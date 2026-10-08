@@ -72,7 +72,7 @@ describe('GET /api/env/:id/stream', () => {
     const port = typeof address === 'object' && address ? address.port : 0;
     const controller = new AbortController();
     const response = await fetch(
-      `http://127.0.0.1:${port}/api/env/prod/stream?since=2026-03-02T00:00:00Z`,
+      `http://127.0.0.1:${port}/api/env/prod/stream?since=${clock.now().toISOString()}`,
       { signal: controller.signal },
     );
     expect(response.status).toBe(200);
