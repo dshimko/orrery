@@ -8,6 +8,17 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `@orrery/render`: the framework-free 3D system view ported from the reference, with a
+  headless simulation layer, six-axis camera, instanced vehicles, alerts, tier and workload
+  filters, and DOM labels throttled to 4 Hz.
+- `@orrery/server`: a read-only API (config, environments, topology, snapshot, events, SSE
+  stream) with per-environment failure isolation and rate limiting, a CSP, and static serving
+  of the web app.
+- The `/env/:id` system view page with time scrubber, filters, panels, alerts, an environment
+  switcher, a data-table text equivalent, and deep links (`t`, `date`, `paused`, `speed`,
+  `tier`, `workload`, `focus`).
+- Playwright tests for the system view, visual-regression baselines, an opt-in comparison
+  with the reference, and an opt-in frame-time benchmark.
 - Domain model in `@orrery/core`: `Topology`, `Snapshot`, the `PlatformEvent` union, and the
   `OrreryAdapter` contract; the metaphor map with orbit, size, and speed formulas; stability
   helpers; seeded randomness.

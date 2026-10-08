@@ -15,13 +15,20 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         // Software WebGL so visual tests run without a GPU (spec: headless test path).
-        launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
+        // The perf benchmark (ORRERY_PERF=1) needs the real GPU instead.
+        launchOptions: {
+          args: process.env.ORRERY_PERF
+            ? []
+            : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+        },
       },
     },
   ],
+  // The real server: built web app plus the API over the all-mock demo config.
   webServer: {
-    command: `pnpm --filter @orrery/web preview`,
-    url: `http://127.0.0.1:${PORT}`,
+    command: `node apps/server/dist/main.js`,
+    url: `http://127.0.0.1:${PORT}/api/health`,
     reuseExistingServer: !process.env.CI,
+    env: { ORRERY_CONFIG: 'config/examples/demo.yaml', PORT: String(PORT), HOST: '127.0.0.1' },
   },
 });

@@ -160,3 +160,13 @@ describe('mock settings and lifecycle', () => {
     expect(stg.previousDayClean).toBe(true);
   });
 });
+
+describe('mock caller signal', () => {
+  it('stops bounded and live iteration when the caller aborts', async () => {
+    const adapter = await started(demoEnv('prod'));
+    const controller = new AbortController();
+    controller.abort();
+    expect(await collect(adapter.events(at('00:00'), at('12:00'), controller.signal))).toEqual([]);
+    expect(await collect(adapter.events(at('12:00'), undefined, controller.signal))).toEqual([]);
+  });
+});

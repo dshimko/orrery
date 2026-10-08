@@ -46,9 +46,10 @@ export interface OrreryAdapter {
   snapshot(at?: Date): Promise<Snapshot>;
   /**
    * Events with `since <= ts < until`, in timestamp order. Without `until` the stream is live:
-   * it follows the clock until `ctx.signal` aborts.
+   * it follows the clock until `ctx.signal` or `signal` aborts. `signal` lets a caller (for
+   * example a disconnected client) stop the work promptly.
    */
-  events(since: Date, until?: Date): AsyncIterable<PlatformEvent>;
+  events(since: Date, until?: Date, signal?: AbortSignal): AsyncIterable<PlatformEvent>;
   health(): Promise<AdapterHealth>;
   dispose(): Promise<void>;
 }

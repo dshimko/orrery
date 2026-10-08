@@ -1,0 +1,224 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.panel {
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 12px 14px;
+}
+
+.panel h2 {
+  font-size: 18px;
+  line-height: 1.2;
+  margin: 14px 0 6px;
+}
+
+.panel h2:first-child,
+.panel > section:first-child h2 {
+  margin-top: 0;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+}
+
+.metrics div {
+  background: var(--chip);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+
+.metrics dt {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.metrics dd {
+  margin: 1px 0 0;
+  font: 600 22px/1.1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.wls,
+.alerts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.wl {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  gap: 0 8px;
+  align-items: center;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  border-radius: 3px;
+  padding: 3px 5px;
+  background: none;
+  text-align: left;
+  width: 100%;
+}
+
+.wl[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--chip);
+}
+
+.wl i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: block;
+}
+
+.wl .pc {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.wl .bar {
+  grid-column: 2 / 4;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.wl .bar u {
+  display: block;
+  height: 100%;
+  text-decoration: none;
+  transition: width 0.25s linear;
+}
+
+.alerts li {
+  border-left: 4px solid var(--line);
+  padding: 1px 0 1px 9px;
+}
+
+.alerts li.sev-incident {
+  border-color: var(--alert);
+}
+
+.alerts li.sev-warning {
+  border-color: var(--warn);
+}
+
+.alerts li.sev-info {
+  border-color: var(--info);
+}
+
+.alerts p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.alert-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.alert-title {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.badge {
+  border-radius: 3px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0a1220;
+  background: var(--info);
+}
+
+.badge.sev-incident {
+  background: var(--alert);
+}
+
+.badge.sev-warning {
+  background: var(--warn);
+}
+
+.card {
+  position: relative;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--tier);
+  border-radius: 3px;
+  background: var(--chip);
+}
+
+.card h2 {
+  margin: 0 0 4px;
+}
+
+.card p {
+  margin: 0 0 4px;
+}
+
+.card .x {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  border: 0;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.data-table {
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 12px;
+  overflow-x: auto;
+}
+
+.data-table summary {
+  font: 600 18px var(--font-display);
+  cursor: pointer;
+}
+
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 13px;
+}
+
+.data-table caption {
+  text-align: left;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+}
+
+.data-table thead th,
+.data-table tbody th {
+  font-weight: 600;
+}

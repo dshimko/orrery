@@ -1,0 +1,194 @@
+// SPDX-License-Identifier: Apache-2.0
+import type { CameraViewKey, Filters, PickTarget, SystemView, TierFilter } from '@orrery/render';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ControlsPanel } from '../components/ControlsPanel.js';
+import { DataTable } from '../components/DataTable.js';
+import { Header } from '../components/Header.js';
+import { SceneHost } from '../components/SceneHost.js';
+import { StatusPanel } from '../components/StatusPanel.js';
+import { TimeControls } from '../components/TimeControls.js';
+import type { EnvData } from '../hooks/useEnvLoad.js';
+import { useIncidentAnnouncer } from '../hooks/useIncidentAnnouncer.js';
+import { useSimClock } from '../hooks/useSimClock.js';
+import { useSystemData } from '../hooks/useSystemData.js';
+import type { Api } from '../lib/api.js';
+import { type DeepLink, toQuery } from '../lib/params.js';
+import { buildUrl, envPath, navigate } from '../lib/router.js';
+import { createTimeController } from '../lib/time.js';
+
+export interface SystemReadyProps {
+  api: Api;
+  envId: string;
+  data: EnvData;
+  link: DeepLink;
+}
+
+const FALLBACK_TIER_COLOR = '#6EA8FF';
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** The interactive system view for one loaded environment. */
+export function SystemReady({ api, envId, data, link }: SystemReadyProps) {
+  const { visuals } = data.config;
+  const env = data.environments.find((item) => item.id === envId) ?? {
+    id: envId,
+    name: envId,
+    tier: 'unknown',
+  };
+  const tierColor = visuals.colors.tiers[env.tier] ?? FALLBACK_TIER_COLOR;
+  const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
+
+  const [controller] = useState(() =>
+    createTimeController({
+      start: data.startAt,
+      secondsPerSimDay: visuals.time.secondsPerSimDay,
+      speed: link.speed !== null && visuals.time.speeds.includes(link.speed) ? link.speed : 1,
+      paused: link.paused || prefersReducedMotion(),
+    }),
+  );
+  const { time, refresh } = useSimClock(controller);
+
+  const viewRef = useRef<SystemView | null>(null);
+  const [viewVersion, setViewVersion] = useState(0);
+  const [sceneError, setSceneError] = useState<string | null>(null);
+  const system = useSystemData(api, envId, controller, data.snapshot, viewRef);
+  const { snapshot } = system;
+  const announcement = useIncidentAnnouncer(snapshot.alerts);
+
+  const [tier, setTier] = useState<TierFilter>(link.tier);
+  const [workload, setWorkload] = useState(link.workload);
+  const [focusAlerts, setFocusAlerts] = useState(false);
+  const [focus, setFocus] = useState<PickTarget | null>(link.focus);
+  const [selected, setSelected] = useState<PickTarget | null>(null);
+  const [urlMinute, setUrlMinute] = useState(link.minuteOfDay);
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
+
+  const onView = useCallback((view: SystemView | null) => {
+    viewRef.current = view;
+    if (view) setViewVersion((version) => version + 1);
+  }, []);
+
+  // Apply filters, restore focus, and subscribe to picks whenever a view is (re)created.
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const filters: Partial<Filters> = { tier, workload, focusAlerts };
+    view.setFilters(filters);
+  }, [viewVersion, tier, workload, focusAlerts]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    if (focusRef.current) view.focus(focusRef.current);
+    return view.onPick((target) => {
+      setSelected(target);
+      if (target) setFocus(target);
+    });
+  }, [viewVersion]);
+
+  useEffect(() => {
+    const query = toQuery({ minuteOfDay: urlMinute, speed: time.speed, tier, workload, focus });
+    const url = buildUrl(envPath(envId), query);
+    if (url !== window.location.pathname + window.location.search) navigate(url, { replace: true });
+  }, [envId, urlMinute, time.speed, tier, workload, focus]);
+
+  const onScrub = (minute: number): void => {
+    controller.seekMinute(minute);
+    refresh();
+    setUrlMinute(minute);
+    system.jump();
+  };
+  const onTogglePlay = (): void => {
+    controller.setPaused(!controller.state().paused);
+    refresh();
+  };
+  const onSpeed = (speed: number): void => {
+    controller.setSpeed(speed);
+    refresh();
+  };
+  const onFocus = (target: PickTarget): void => {
+    viewRef.current?.focus(target);
+    setFocus(target);
+  };
+  const onViewKey = (key: CameraViewKey): void => {
+    viewRef.current?.goView(key);
+  };
+
+  return (
+    <div className="app" style={{ ['--tier' as string]: tierColor }}>
+      <Header
+        productName={data.config.product.title}
+        env={env}
+        environments={data.environments}
+        tierColor={tierColor}
+      />
+      <div className="layout">
+        <main className="stage-col">
+          <section className="scene-wrap" aria-label="System view">
+            <div className="tier-edge" style={{ background: tierColor }} aria-hidden="true" />
+            <SceneHost
+              envId={envId}
+              topology={data.topology}
+              visuals={visuals}
+              tierColor={tierColor}
+              initialSnapshot={snapshot}
+              reducedMotion={reducedMotion}
+              time={() => controller.state()}
+              onView={onView}
+              onFailure={setSceneError}
+            />
+            {sceneError && <p className="scene-error">{sceneError}</p>}
+          </section>
+          {system.refreshError && (
+            <p className="banner" role="status">
+              {system.refreshError}
+            </p>
+          )}
+          <TimeControls
+            time={time}
+            speeds={visuals.time.speeds}
+            onTogglePlay={onTogglePlay}
+            onSpeed={onSpeed}
+            onScrub={onScrub}
+          />
+          <DataTable topology={data.topology} snapshot={snapshot} />
+        </main>
+        <div className="side">
+          <ControlsPanel
+            tier={tier}
+            workload={workload}
+            focusAlerts={focusAlerts}
+            reducedMotion={reducedMotion}
+            workloads={visuals.workloads}
+            hasFederation={data.topology.foreignCatalogs.length > 0}
+            onTier={setTier}
+            onWorkload={setWorkload}
+            onFocusAlerts={setFocusAlerts}
+            onReducedMotion={setReducedMotion}
+            onView={onViewKey}
+            onResetCamera={() => viewRef.current?.resetCamera()}
+            onLevelHorizon={() => viewRef.current?.levelHorizon()}
+          />
+          <StatusPanel
+            topology={data.topology}
+            snapshot={snapshot}
+            workloads={visuals.workloads}
+            workload={workload}
+            selected={selected}
+            onWorkload={setWorkload}
+            onFocus={onFocus}
+            onCloseSelection={() => {
+              setSelected(null);
+            }}
+          />
+        </div>
+      </div>
+      <div className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </div>
+    </div>
+  );
+}

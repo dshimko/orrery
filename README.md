@@ -5,7 +5,7 @@ view, shows one astronomical clock face per environment (for example dev, stg, p
 there you can fly into any environment's **system view**: a 3D solar system of sources,
 pipelines, data products, freshness, workloads, and consumers, live or in replay.
 
-> Status: milestone 1 (skeleton). The views and adapters land in later milestones; see
+> Status: milestone 3 (system view). The views and adapters land in later milestones; see
 > `docs/BUILD_PROMPT.md`.
 
 ## Quick start
@@ -14,8 +14,12 @@ pipelines, data products, freshness, workloads, and consumers, live or in replay
 corepack enable
 pnpm install
 pnpm build
-pnpm --filter @orrery/web preview   # http://127.0.0.1:4173
+ORRERY_CONFIG=config/examples/demo.yaml node apps/server/dist/main.js
+# open http://127.0.0.1:8787/env/prod
 ```
+
+For development, run `pnpm dev:server` and `pnpm --filter @orrery/web dev` together. Vite
+proxies `/api` to the server.
 
 ## Configuration
 

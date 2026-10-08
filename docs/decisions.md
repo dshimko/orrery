@@ -126,3 +126,43 @@ ambiguity. Newest milestone last.
     3% band), because adapters do not receive the `visuals` config.
 30. **Fast-aging tiers get a looser target**, target × max(1, `agingFactor` × 0.6), as in
     the reference. Otherwise dev would show every spoke past target.
+
+## Milestone 3: system view
+
+### Spec differences and acceptance
+
+31. **Screenshot parity with the reference is by side-by-side review, not a pixel diff.** The
+    reference places stars, the belt, and every vehicle with unseeded `Math.random`, so no two
+    loads of it match each other. `e2e/reference-compare.spec.ts` (opt-in,
+    `ORRERY_REFERENCE_COMPARE=1`) captures the reference and the port at the same environment
+    and time for review. The pixel gate is `e2e/visual.spec.ts`, against our own seeded
+    baselines.
+32. **Visual baselines are rendered on Linux arm64 in `mcr.microsoft.com/playwright:v1.64.0-noble-arm64`**
+    (`pnpm test:visual:update`, verified reproducible with `sh scripts/visual-baselines.sh check`).
+    That image is published for arm64 only, so the CI e2e job runs in it on `ubuntu-24.04-arm`.
+    Visual tests skip on other platforms because font rasterization differs.
+33. **60 fps is verified on Apple-silicon integrated graphics only.** At 1920×1080 with the prod
+    mock at 4×, two runs measured 60 fps mean, p95 17 ms (`ORRERY_PERF=1 pnpm exec playwright
+test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integrated GPUs are
+    not yet measured.
+34. **A minimal `apps/server` lands in milestone 3** even though no milestone names it, because
+    adapters may only run on the server and the system view needs data. It is read-only, has
+    a `{data}` / `{error}` envelope, and enforces a 24 h event window, a 50,000-event cap, and a
+    per-environment rate limit. Environments that list several adapters report
+    "composition not supported yet" until composition lands.
+
+### Rendering
+
+35. **The render package is two layers.** `sim/` is headless: model, integration, vehicle
+    pools, and the camera rig on three's math classes. `scene/` and `view.ts` draw with Three.js.
+    All eight stability rules are unit-tested on `sim/` in Node, and rule 8 is also tested in
+    a browser (paused frames are byte-identical).
+36. **The renderer is driven by events.** Each `PlatformEvent` spawns its vehicle when simulated
+    time passes its timestamp, and randomness is keyed by the event, so the same events always
+    produce the same vehicles. The page prefetches 15-minute event windows, and refreshes the
+    snapshot every 5 simulated minutes and after a scrub.
+37. **Spoke colors come from a reference palette in `scene/palette.ts`** because `Spoke` has no
+    color field. Moving them into `visuals` config is a candidate follow-up.
+38. **Two new deep-link params for reproducible views**, alongside `t`: `date=YYYY-MM-DD` and
+    `paused=1`.
+39. **The page CSP adds `script-src 'self'`.** The server sends the same CSP as a header.

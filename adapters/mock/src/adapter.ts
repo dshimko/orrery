@@ -62,24 +62,32 @@ export class MockAdapter implements OrreryAdapter {
     return snapshotAt(this.ready().world, at ?? this.now());
   }
 
-  events(since: Date, until?: Date): AsyncIterable<PlatformEvent> {
+  events(since: Date, until?: Date, signal?: AbortSignal): AsyncIterable<PlatformEvent> {
     const state = this.ready();
-    if (until) return toAsync(eventsBetween(state.world, since, until));
-    return this.live(state, since);
+    if (until) return toAsync(eventsBetween(state.world, since, until), signal);
+    return this.live(state, since, signal);
   }
 
   private async *live(
     { world, ctx, speed, startMs }: NonNullable<MockAdapter['state']>,
     since: Date,
+    caller?: AbortSignal,
   ): AsyncGenerator<PlatformEvent> {
     const simulatedNow = () => new Date(startMs + (ctx.clock.now().getTime() - startMs) * speed);
-    const signals = [this.disposal.signal, ...(ctx.signal ? [ctx.signal] : [])];
+    const signals = [
+      this.disposal.signal,
+      ...(ctx.signal ? [ctx.signal] : []),
+      ...(caller ? [caller] : []),
+    ];
     const signal = AbortSignal.any(signals);
     let cursor = since;
     while (!signal.aborted) {
       const now = simulatedNow();
       if (now > cursor) {
-        yield* eventsBetween(world, cursor, now);
+        for (const event of eventsBetween(world, cursor, now)) {
+          if (signal.aborted) return;
+          yield event;
+        }
         cursor = now;
       }
       try {
@@ -102,6 +110,9 @@ export class MockAdapter implements OrreryAdapter {
   }
 }
 
-async function* toAsync<T>(items: Iterable<T>): AsyncGenerator<T> {
-  yield* items;
+async function* toAsync<T>(items: Iterable<T>, signal?: AbortSignal): AsyncGenerator<T> {
+  for (const item of items) {
+    if (signal?.aborted) return;
+    yield item;
+  }
 }

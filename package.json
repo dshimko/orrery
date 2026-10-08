@@ -10,6 +10,7 @@
     "node": ">=20.19.0"
   },
   "scripts": {
+    "dev:server": "pnpm --filter @orrery/server dev",
     "prepare": "git config core.hooksPath .githooks || true",
     "build": "pnpm -r --workspace-concurrency=1 build",
     "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json",
@@ -23,7 +24,8 @@
     "check:licenses": "node scripts/check-licenses.mjs",
     "check:denylist": "node scripts/check-denylist.mjs",
     "check:size": "size-limit",
-    "ci": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm check:spdx && pnpm check:licenses && pnpm check:denylist && pnpm test:coverage && pnpm build && pnpm check:size"
+    "ci": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm check:spdx && pnpm check:licenses && pnpm check:denylist && pnpm test:coverage && pnpm build && pnpm check:size",
+    "test:visual:update": "sh scripts/visual-baselines.sh"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

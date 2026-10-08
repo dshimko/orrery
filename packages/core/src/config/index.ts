@@ -20,4 +20,4 @@ export { mergeById, resolveTopology } from './resolve.js';
 export { OrreryConfigInput } from './root.js';
 export { envRefName, suggestKey } from './strict.js';
 export { TopologyConfig, type Matcher } from './topology.js';
-export { DEFAULT_WORKLOADS, type Visuals, type Workload } from './visuals.js';
+export { DEFAULT_WORKLOADS, Visuals, type Workload } from './visuals.js';

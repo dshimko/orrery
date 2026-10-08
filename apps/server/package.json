@@ -17,9 +17,18 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js",
+    "dev": "tsx watch --conditions=source src/main.ts"
   },
   "dependencies": {
-    "@orrery/core": "workspace:*"
+    "@orrery/adapter-mock": "workspace:*",
+    "@orrery/core": "workspace:*",
+    "fastify": "5.12.5",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@orrery/testkit": "workspace:*",
+    "tsx": "4.23.15"
   }
 }

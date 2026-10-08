@@ -1,0 +1,166 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--page);
+  border-top: 4px solid var(--tier);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  font: 700 22px/1 var(--font-display);
+  text-decoration: none;
+}
+
+.env-name {
+  margin: 0;
+  font-size: 22px;
+}
+
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid;
+  border-radius: 3px;
+  padding: 1px 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.tier-badge i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.topbar-spacer {
+  flex: 1;
+}
+
+.layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 12px;
+  padding: 12px;
+}
+
+.stage-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.scene-wrap {
+  position: relative;
+  height: min(70vh, 760px);
+  min-height: 420px;
+  background: #02040a;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tier-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+.scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.scene-error,
+.banner {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--warn);
+  border-radius: 3px;
+  color: var(--warn);
+  background: var(--glass);
+}
+
+.scene-error {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 16px;
+  z-index: 3;
+}
+
+.time-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.clock {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 11rem;
+}
+
+.clock-time {
+  font: 700 36px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-unit {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.scrubber {
+  flex: 1 1 260px;
+  min-width: 200px;
+  height: 24px;
+  accent-color: var(--tier);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+@media (max-width: 1279px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scene-wrap {
+    height: 60vh;
+    min-height: 360px;
+  }
+}
