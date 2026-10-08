@@ -26,7 +26,8 @@
     "@orrery/core": "workspace:*",
     "fastify": "5.12.5",
     "zod": "4.6.5",
-    "@orrery/adapter-databricks": "workspace:*"
+    "@orrery/adapter-databricks": "workspace:*",
+    "@orrery/adapter-openlineage": "workspace:*"
   },
   "devDependencies": {
     "@orrery/testkit": "workspace:*",

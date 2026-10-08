@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=../../packages/core/schema/orrery.config.schema.json
+# Renders the public Marquez seed events (Apache-2.0; see adapters/openlineage/samples/README.md)
+# with the OpenLineage adapter. The names below ("food_delivery", "public.menus", "etl_menus") are
+# the sample's own. The path is relative to the working directory; the packaged app ships the same
+# file at the same relative path, so this config works from the repo root and from build/app.
+#
+# Matching (adapters/openlineage/README.md):
+#   catalog  glob on the dataset (or job) namespace
+#   schema   glob on the dataset name, its first dotted segment, or the job name
+# Domain spokes claim their datasets first; the ingest spoke takes the rest of the namespace.
+version: 1
+product:
+  title: Orrery
+  timezone: UTC
+
+topologies:
+  food-delivery:
+    hub: { id: core, name: Core platform }
+    spokes:
+      - id: ingest
+        name: Raw tables
+        role: ingest
+        match: { catalog: food_delivery }
+        freshness: { cadenceMinutes: 60, targetMinutes: 75 }
+      - id: orders-mart
+        name: Orders mart
+        role: domain
+        match: { catalog: food_delivery, schema: 'public.*_7_days' }
+        freshness: { cadenceMinutes: 60, targetMinutes: 80 }
+      - id: insights
+        name: Delivery insights
+        role: domain
+        match: { catalog: food_delivery, schema: 'public.top_*' }
+        freshness: { cadenceMinutes: 60, targetMinutes: 80 }
+      - id: engagement
+        name: Customer engagement
+        role: domain
+        match: { catalog: food_delivery, schema: 'public.popular_*' }
+        freshness: { cadenceMinutes: 60, targetMinutes: 80 }
+    sourceGroups:
+      # Jobs that read nothing are the sample's extract jobs; each becomes a site.
+      - id: extracts
+        name: Extract jobs
+        utcOffset: 0
+        match: { catalog: food_delivery, schema: 'etl_*' }
+    useCases:
+      # Jobs whose outputs nobody reads are the sample's consumers.
+      - id: discount-emails
+        name: Discount emails
+        match: { schema: 'email_*' }
+      - id: demand-planning
+        name: Demand planning
+        match: { schema: 'orders_popular_*' }
+
+environments:
+  - id: sample
+    name: OpenLineage sample
+    tier: dev
+    topology: food-delivery
+    adapter: openlineage
+    options:
+      source:
+        kind: file
+        path: adapters/openlineage/samples/metadata.json
+      # The sample is one burst of runs on a past day. Repeat it every hour so the scene moves.
+      replay: { period: hour }

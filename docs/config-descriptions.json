@@ -46,7 +46,7 @@
   "environments[].tier": "Tier id, such as `dev`, `stg`, or `prod`. Picks the plaque and band color from `visuals.colors.tiers`; a tier with no color there falls back to a default.",
   "environments[].topology": "Name of a topology under `topologies`. An unknown name fails validation with a suggestion.",
   "environments[].overrides": "Overrides applied on top of the named topology after its `extends` chain. Same shape as a topology without `extends`: `exclude`, `hub`, `spokes`, `sourceGroups`, `useCases`, `medallion`, `shipyard`. List entries merge by `id`.",
-  "environments[].adapter": "Adapter name, or a list of names. Built-in: `mock`, `databricks`. `openlineage` is accepted but not available yet. Fork adapters are named under `adapters`. A list (composition) is accepted by the schema, but the server reports \"Adapter composition is not supported yet\" (decision 34).",
+  "environments[].adapter": "Adapter name, or a list of names. Built-in: `mock`, `databricks`, `openlineage` (see `adapters/openlineage/README.md` for its `options`). Fork adapters are named under `adapters`. A list (composition) is accepted by the schema, but the server reports \"Adapter composition is not supported yet\" (decision 34).",
   "environments[].mock": "Profile for the `mock` adapter. Ignored by other adapters.",
   "environments[].mock.seed": "Integer seed. Default: a hash of the environment id. `MOCK_SEED` overrides it for every environment (hashed with the environment id).",
   "environments[].mock.scale": "Multiplier for pipeline, product, and volume counts.",

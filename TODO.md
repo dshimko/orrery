@@ -2,6 +2,20 @@
 
 Cross-milestone backlog. Each item: where, what, and the fix direction.
 
+## From the milestone 7 OpenLineage adapter
+
+- **[LOW] Marquez reads are bounded, not complete.** A busy server can hold more than 25 pages
+  of 200 events in the 7-day topology window or the 24-hour event lookback, so the oldest are
+  dropped (`adapters/openlineage/src/marquez.ts`). Add a time-sliced read, or use Marquez's job
+  and dataset endpoints for discovery.
+- **[LOW] Run facets are not used.** `ErrorMessageRunFacet`, `nominalTime`, and dataset
+  statistics (`outputStatistics`) could fill alert text, batch size, and spoke `volume`
+  (`adapters/openlineage/src/convert/`).
+- **[LOW] Live runs are kept in memory only.** A long-lived stream holds the lookback's events
+  (`adapters/openlineage/src/event-store.ts`); cap it by count if a very busy Marquez is used.
+- **[LOW] Not validated against a real Marquez.** Only a fake `fetch` modelled on the OpenAPI
+  spec was used. Run it against `docker/up.sh --seed` from the Marquez repo.
+
 ## From the milestone 5 Databricks review
 
 - **[LOW] Late system-table data in live mode.** A run that lands in the system tables up to an

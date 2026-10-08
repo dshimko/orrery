@@ -9,5 +9,11 @@ Influences (patterns only, no code copied unless noted; details in docs/prior-ar
   - OpenLineage and Marquez (Apache-2.0): the run event model.
   - three.js (MIT): renderer, used as a dependency.
 
+Included third-party data:
+  - adapters/openlineage/samples/metadata.json: the Marquez seed events from
+    docker/metadata.template.json (Marquez, Apache-2.0, https://github.com/MarquezProject/marquez),
+    with fixed times and the demo database credentials removed. See
+    adapters/openlineage/samples/README.md.
+
 Databricks and Unity Catalog are named only to describe compatibility. This project is
 not affiliated with or endorsed by Databricks, Inc.

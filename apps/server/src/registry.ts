@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { currentUserToken } from './user-token.js';
 import { DatabricksAdapter } from '@orrery/adapter-databricks';
 import { MockAdapter } from '@orrery/adapter-mock';
+import { OpenLineageAdapter } from '@orrery/adapter-openlineage';
 import {
   adapterList,
   type AdapterContext,
@@ -17,8 +18,6 @@ import {
 import { errorMessage } from './logger.js';
 
 export const ADAPTER_INIT_TIMEOUT_MS = 10_000;
-
-const NOT_YET_AVAILABLE = new Set(['openlineage']);
 
 /** One configured environment: a live adapter, or the reason there is none. */
 export interface EnvRuntime {
@@ -70,7 +69,7 @@ async function createAdapter(
 ): Promise<OrreryAdapter | { message: string }> {
   if (name === 'mock') return new MockAdapter();
   if (name === 'databricks') return new DatabricksAdapter();
-  if (NOT_YET_AVAILABLE.has(name)) return { message: `The ${name} adapter is not available yet.` };
+  if (name === 'openlineage') return new OpenLineageAdapter();
   const registered = config.adapters?.[name];
   if (!registered) return { message: `The adapter "${name}" is not registered.` };
   return loadForkAdapter(registered.package);

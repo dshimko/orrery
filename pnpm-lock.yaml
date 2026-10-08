@@ -82,6 +82,13 @@ importers:
       '@orrery/core':
         specifier: workspace:*
         version: link:../../packages/core
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@orrery/testkit':
+        specifier: workspace:*
+        version: link:../../packages/testkit
 
   apps/server:
     dependencies:
@@ -91,6 +98,9 @@ importers:
       '@orrery/adapter-mock':
         specifier: workspace:*
         version: link:../../adapters/mock
+      '@orrery/adapter-openlineage':
+        specifier: workspace:*
+        version: link:../../adapters/openlineage
       '@orrery/core':
         specifier: workspace:*
         version: link:../../packages/core

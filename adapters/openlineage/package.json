@@ -13,13 +13,18 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "samples"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@orrery/core": "workspace:*"
+    "@orrery/core": "workspace:*",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@orrery/testkit": "workspace:*"
   }
 }

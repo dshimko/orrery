@@ -66,19 +66,19 @@ before you start.
 
 ## Repository layout
 
-| Path               | Contents                                                            |
-| ------------------ | ------------------------------------------------------------------- |
-| `apps/web`         | Orloj clock view, system view, panels (React and Vite)              |
-| `apps/server`      | Config loading, adapter registry, snapshot and SSE API              |
-| `packages/core`    | Domain model, event union, config schema, metaphor map              |
-| `packages/render`  | Framework-free Three.js system view                                 |
-| `packages/orloj`   | Framework-free Canvas 2D clock faces                                |
-| `packages/testkit` | Adapter contract suite, seeded clock                                |
-| `adapters/*`       | Mock and Databricks adapters (OpenLineage is a planned placeholder) |
-| `config/`          | Example configs; `config/private/` is git-ignored for forks         |
-| `deploy/`          | Databricks App bundle, Docker image, and Helm chart                 |
-| `docs/`            | Documentation, design decisions, and the specification              |
-| `scripts/`         | Packaging, docs generation, and repository checks                   |
+| Path               | Contents                                                    |
+| ------------------ | ----------------------------------------------------------- |
+| `apps/web`         | Orloj clock view, system view, panels (React and Vite)      |
+| `apps/server`      | Config loading, adapter registry, snapshot and SSE API      |
+| `packages/core`    | Domain model, event union, config schema, metaphor map      |
+| `packages/render`  | Framework-free Three.js system view                         |
+| `packages/orloj`   | Framework-free Canvas 2D clock faces                        |
+| `packages/testkit` | Adapter contract suite, seeded clock                        |
+| `adapters/*`       | Mock, Databricks, and OpenLineage adapters                  |
+| `config/`          | Example configs; `config/private/` is git-ignored for forks |
+| `deploy/`          | Databricks App bundle, Docker image, and Helm chart         |
+| `docs/`            | Documentation, design decisions, and the specification      |
+| `scripts/`         | Packaging, docs generation, and repository checks           |
 
 ## License
 

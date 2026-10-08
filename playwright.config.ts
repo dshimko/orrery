@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
 export const FAILING_PORT = 4174;
+export const OPENLINEAGE_PORT = 4175;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -42,6 +43,17 @@ export default defineConfig({
       env: {
         ORRERY_CONFIG: 'config/examples/three-env.yaml',
         PORT: String(FAILING_PORT),
+        HOST: '127.0.0.1',
+      },
+    },
+    // openlineage.yaml: the public OpenLineage sample events (milestone 7 acceptance).
+    {
+      command: `node apps/server/dist/main.js`,
+      url: `http://127.0.0.1:${OPENLINEAGE_PORT}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        ORRERY_CONFIG: 'config/examples/openlineage.yaml',
+        PORT: String(OPENLINEAGE_PORT),
         HOST: '127.0.0.1',
       },
     },

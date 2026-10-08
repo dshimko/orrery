@@ -59,6 +59,11 @@ async function main() {
   }
   const sqlFiles = readdirSync(path.join(APP_DIR, 'sql')).filter((name) => name.endsWith('.sql'));
   assert(sqlFiles.length > 0, 'sql/ sits beside server/ where the Databricks adapter looks');
+  assert(
+    existsSync(path.join(APP_DIR, 'adapters/openlineage/samples/metadata.json')) &&
+      existsSync(path.join(APP_DIR, 'config/openlineage.yaml')),
+    'the OpenLineage sample and its config are packaged at the paths the config names',
+  );
   const child = spawn(process.execPath, ['server/main.mjs'], {
     cwd: APP_DIR,
     env: {

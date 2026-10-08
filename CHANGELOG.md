@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `@orrery/adapter-openlineage`: an optional read-only adapter that renders OpenLineage
+  RunEvents from a JSON or NDJSON file or a Marquez server (`GET /api/v1/events/lineage` only,
+  https unless loopback, bearer key from an env reference, bounded pages, 30 s live polling),
+  with matcher-based topology, sample replay for files, and recorded-fixture-free tests on a
+  fake `fetch`. `config/examples/openlineage.yaml` renders the public Marquez seed events
+  (`adapters/openlineage/samples`, Apache-2.0, credited in `NOTICE`). The server now starts
+  `adapter: openlineage` environments, and the package ships the sample.
 - Packaging: `pnpm package` builds one deployable bundle (`build/app`) for the Databricks App
   (`app.yaml`, `deploy/databricks-app` bundle and deploy script) and a distroless Docker image
   (`deploy/docker`, `docker-compose.yml`), plus a Helm chart stub (`deploy/helm/orrery`).

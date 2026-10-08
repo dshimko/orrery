@@ -3,8 +3,8 @@
 An adapter is the only code that talks to a data platform. It runs on the server, turns platform
 data into the model in `@orrery/core`, and knows nothing about visuals. The renderer maps events
 to vehicles. Three adapters ship: `mock` (`adapters/mock`), `databricks`
-(`adapters/databricks`, see `docs/databricks.md`), and `openlineage` (planned; the server reports
-it as not available yet).
+(`adapters/databricks`, see `docs/databricks.md`), and `openlineage` (`adapters/openlineage`, see
+its `README.md`; it reads OpenLineage run events from a file or a Marquez server).
 
 An adapter is a package that exports an `AdapterFactory` as its default export. Everything below
 is exported by `@orrery/core`.

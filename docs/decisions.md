@@ -291,3 +291,44 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
 65. **Not validated:** the Databricks App bundle and `deploy.sh`, because there is no Databricks
     CLI or workspace in this environment. The milestone 6 acceptance criterion (deploy to a
     fresh workspace from the README steps alone) is open in `TODO.md`.
+
+## Milestone 7: OpenLineage adapter
+
+66. **Two sources, one conversion path.** `options.source` is a `file` (read once, 50 MB cap) or
+    a `marquez` server. Both feed an `EventSource` that returns RunEvents for a window, and
+    one set of pure functions turns runs into the topology, snapshots, and events. Only
+    `GET /api/v1/events/lineage` is used (verified in Marquez's `spec/openapi.yml`); the
+    namespace, dataset, and job endpoints add nothing the events do not carry.
+67. **Matchers read OpenLineage identity.** `catalog` is the namespace, `schema` is the dataset
+    name or its first dotted segment (so both `public` and `public.menu*` work), `tag` is the
+    `tags` facet, and `jobTag` / `pipelineTag` are job `tags` and `jobType` facets (for a dataset,
+    those of its producers). `sqlPredicate` and `dashboardTag` never match, as for Databricks, and
+    are reported in health. Domain spokes are tried before ingest spokes, so an ingest spoke
+    works as the catch-all of its namespace.
+68. **Sources are unproduced inputs, or the job itself.** The sample has no external input
+    datasets (every table is produced by a job), so a job that reads nothing counts as an extract
+    source and each such job is a site (8 per group at most). Sites are ids derived from the
+    source name by hash, so they are stable as sources come and go.
+69. **Spoke roles pick the vehicle** (see `adapters/openlineage/README.md`): ingest writes
+    draw `source.batch` or `source.stream` from a matched group, else `transfer`; domain writes
+    draw `copy`, or `product.publish` when the run also reads that spoke; sink jobs draw
+    `serve.read`; failures open alerts closed by the next completion of the job. Event times are
+    the run's own, so splits of a window are identical.
+70. **Replay is a convenience for files only.** Recorded events are historical, so the file
+    source repeats the whole sample every `day` (default) or `hour`, as many times as the window
+    needs (run `k` gets id `<runId>@<k>`). `replay.anchor` moves the earliest event to a chosen
+    instant (the brief proposed shifting by whole days; repeating the sample is equivalent on the
+    sample's day and also fills the days before it, so freshness is never "7 days" at midnight).
+    Marquez data is never replayed.
+71. **Known gaps from run events:** no deploys, promotions, ML runs, spend, volume, schedule, or
+    federation; the calendar is zeros. A Marquez read is capped at 25 pages of 200 events and
+    health says when it was cut.
+72. **The sample is Marquez's seed.** `docker/metadata.template.json` at a pinned commit, with
+    fixed times (as `seed.sh` would render) and the demo database credentials removed
+    (`adapters/openlineage/samples/README.md`). The packaged app carries it at the same relative
+    path, so `config/openlineage.yaml` runs from `build/app` as well as from the repo root.
+73. **Marquez response bodies are read as a stream and capped at 20 MB** while reading. This
+    covers chunked responses without `Content-Length` (found at milestone 7 integration). The
+    milestone 7 acceptance runs in e2e: a third server on `config/examples/openlineage.yaml`
+    renders the public Marquez sample on the Orloj home and the system view
+    (`e2e/openlineage.spec.ts`).

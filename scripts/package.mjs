@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Assembles the single deployable artifact in build/app: one bundled server file, the web build,
-// the Databricks SQL files, demo configs, and Databricks Apps / container metadata. Requires
-// `pnpm build` first (the web app's dist). Fails when Databricks Apps file-size limits are exceeded.
+// the Databricks SQL files, the OpenLineage sample events, demo configs, and Databricks Apps /
+// container metadata. Requires `pnpm build` first (the web app's dist). Fails when Databricks Apps
+// file-size limits are exceeded.
 import { build } from 'esbuild';
 import { cpSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -104,6 +105,10 @@ async function main() {
   });
   copy('config/examples/demo.yaml', 'config/demo.yaml');
   copy('config/examples/three-env.yaml', 'config/three-env.yaml');
+  // The OpenLineage demo reads its sample by a path relative to the working directory. It sits at
+  // the same relative path in the package, so config/openlineage.yaml works from build/app too.
+  copy('config/examples/openlineage.yaml', 'config/openlineage.yaml');
+  copy('adapters/openlineage/samples', 'adapters/openlineage/samples');
   copy('LICENSE', 'LICENSE');
   copy('NOTICE', 'NOTICE');
   writeFileSync(path.join(OUT, 'package.json'), `${JSON.stringify(APP_PACKAGE, null, 2)}\n`);
