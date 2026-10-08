@@ -20,9 +20,12 @@ for (const envId of ['dev', 'stg', 'prod']) {
 test('Orloj home matches its baseline', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto('/?date=2026-10-07&t=10:45&paused=1');
-  await page.getByTestId('orloj').locator('canvas').waitFor();
-  await page.waitForTimeout(2500);
+  await page
+    .locator('[data-testid="orloj"][data-ready="true"] canvas')
+    .waitFor({ timeout: 20_000 });
+  await page.waitForTimeout(1500);
   await expect(page.getByTestId('orloj')).toHaveScreenshot('orloj-home.png', {
+    timeout: 20_000,
     maxDiffPixelRatio: 0.01,
     animations: 'disabled',
   });

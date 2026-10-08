@@ -28,6 +28,14 @@ interface TooltipState {
  * is set as text content only. The canvas is not keyboard accessible; the at-a-glance table and
  * its summary buttons are the text equivalent.
  */
+/** Every face has its data or a definite error: the faces show their settled state. */
+export function isReady(faces: readonly OrlojFace[]): boolean {
+  return (
+    faces.length > 0 &&
+    faces.every((f) => Boolean(f.error) || (f.snapshot !== null && f.topology !== null))
+  );
+}
+
 export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: OrlojStageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<OrlojView | null>(null);
@@ -77,6 +85,7 @@ export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: Or
         ref={containerRef}
         className="orloj"
         data-testid="orloj"
+        data-ready={isReady(faces) ? 'true' : 'false'}
         role="img"
         aria-label="One astronomical clock face per environment, showing schedules, freshness, and incidents. The table below is a text equivalent."
         onPointerLeave={() => {

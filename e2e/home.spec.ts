@@ -7,8 +7,10 @@ import { FIXED, openSystem } from './fixtures.js';
 async function openHome(page: Page, width = 1600, base = ''): Promise<void> {
   await page.setViewportSize({ width, height: 1000 });
   await page.goto(`${base}/?${FIXED}`);
-  await page.getByTestId('orloj').locator('canvas').waitFor();
-  await page.waitForTimeout(1500);
+  await page
+    .locator('[data-testid="orloj"][data-ready="true"] canvas')
+    .waitFor({ timeout: 20_000 });
+  await page.waitForTimeout(500);
 }
 
 /** Columns from the canvas aspect ratio: 3 faces give 1, 2, or 3 rows of 440×820 faces. */
@@ -34,6 +36,7 @@ test.describe('Orloj home', () => {
   });
 
   test('switches layout at 1,150 and 720 px', async ({ page }) => {
+    test.setTimeout(90_000);
     for (const [width, expected] of [
       [1600, 3],
       [1100, 2],
