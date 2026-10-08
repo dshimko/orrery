@@ -19,3 +19,9 @@ the open backlog is in `TODO.md`. Run every gate before calling a milestone done
 - **pnpm and licenses:** check every new dependency against the allowlist. Vite stays
   pinned at 7.3.7 because Vite 8 pulls in MPL-2.0 `lightningcss`.
 - **YAML flow maps:** quote `${env:NAME}` inside `{ ... }`, or the file will not parse.
+- **CI runs Node 20, and a newer local Node can hide breakage.** Check the `engines` field of
+  every new tool. size-limit 13 and later need Node 22, so it is pinned at 12.1.0. For a quick
+  check, run a gate on Node 20 with `docker run --rm -v "$PWD:/repo:ro" -w /repo
+node:20-bookworm-slim node <script>`.
+- **CI runners are slower than a laptop.** Tests that fast-forward a clock must take
+  timestamps from that clock, and e2e tests wait for `data-ready` signals, not fixed sleeps.
