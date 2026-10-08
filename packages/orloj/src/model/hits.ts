@@ -9,9 +9,9 @@ import {
 } from '../geometry.js';
 import {
   HUB_RADIUS,
-  LUTE_POS,
-  MIRROR_POS,
-  MISER_POS,
+  CONSUMERS_POS,
+  FRESHNESS_POS,
+  SPEND_POS,
   NICHE_HIT_RADIUS,
   PLAQUE,
   PLAQUE_HIT_RADIUS,
@@ -19,7 +19,7 @@ import {
   PROCESSION_HIT_RADIUS,
   ROOSTER_HIT_RADIUS,
   ROOSTER_POS,
-  SKELETON_POS,
+  INCIDENTS_POS,
 } from '../constants.js';
 import { formatAge } from './format.js';
 import { localizeUtcText, utcWithLocal, type LocalTimeContext } from './local-time.js';
@@ -84,31 +84,31 @@ function figureHits(model: FaceModel): FaceHit[] {
       : 'No open incidents. The bell rings when one opens.';
   return [
     {
-      part: 'miser',
-      title: 'Miser: spend rate',
+      part: 'spend',
+      title: 'Spend rate',
       text: `${f.spend} compute units per hour at current activity.`,
-      ...MISER_POS,
+      ...SPEND_POS,
       r: NICHE_HIT_RADIUS,
     },
     {
-      part: 'mirror',
-      title: 'Mirror: freshness',
+      part: 'freshness',
+      title: 'Freshness',
       text: `${f.spokesPastTarget} of ${f.spokeCount} spokes past their freshness target.`,
-      ...MIRROR_POS,
+      ...FRESHNESS_POS,
       r: NICHE_HIT_RADIUS,
     },
     {
-      part: 'skeleton',
-      title: 'Skeleton: incidents',
+      part: 'incidents',
+      title: 'Incidents',
       text: incidentText,
-      ...SKELETON_POS,
+      ...INCIDENTS_POS,
       r: NICHE_HIT_RADIUS,
     },
     {
-      part: 'lute',
-      title: 'Lute: consumers',
+      part: 'consumers',
+      title: 'Consumers',
       text: `${Math.round(f.consumerActivity * 100)}% of peak use-case activity across offices.`,
-      ...LUTE_POS,
+      ...CONSUMERS_POS,
       r: NICHE_HIT_RADIUS,
     },
   ];

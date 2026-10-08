@@ -416,3 +416,23 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
     - **Renderer:** honors `TimeState.live`. Orbits advance at real time, and vehicles move at
       their 1× pace.
     - **Orloj captions:** laid out from the niche bottom, so two-line labels stay inside.
+
+85. **The four Orloj niche figures are icon glyphs.** The miser, mirror, skeleton-with-bell and
+    lute of the original port are replaced by the symbols in `reference/orloj-icons.svg` (coins,
+    hourglass, bell, eye), drawn with `Path2D` at 0.66 on the 64-unit grid and centered 16 units
+    above each niche's center (paths in `packages/orloj/src/draw/icons.ts`). Encodings:
+    - **Coins (spend rate):** 1 to 4 coins by spend level (share of the 520/h full-purse rate),
+      with thresholds at 25%, 50% and 75%.
+    - **Hourglass (freshness):** amber when any spoke is past target, otherwise gold. The top
+      sand is the share of spokes within target.
+    - **Bell (incidents):** swings with ring waves while incidents are open, driven by the
+      decorative clock. Red when any open alert is an incident, amber when only warnings.
+    - **Eye (consumers):** the pupil grows from 2.5 to 7 units with activity, and rays appear
+      above 45%.
+      Tooltip titles are now "Spend rate", "Freshness", "Incidents" and "Consumers", and hit-region
+      parts are `spend`, `freshness`, `incidents` and `consumers`. Supersedes the miser, mirror,
+      skeleton and lute figures of the Orloj port.
+86. **Visual tolerance depends on the view.** The Canvas 2D Orloj renders byte-stably, so its
+    baseline allows 0.1% of pixels to differ. At the old 1%, all twelve niche icons could
+    change without the test noticing. The WebGL system views vary by up to about 0.2% between
+    runs under software rendering, so they keep 1%.

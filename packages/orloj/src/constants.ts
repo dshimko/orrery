@@ -12,7 +12,6 @@ export const PANEL = '#0B0E15';
 export const DIAL_FACE = '#0B0E14';
 export const NICHE_FILL = '#0D1119';
 export const SILVER = '#D5DEEA';
-export const BONE = '#E7E1D0';
 export const STAR_COLOR = '#E7EDF6';
 export const SUN_CORE = '#FFF3C4';
 export const SUN_EDGE = '#E2A93A';
@@ -24,7 +23,6 @@ export const SKY_BOTTOM = '#163866';
 export const INK_ON_LIGHT = '#06101E';
 export const SECONDARY_METASTORE = '#3FC1CF';
 export const ROOSTER_COMB = '#E0603F';
-export const LUTE_WOOD = '#B07A3E';
 export const FACADE_TOP = '#232A3A';
 export const FACADE_BOTTOM = '#12161F';
 export const WINDOW_FILL = '#0A1830';
@@ -38,10 +36,10 @@ export interface Point {
   y: number;
 }
 
-export const MISER_POS: Point = { x: 44, y: 275 };
-export const MIRROR_POS: Point = { x: 44, y: 420 };
-export const SKELETON_POS: Point = { x: 396, y: 275 };
-export const LUTE_POS: Point = { x: 396, y: 420 };
+export const SPEND_POS: Point = { x: 44, y: 275 };
+export const FRESHNESS_POS: Point = { x: 44, y: 420 };
+export const INCIDENTS_POS: Point = { x: 396, y: 275 };
+export const CONSUMERS_POS: Point = { x: 396, y: 420 };
 export const NICHE_HIT_RADIUS = 30;
 
 export const PROCESSION_HIT: Point = { x: 220, y: 100 };

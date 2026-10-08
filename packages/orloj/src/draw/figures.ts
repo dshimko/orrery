@@ -1,31 +1,53 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BONE,
+  CONSUMERS_POS,
+  FRESHNESS_POS,
   GOLD,
   GOLD_DARK,
-  GOLD_RIM_EDGE,
+  INCIDENTS_POS,
   INK,
-  LUTE_POS,
-  LUTE_WOOD,
-  MIRROR_POS,
-  MISER_POS,
   MUTED,
   NICHE_FILL,
-  SKELETON_POS,
-  SUN_RAY,
+  SPEND_POS,
 } from '../constants.js';
 import type { FaceModel } from '../model/index.js';
-import { archPath, circle, sans, serif, text, type Ctx, type DrawEnv } from './common.js';
+import { clamp } from '../model/format.js';
+import { archPath, sans, serif, text, type Ctx, type DrawEnv } from './common.js';
+import {
+  BELL_PIVOT_Y,
+  BELL_SWING_AMPLITUDE,
+  BIG_COIN,
+  COIN_BOTTOM_Y,
+  COIN_RX,
+  COIN_RY,
+  COIN_STEP,
+  COIN_X,
+  EYE_IRIS_RADIUS,
+  ICON_CENTER_DY,
+  ICON_RAY_STROKE,
+  ICON_SCALE,
+  ICON_STROKE,
+  ICON_THIN_STROKE,
+  ICON_WAVE_STROKE,
+  MAX_COINS,
+  PUPIL_MAX_RADIUS,
+  PUPIL_MIN_RADIUS,
+  fillIconPath,
+  strokeIconPath,
+} from './icons.js';
 
 const BELL_SWING_SPEED = 9;
-const BELL_SWING_AMPLITUDE = 0.5;
-const WAVE_SPEED = 20;
-const WAVE_PERIOD = 6;
-const LUTE_NOTE_THRESHOLD = 0.45;
-const LUTE_NOTE_COUNT = 3;
-const LUTE_NOTE_SPEED = 0.6;
-const MIRROR_BASE = '#B9C7DA';
-const SKULL_EYE = '#0D1119';
+/** Below this ring strength the bell's wave arcs are not drawn. */
+const RING_MIN = 0.05;
+const RAYS_ACTIVITY_THRESHOLD = 0.45;
+const RAYS_PULSE_SPEED = 3;
+const RAYS_PULSE_BASE = 0.6;
+const RAYS_PULSE_DEPTH = 0.4;
+const SAND_DASH = 3;
+const SAND_DASH_SPEED = 12;
+const SAND_STREAM_STROKE = 1.6;
+/** Spend levels (share of the full-purse rate) up to which 1, 2 and 3 coins are drawn. */
+const COIN_LEVEL_THRESHOLDS = [0.25, 0.5, 0.75] as const;
 const BAD_TEXT_INCIDENT = '#FF8A8C';
 const BAD_TEXT_WARNING = '#FFC766';
 const BAD_TEXT_LATE = '#FFC766';
@@ -91,14 +113,12 @@ export function captionLayout(lineCount: number): CaptionLayout {
   };
 }
 
-/** Lowest point of each figure's icon, relative to its anchor y (checked against captions). */
-export const FIGURE_ICON_BOTTOM = { miser: 6, mirror: 6, skeleton: 2, lute: 8 } as const;
 /** Each figure's caption label, so layout tests can match icons to their line counts. */
 export const FIGURE_LABELS = {
-  miser: 'spend per hour',
-  mirror: 'past target',
-  skeleton: 'incidents',
-  lute: 'consumer activity',
+  spend: 'spend per hour',
+  freshness: 'past target',
+  incidents: 'incidents',
+  consumers: 'consumer activity',
 } as const;
 
 function caption(ctx: Ctx, x: number, y: number, value: string, label: string, color = INK): void {
@@ -110,139 +130,201 @@ function caption(ctx: Ctx, x: number, y: number, value: string, label: string, c
   });
 }
 
-function drawMiser(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
-  const { x, y } = MISER_POS;
-  niche(ctx, x, y);
-  const pr = 7 + 9 * env.smooth.purse;
-  ctx.fillStyle = GOLD;
-  ctx.beginPath();
-  ctx.ellipse(x, y - 12, pr * 0.85, pr, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = GOLD_RIM_EDGE;
-  ctx.fillRect(x - pr * 0.5, y - 12 - pr - 2, pr, 4);
-  caption(ctx, x, y, String(model.figures.spend), FIGURE_LABELS.miser);
+/** Coins drawn for a spend level (0..1 of the full-purse rate): 1 to `MAX_COINS`. */
+export function coinCount(level: number): number {
+  const below = COIN_LEVEL_THRESHOLDS.filter((t) => level > t).length;
+  return Math.min(MAX_COINS, 1 + below);
 }
 
-function drawMirror(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
-  const { x, y } = MIRROR_POS;
-  const late = model.figures.spokesPastTarget;
-  niche(ctx, x, y);
-  ctx.strokeStyle = GOLD;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.ellipse(x, y - 20, 11, 15, 0, 0, Math.PI * 2);
-  if (late > 0) {
-    ctx.globalAlpha = 0.55 + 0.25 * Math.sin(env.deco * 3);
-    ctx.fillStyle = env.visuals.colors.warning;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  } else {
-    ctx.fillStyle = MIRROR_BASE;
-    ctx.fill();
-  }
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x, y - 5);
-  ctx.lineTo(x, y + 6);
-  ctx.stroke();
-  caption(ctx, x, y, String(late), FIGURE_LABELS.mirror, late > 0 ? BAD_TEXT_LATE : INK);
+/** Share of spokes within their freshness target, 0..1 (1 when there are no spokes). */
+export function freshShare(spokesPastTarget: number, spokeCount: number): number {
+  if (spokeCount <= 0) return 1;
+  return clamp(1 - spokesPastTarget / spokeCount, 0, 1);
 }
 
-function drawBell(ctx: Ctx, x: number, y: number, model: FaceModel, env: DrawEnv): void {
-  const f = model.figures;
-  const swing = env.smooth.bell * Math.sin(env.deco * BELL_SWING_SPEED) * BELL_SWING_AMPLITUDE;
+/** Pupil radius in icon units: `PUPIL_MIN_RADIUS` at no activity, `PUPIL_MAX_RADIUS` at full. */
+export function pupilRadius(activity: number): number {
+  return PUPIL_MIN_RADIUS + (PUPIL_MAX_RADIUS - PUPIL_MIN_RADIUS) * clamp(activity, 0, 1);
+}
+
+export function showsRays(activity: number): boolean {
+  return activity > RAYS_ACTIVITY_THRESHOLD;
+}
+
+/** Bell swing in radians: zero unless `bell` (0..1, eased from open incidents) is above zero. */
+export function bellSwing(bell: number, deco: number): number {
+  return bell * Math.sin(deco * BELL_SWING_SPEED) * BELL_SWING_AMPLITUDE;
+}
+
+/** Runs `draw` on the icon grid: scaled, centered `ICON_CENTER_DY` above the niche center. */
+function onIconGrid(ctx: Ctx, x: number, y: number, color: string, draw: () => void): void {
   ctx.save();
-  ctx.translate(x + 6, y - 24);
-  ctx.rotate(swing);
-  ctx.fillStyle = f.openIncidents > 0 ? f.incidentColor : GOLD;
-  ctx.beginPath();
-  ctx.moveTo(-5, 0);
-  ctx.lineTo(5, 0);
-  ctx.lineTo(8, 12);
-  ctx.lineTo(-8, 12);
-  ctx.closePath();
-  ctx.fill();
-  circle(ctx, 0, 13, 2);
-  ctx.fill();
+  ctx.translate(x, y + ICON_CENTER_DY);
+  ctx.scale(ICON_SCALE, ICON_SCALE);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = ICON_STROKE;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  draw();
   ctx.restore();
-  if (f.openIncidents <= 0) return;
-  ctx.strokeStyle = f.incidentColor;
-  ctx.globalAlpha = 0.5 * env.smooth.bell;
-  ctx.lineWidth = 1.2;
-  for (let w = 0; w < 2; w += 1) {
-    ctx.beginPath();
-    ctx.arc(x + 6, y - 18, 14 + w * 6 + ((env.deco * WAVE_SPEED) % WAVE_PERIOD), -0.8, 0.8);
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
 }
 
-function drawSkeleton(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
-  const { x, y } = SKELETON_POS;
+function drawCoins(ctx: Ctx, x: number, y: number, color: string, coins: number): void {
+  onIconGrid(ctx, x, y, color, () => {
+    ctx.fillStyle = NICHE_FILL;
+    for (let k = 0; k < coins; k += 1) {
+      ctx.save();
+      ctx.translate(COIN_X, COIN_BOTTOM_Y - k * COIN_STEP);
+      fillIconPath(ctx, 'coinSide');
+      strokeIconPath(ctx, 'coinSide');
+      ctx.beginPath();
+      ctx.ellipse(0, 0, COIN_RX, COIN_RY, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.beginPath();
+    ctx.arc(BIG_COIN.x, BIG_COIN.y, BIG_COIN.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.lineWidth = ICON_THIN_STROKE;
+    ctx.beginPath();
+    ctx.arc(BIG_COIN.x, BIG_COIN.y, BIG_COIN.innerR, 0, Math.PI * 2);
+    ctx.stroke();
+    strokeIconPath(ctx, 'coinGlyph');
+  });
+}
+
+function drawHourglass(
+  ctx: Ctx,
+  x: number,
+  y: number,
+  color: string,
+  fresh: number,
+  deco: number,
+): void {
+  onIconGrid(ctx, x, y, color, () => {
+    strokeIconPath(ctx, 'hourglassBars');
+    strokeIconPath(ctx, 'hourglassGlass');
+    ctx.fillStyle = color;
+    const top = -17 + (1 - fresh) * 8;
+    ctx.beginPath();
+    ctx.moveTo(-6 * fresh - 1, top);
+    ctx.lineTo(6 * fresh + 1, top);
+    ctx.lineTo(0, -6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-9, 23);
+    ctx.quadraticCurveTo(0, 23 - 10 * (0.3 + (1 - fresh) * 0.7), 9, 23);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = SAND_STREAM_STROKE;
+    ctx.setLineDash([SAND_DASH, SAND_DASH]);
+    ctx.lineDashOffset = -deco * SAND_DASH_SPEED;
+    ctx.beginPath();
+    ctx.moveTo(0, -5);
+    ctx.lineTo(0, 14);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+}
+
+function drawBell(
+  ctx: Ctx,
+  x: number,
+  y: number,
+  color: string,
+  swing: number,
+  ring: number,
+): void {
+  onIconGrid(ctx, x, y, color, () => {
+    ctx.save();
+    ctx.translate(0, BELL_PIVOT_Y);
+    ctx.rotate(swing);
+    ctx.translate(0, -BELL_PIVOT_Y);
+    ctx.fillStyle = NICHE_FILL;
+    fillIconPath(ctx, 'bell');
+    strokeIconPath(ctx, 'bell');
+    strokeIconPath(ctx, 'bellClapper');
+    ctx.restore();
+    if (ring <= RING_MIN) return;
+    ctx.globalAlpha = ring;
+    ctx.lineWidth = ICON_WAVE_STROKE;
+    strokeIconPath(ctx, 'bellWaves');
+    ctx.globalAlpha = 1;
+  });
+}
+
+function drawEye(
+  ctx: Ctx,
+  x: number,
+  y: number,
+  color: string,
+  activity: number,
+  deco: number,
+): void {
+  onIconGrid(ctx, x, y, color, () => {
+    strokeIconPath(ctx, 'eye');
+    ctx.beginPath();
+    ctx.arc(0, 0, EYE_IRIS_RADIUS, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, 0, pupilRadius(activity), 0, Math.PI * 2);
+    ctx.fill();
+    if (!showsRays(activity)) return;
+    ctx.globalAlpha = RAYS_PULSE_BASE + RAYS_PULSE_DEPTH * Math.sin(deco * RAYS_PULSE_SPEED);
+    ctx.lineWidth = ICON_RAY_STROKE;
+    strokeIconPath(ctx, 'eyeRays');
+    ctx.globalAlpha = 1;
+  });
+}
+
+function drawSpend(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
+  const { x, y } = SPEND_POS;
+  niche(ctx, x, y);
+  drawCoins(ctx, x, y, GOLD, coinCount(env.smooth.purse));
+  caption(ctx, x, y, String(model.figures.spend), FIGURE_LABELS.spend);
+}
+
+function drawFreshness(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
+  const { x, y } = FRESHNESS_POS;
+  const f = model.figures;
+  const late = f.spokesPastTarget;
+  niche(ctx, x, y);
+  const color = late > 0 ? env.visuals.colors.warning : GOLD;
+  drawHourglass(ctx, x, y, color, freshShare(late, f.spokeCount), env.deco);
+  caption(ctx, x, y, String(late), FIGURE_LABELS.freshness, late > 0 ? BAD_TEXT_LATE : INK);
+}
+
+function drawIncidents(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
+  const { x, y } = INCIDENTS_POS;
   const f = model.figures;
   niche(ctx, x, y);
-  ctx.fillStyle = BONE;
-  circle(ctx, x - 6, y - 30, 6);
-  ctx.fill();
-  ctx.fillStyle = SKULL_EYE;
-  ctx.fillRect(x - 9, y - 31, 2, 2);
-  ctx.fillRect(x - 5, y - 31, 2, 2);
-  ctx.strokeStyle = BONE;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x - 6, y - 24);
-  ctx.lineTo(x - 6, y - 4);
-  ctx.moveTo(x - 6, y - 18);
-  ctx.lineTo(x + 4, y - 22);
-  ctx.stroke();
-  drawBell(ctx, x, y, model, env);
-  const color =
+  const color = f.openIncidents > 0 ? f.incidentColor : GOLD;
+  drawBell(ctx, x, y, color, bellSwing(env.smooth.bell, env.deco), env.smooth.bell);
+  const textColor =
     f.incidentLevel === 'incident'
       ? BAD_TEXT_INCIDENT
       : f.incidentLevel === 'warning'
         ? BAD_TEXT_WARNING
         : INK;
-  caption(ctx, x, y, String(f.openIncidents), FIGURE_LABELS.skeleton, color);
+  caption(ctx, x, y, String(f.openIncidents), FIGURE_LABELS.incidents, textColor);
 }
 
-function drawLute(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
-  const { x, y } = LUTE_POS;
-  niche(ctx, x, y);
-  ctx.fillStyle = LUTE_WOOD;
-  ctx.beginPath();
-  ctx.ellipse(x - 2, y - 6, 9, 12, -0.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = LUTE_WOOD;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(x + 4, y - 14);
-  ctx.lineTo(x + 13, y - 30);
-  ctx.stroke();
-  ctx.fillStyle = '#2A1E06';
-  circle(ctx, x - 2, y - 6, 2.5);
-  ctx.fill();
+function drawConsumers(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
+  const { x, y } = CONSUMERS_POS;
   const activity = model.figures.consumerActivity;
-  if (activity > LUTE_NOTE_THRESHOLD) {
-    for (let n = 0; n < LUTE_NOTE_COUNT; n += 1) {
-      const phase = (env.deco * LUTE_NOTE_SPEED + n / LUTE_NOTE_COUNT) % 1;
-      const ny = y - 20 - phase * 28;
-      const nx = x + 10 + Math.sin(phase * 6 + n) * 5;
-      ctx.globalAlpha = 1 - phase;
-      ctx.fillStyle = SUN_RAY;
-      ctx.beginPath();
-      ctx.ellipse(nx, ny, 2.6, 2, -0.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(nx + 1.8, ny - 9, 1.2, 9);
-    }
-    ctx.globalAlpha = 1;
-  }
-  caption(ctx, x, y, `${Math.round(activity * 100)}%`, FIGURE_LABELS.lute);
+  niche(ctx, x, y);
+  drawEye(ctx, x, y, GOLD, activity, env.deco);
+  caption(ctx, x, y, `${Math.round(activity * 100)}%`, FIGURE_LABELS.consumers);
 }
 
-/** Miser (spend), mirror (past target), skeleton with bell (incidents), lute (consumers). */
+/** Coins (spend), hourglass (past target), bell (incidents), eye (consumers). */
 export function drawFigures(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
-  drawMiser(ctx, model, env);
-  drawMirror(ctx, model, env);
-  drawSkeleton(ctx, model, env);
-  drawLute(ctx, model, env);
+  drawSpend(ctx, model, env);
+  drawFreshness(ctx, model, env);
+  drawIncidents(ctx, model, env);
+  drawConsumers(ctx, model, env);
 }

@@ -184,7 +184,7 @@ describe('rooster', () => {
 });
 
 describe('figures and calendar', () => {
-  it('reads miser, mirror, skeleton, and lute from the snapshot', () => {
+  it('reads the four niche figures from the snapshot', () => {
     const snap = prod.snapshot as Snapshot;
     const f = model(prod).figures;
     expect(f.spend).toBe(Math.round(snap.spendPerHour));
@@ -270,10 +270,10 @@ describe('hit regions', () => {
       'moon',
       'star-hand',
       'procession',
-      'miser',
-      'mirror',
-      'skeleton',
-      'lute',
+      'spend',
+      'freshness',
+      'incidents',
+      'consumers',
       'calendar',
       'calendar-day:7',
       'rooster',

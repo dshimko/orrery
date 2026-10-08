@@ -96,7 +96,7 @@ Each environment is one solar system. The hub sits at the center, spokes orbit i
 | Moon phase | Ingest backlog |
 | Star hand | Next scheduled event |
 | Apostle procession | Runs scheduled in the current hour, colored by workload, at the top of each hour |
-| Miser, mirror, skeleton, lute | Spend rate, spokes past target, open incidents (the bell rings), consumer activity |
+| Niche icons: coins, hourglass, bell, eye | Spend rate (the stack grows with spend), spokes past freshness target (amber when any are late), open incidents (the bell swings and turns red or amber), consumer activity (the pupil widens with reads) |
 | Calendar dial | Releases per day this month, promotions, month-end close |
 | Rooster | Crows after midnight when the previous day had no red incident |
 

@@ -11,6 +11,7 @@ for (const envId of ['dev', 'stg', 'prod']) {
   test(`system view ${envId} matches its baseline`, async ({ page }) => {
     await openSystem(page, envId);
     await expect(page.getByTestId('scene')).toHaveScreenshot(`system-${envId}.png`, {
+      // Software WebGL varies by a few hundred pixels between runs; 1% absorbs that.
       maxDiffPixelRatio: 0.01,
       animations: 'disabled',
     });
@@ -26,7 +27,8 @@ test('Orloj home matches its baseline', async ({ page }) => {
   await page.waitForTimeout(1500);
   await expect(page.getByTestId('orloj')).toHaveScreenshot('orloj-home.png', {
     timeout: 20_000,
-    maxDiffPixelRatio: 0.01,
+    // Canvas 2D renders byte-stably, so stay strict: small icon changes must fail.
+    maxDiffPixelRatio: 0.001,
     animations: 'disabled',
   });
 });

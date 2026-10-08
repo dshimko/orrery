@@ -101,7 +101,7 @@ export type IncidentLevel = 'none' | 'warning' | 'incident';
 
 export interface FiguresModel {
   spend: number;
-  /** Purse fullness target, 0.25 to 1. */
+  /** Spend level target (share of the full-purse rate), 0.25 to 1. */
   purseTarget: number;
   spokesPastTarget: number;
   spokeCount: number;

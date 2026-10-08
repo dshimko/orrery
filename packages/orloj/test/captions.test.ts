@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
-import {
-  FIGURE_ICON_BOTTOM,
-  FIGURE_LABELS,
-  NICHE_HALF_HEIGHT,
-  captionLayout,
-  wrapCaption,
-} from '../src/draw/figures.js';
+import { NICHE_HALF_HEIGHT, captionLayout, wrapCaption } from '../src/draw/figures.js';
 
 const LABEL_PX = 9.5;
 const VALUE_PX = 15;
@@ -35,13 +29,6 @@ describe('captionLayout', () => {
   it('moves the value up when the label takes two lines', () => {
     expect(captionLayout(2).valueDy).toBeLessThan(captionLayout(1).valueDy);
     expect(captionLayout(2).bottom).toBe(captionLayout(1).bottom);
-  });
-
-  it('keeps every figure icon above its caption value', () => {
-    for (const key of Object.keys(FIGURE_LABELS) as (keyof typeof FIGURE_LABELS)[]) {
-      const layout = captionLayout(wrapCaption(FIGURE_LABELS[key]).length);
-      expect(FIGURE_ICON_BOTTOM[key], key).toBeLessThan(layout.valueTop);
-    }
   });
 
   it('wraps the two-word figure labels onto two lines', () => {

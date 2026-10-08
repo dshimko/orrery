@@ -92,7 +92,7 @@ td.n{font-variant-numeric:tabular-nums}
         <dt>Moon</dt><dd>Ingest backlog. A full moon means the bronze yard is full.</dd>
         <dt>Star hand</dt><dd>Points at the next scheduled event.</dd>
         <dt>Procession</dt><dd>At the top of every hour, the apostle windows parade the runs scheduled for that hour, colored by workload.</dd>
-        <dt>Figures</dt><dd>Miser: spend rate. Mirror: spokes past target. Skeleton: rings the bell on incidents. Lute: consumer activity.</dd>
+        <dt>Niche icons</dt><dd>Coins: spend rate (the stack grows with spend). Hourglass: spokes past freshness target (amber when any are late). Bell: open incidents (swings and turns red or amber). Eye: consumer activity (the pupil widens with reads).</dd>
         <dt>Calendar dial</dt><dd>Releases per day this month; dots are promotions, the gold mark is month-end close.</dd>
         <dt>Rooster</dt><dd>Crows just after midnight when the day passed without a red incident.</dd>
       </dl></section>
@@ -418,30 +418,67 @@ function figures(i,E,m,t){
   var env=E.env,hv=envHealth(env,m),act=activeIn(E.script,m),bad=act.filter(function(e){return e.lvl!=='info'}),alert=bad.some(function(e){return e.lvl==='alert'});
   var spend=0;E.topo.spokes.forEach(function(s){spend+=s.m.pipelines*(.2+.8*ACT[s.activity](localH(-4,m)))});spend=Math.round(spend*.9);
   var serve=0;E.topo.useCases.forEach(function(u){serve+=OFFICE(localH(u.utcOffset,m))});serve/=Math.max(1,E.topo.useCases.length);
-  /* miser */
-  var x=44,y=275;niche(x,y);E.purse=lerp(E.purse,clamp(spend/520,.25,1),.05);var pr=7+9*E.purse;
-  ctx.fillStyle=GOLD;ctx.beginPath();ctx.ellipse(x,y-8,pr*.85,pr,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#5A4A22';ctx.fillRect(x-pr*.5,y-8-pr-2,pr,4);
+  /* icons: coin stack (spend), hourglass (freshness), bell (incidents), eye (consumers) */
+  var x=44,y=275;niche(x,y);E.purse=lerp(E.purse,clamp(spend/520,.25,1),.05);
+  iconSpend(x,y-16,.66,GOLD,Math.max(1,Math.round(E.purse*4)));
   txt(String(spend),x,y+30,'700 15px Cinzel, serif',INK);txt('spend per hour',x,y+46,'500 10px Barlow, sans-serif','#A6B8D2');
-  hit(i,x,y,30,'Miser: spend rate',spend+' compute units per hour at current activity.');
-  /* mirror */
+  hit(i,x,y,30,'Spend rate',spend+' compute units per hour at current activity.');
   x=44;y=420;niche(x,y);
-  ctx.strokeStyle=GOLD;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y-12,11,15,0,0,Math.PI*2);ctx.fillStyle=hv.late?'rgba(255,176,32,'+(.55+.25*Math.sin(t*3))+')':'#B9C7DA';ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x,y+3);ctx.lineTo(x,y+14);ctx.stroke();
+  iconHourglass(x,y-16,.66,hv.late?'#FFB020':GOLD,hv.spokes?1-hv.late/hv.spokes:1,t);
   txt(String(hv.late),x,y+30,'700 15px Cinzel, serif',hv.late?'#FFC766':INK);txt('past target',x,y+46,'500 10px Barlow, sans-serif','#A6B8D2');
-  hit(i,x,y,30,'Mirror: freshness',hv.late+' of '+hv.spokes+' spokes past their freshness target.');
-  /* skeleton with bell */
-  x=396;y=275;niche(x,y);E.bell=lerp(E.bell,bad.length?1:0,.08);var sw=E.bell*Math.sin(t*9)*.5;
-  ctx.fillStyle='#E7E1D0';ctx.beginPath();ctx.arc(x-6,y-30,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0D1119';ctx.fillRect(x-9,y-31,2,2);ctx.fillRect(x-5,y-31,2,2);
-  ctx.strokeStyle='#E7E1D0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-6,y-24);ctx.lineTo(x-6,y-4);ctx.moveTo(x-6,y-18);ctx.lineTo(x+4,y-22);ctx.stroke();
-  ctx.save();ctx.translate(x+6,y-24);ctx.rotate(sw);var bc=bad.length?(alert?'#FF4D4F':'#FFB020'):GOLD;ctx.fillStyle=bc;ctx.beginPath();ctx.moveTo(-5,0);ctx.lineTo(5,0);ctx.lineTo(8,12);ctx.lineTo(-8,12);ctx.closePath();ctx.fill();ctx.beginPath();ctx.arc(0,13,2,0,Math.PI*2);ctx.fill();ctx.restore();
-  if(bad.length){ctx.strokeStyle=bc;ctx.globalAlpha=.5*E.bell;ctx.lineWidth=1.2;for(var w2=0;w2<2;w2++){ctx.beginPath();ctx.arc(x+6,y-18,14+w2*6+((t*20)%6),-.8,.8);ctx.stroke()}ctx.globalAlpha=1}
+  hit(i,x,y,30,'Freshness',hv.late+' of '+hv.spokes+' spokes past their freshness target.');
+  x=396;y=275;niche(x,y);E.bell=lerp(E.bell,bad.length?1:0,.08);
+  var bc=bad.length?(alert?'#FF4D4F':'#FFB020'):GOLD;
+  iconBell(x,y-16,.66,bc,E.bell*Math.sin(t*9)*.35,E.bell);
   txt(String(bad.length),x,y+30,'700 15px Cinzel, serif',bad.length?(alert?'#FF8A8C':'#FFC766'):INK);txt('incidents',x,y+46,'500 10px Barlow, sans-serif','#A6B8D2');
-  hit(i,x,y,30,'Skeleton: incidents',bad.length?bad.map(function(e){return e.title}).join('; ')+'.':'No open incidents. The bell rings when one opens.');
-  /* lute */
+  hit(i,x,y,30,'Incidents',bad.length?bad.map(function(e){return e.title}).join('; ')+'.':'No open incidents. The bell rings when one opens.');
   x=396;y=420;niche(x,y);
-  ctx.fillStyle='#B07A3E';ctx.beginPath();ctx.ellipse(x-2,y-6,9,12,-.5,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#B07A3E';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+4,y-14);ctx.lineTo(x+13,y-30);ctx.stroke();ctx.fillStyle='#2A1E06';ctx.beginPath();ctx.arc(x-2,y-6,2.5,0,Math.PI*2);ctx.fill();
-  if(serve>.45){for(var nn=0;nn<3;nn++){var ph=((t*.6+nn/3)%1),ny=y-20-ph*28,nx2=x+10+Math.sin(ph*6+nn)*5;ctx.globalAlpha=1-ph;ctx.fillStyle='#F3D36B';ctx.beginPath();ctx.ellipse(nx2,ny,2.6,2,-.4,0,Math.PI*2);ctx.fill();ctx.fillRect(nx2+1.8,ny-9,1.2,9);ctx.globalAlpha=1}}
+  iconEye(x,y-16,.66,GOLD,serve,t);
   txt(Math.round(serve*100)+'%',x,y+30,'700 15px Cinzel, serif',INK);txt('consumer activity',x,y+46,'500 10px Barlow, sans-serif','#A6B8D2');
-  hit(i,x,y,30,'Lute: consumers',Math.round(serve*100)+'% of peak use-case activity across offices.');
+  hit(i,x,y,30,'Consumers',Math.round(serve*100)+'% of peak use-case activity across offices.');
+}
+
+
+/* Orloj niche icons, drawn on a 64-unit grid centered on (x, y) */
+var P={
+  coinSide:new Path2D('M-14 0v5c0 3 6 5 14 5s14-2 14-5v-5'),
+  bell:new Path2D('M0-25c-2 0-3.5 1.5-3.5 3.5v1.8C-11.5-17.8-16-11-16-3v10l-5 7h42l-5-7V-3c0-8-4.5-14.8-12.5-16.7v-1.8C3.5-23.5 2-25 0-25z'),
+  clapper:new Path2D('M-6 18a6 6 0 0 0 12 0'),
+  waves:new Path2D('M-25-12c-3 5-3 12 0 17M25-12c3 5 3 12 0 17'),
+  glass:new Path2D('M-11-26c0 15 22 17 22 26s-22 11-22 26M11-26c0 15-22 17-22 26s22 11 22 26'),
+  bars:new Path2D('M-16-26h32M-16 26h32'),
+  eye:new Path2D('M-27 0c6-11 15.5-17 27-17s21 6 27 17c-6 11-15.5 17-27 17S-21 11-27 0z'),
+  rays:new Path2D('M0-23v-5M-14-20l-3-4M14-20l3-4')
+};
+function iconStroke(col,w){ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.lineJoin='round'}
+function iconSpend(x,y,s,col,coins){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);iconStroke(col,3);
+  for(var k=0;k<coins;k++){var cy2=16-k*8;ctx.save();ctx.translate(-12,cy2);ctx.fillStyle='#0D1119';ctx.fill(P.coinSide);ctx.stroke(P.coinSide);ctx.beginPath();ctx.ellipse(0,0,14,5,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore()}
+  ctx.fillStyle='#0D1119';ctx.beginPath();ctx.arc(14,6,13,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.lineWidth=2;ctx.beginPath();ctx.arc(14,6,8.5,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(14,12);ctx.moveTo(10.5,3.5);ctx.lineTo(15.5,3.5);ctx.arc(15.5,6,2.5,-Math.PI/2,Math.PI/2);ctx.lineTo(10.5,8.5);ctx.stroke();
+  ctx.restore();
+}
+function iconHourglass(x,y,s,col,full,t){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);iconStroke(col,3);ctx.stroke(P.bars);ctx.stroke(P.glass);
+  ctx.fillStyle=col;var f=clamp(full,0,1);
+  ctx.beginPath();ctx.moveTo(-6*f-1,-17+ (1-f)*8);ctx.lineTo(6*f+1,-17+(1-f)*8);ctx.lineTo(0,-6);ctx.closePath();ctx.fill();
+  var b=1-f;ctx.beginPath();ctx.moveTo(-9,23);ctx.quadraticCurveTo(0,23-10*(.3+b*.7),9,23);ctx.closePath();ctx.fill();
+  ctx.lineWidth=1.6;ctx.setLineDash([3,3]);ctx.lineDashOffset=-t*12;ctx.beginPath();ctx.moveTo(0,-5);ctx.lineTo(0,14);ctx.stroke();ctx.setLineDash([]);
+  ctx.restore();
+}
+function iconBell(x,y,s,col,swing,ring){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);iconStroke(col,3);
+  ctx.save();ctx.translate(0,-25);ctx.rotate(swing);ctx.translate(0,25);ctx.fillStyle='rgba(13,17,25,.9)';ctx.fill(P.bell);ctx.stroke(P.bell);ctx.stroke(P.clapper);ctx.restore();
+  if(ring>.05){ctx.globalAlpha=ring;ctx.lineWidth=2.4;ctx.stroke(P.waves);ctx.globalAlpha=1}
+  ctx.restore();
+}
+function iconEye(x,y,s,col,act,t){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);iconStroke(col,3);ctx.stroke(P.eye);
+  ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,0,2.5+4.5*clamp(act,0,1),0,Math.PI*2);ctx.fill();
+  if(act>.45){ctx.globalAlpha=.6+.4*Math.sin(t*3);ctx.lineWidth=2.2;ctx.stroke(P.rays);ctx.globalAlpha=1}
+  ctx.restore();
 }
 
 /* calendar dial: releases this month */
