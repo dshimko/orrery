@@ -2,6 +2,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { drawFace } from '../src/draw/index.js';
 import { wrapLines } from '../src/draw/common.js';
+import { wrapCaption } from '../src/draw/figures.js';
 import { geometryFor } from '../src/geometry.js';
 import { createFaceModel, maxPipelinesAcross } from '../src/model/index.js';
 import { settledSmooth } from '../src/smooth.js';
@@ -72,5 +73,27 @@ describe('wrapLines', () => {
   it('keeps an overlong word on its own line and ignores empty input', () => {
     expect(wrapLines('abcdefghij k', 5, measure)).toEqual(['abcdefghij', 'k']);
     expect(wrapLines('   ', 5, measure)).toEqual([]);
+  });
+});
+
+describe('wrapCaption', () => {
+  it('keeps short labels on one line', () => {
+    expect(wrapCaption('incidents')).toEqual(['incidents']);
+    expect(wrapCaption('past target')).toEqual(['past target']);
+  });
+
+  it('wraps long labels at the space nearest the middle so they fit the niche', () => {
+    expect(wrapCaption('spend per hour')).toEqual(['spend', 'per hour']);
+    expect(wrapCaption('consumer activity')).toEqual(['consumer', 'activity']);
+  });
+});
+
+describe('center label', () => {
+  it('draws the calendar caption on two short lines', () => {
+    const texts = draw(faces[0] as OrlojFace, '2026-10-07T10:45:00Z').filter((c) =>
+      c.startsWith('fillText'),
+    );
+    expect(texts.some((c) => c.includes('this month'))).toBe(true);
+    expect(texts.some((c) => c.includes('releases this month'))).toBe(false);
   });
 });

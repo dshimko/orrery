@@ -3,7 +3,7 @@
 // timestamp taken from the data, never from the clock, so a given set of runs always yields the
 // same events and any split of a window yields the same events in total.
 import { DEFAULT_EVENT_WORKLOAD, type PlatformEvent } from '@orrery/core';
-import type { Model } from '../model.js';
+import { spokeOf, type Model } from '../model.js';
 import type { Run } from '../runs.js';
 import { MS_PER_MINUTE, type TimeWindow } from '../time.js';
 import { ALERT_WINDOW_MS, deriveAlerts } from './alerts.js';
@@ -39,6 +39,9 @@ const TYPE_ORDER: readonly PlatformEvent['type'][] = [
 /** One cargo pod per this much run time, on top of the first. */
 const MINUTES_PER_BATCH_POD = 5;
 const MAX_BATCH_PODS = 4;
+/** With output statistics: one more cargo pod per this many bytes written, or rows written. */
+export const BYTES_PER_BATCH_POD = 256 * 1024 * 1024;
+export const ROWS_PER_BATCH_POD = 1_000_000;
 
 class Collector {
   private readonly items = new Map<string, { ms: number; event: PlatformEvent }>();
@@ -72,6 +75,29 @@ class Collector {
   }
 }
 
+/**
+ * Cargo pods of a batch, 1 to 4. The data a run wrote to the spoke decides it when the run
+ * reported `outputStatistics` (bytes first, else rows); otherwise its duration does.
+ */
+export function batchSize(model: Model, run: Run, spokeId: string): number {
+  const written = run.outputs.filter((ref) => spokeOf(model, ref) === spokeId);
+  const sum = (pick: (ref: Run['outputs'][number]) => number | undefined): number | undefined => {
+    const values = written.map(pick).filter((value): value is number => value !== undefined);
+    return values.length === 0 ? undefined : values.reduce((a, b) => a + b, 0);
+  };
+  const bytes = sum((ref) => ref.stats?.sizeBytes);
+  const rows = sum((ref) => ref.stats?.rowCount);
+  const extra =
+    bytes !== undefined
+      ? bytes / BYTES_PER_BATCH_POD
+      : rows !== undefined
+        ? rows / ROWS_PER_BATCH_POD
+        : Math.max(0, run.endMs - (run.startMs ?? run.endMs)) /
+          MS_PER_MINUTE /
+          MINUTES_PER_BATCH_POD;
+  return 1 + Math.min(MAX_BATCH_PODS - 1, Math.floor(extra));
+}
+
 function classDraft(model: Model, klass: RunClass, run: Run): Draft {
   switch (klass.type) {
     case 'source.stream':
@@ -83,15 +109,13 @@ function classDraft(model: Model, klass: RunClass, run: Run): Draft {
         spokeId: klass.spokeId,
       };
     case 'source.batch': {
-      const minutes = Math.max(0, run.endMs - (run.startMs ?? run.endMs)) / MS_PER_MINUTE;
-      const pods = Math.min(MAX_BATCH_PODS - 1, Math.floor(minutes / MINUTES_PER_BATCH_POD));
       return {
         type: klass.type,
         tier: klass.tier,
         sourceGroupId: klass.groupId,
         siteId: klass.siteId,
         spokeId: klass.spokeId,
-        size: 1 + pods,
+        size: batchSize(model, run, klass.spokeId),
       };
     }
     case 'transfer':

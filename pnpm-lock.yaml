@@ -107,6 +107,9 @@ importers:
       fastify:
         specifier: 5.12.5
         version: 5.12.5
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -120,6 +123,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@fontsource/barlow':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/cinzel':
+        specifier: 5.3.0
+        version: 5.3.0
       '@orrery/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -446,6 +455,12 @@ packages:
 
   '@fastify/proxy-addr@5.1.1':
     resolution: {integrity: sha512-zv07Y9GEuDsJPegZoDFd4SDWaZOW8N2pa0GSrYmKpId/tjt1Hgo3BjZBVjdVpfVrHaA+Qv5jawtS2O50J5xM9g==}
+
+  '@fontsource/barlow@5.3.0':
+    resolution: {integrity: sha512-tGR0y6QObRtKv71MOth44222+mdNFM/ZWFWDV1VLzNbG4oK9PNRlyJzmkck4vHAi9ibHBXgt4SlY51amFP55CA==}
+
+  '@fontsource/cinzel@5.3.0':
+    resolution: {integrity: sha512-KEOYTsrRppW0uRIPWBDPrQgunCS6f8u4nzZxYRBfo9SCknKojLYjK7B0ZoVmJhyVLefz271ZQRF9EOpHZlfhRw==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1656,6 +1671,10 @@ snapshots:
     dependencies:
       '@fastify/forwarded': 3.0.2
       ipaddr.js: 2.5.0
+
+  '@fontsource/barlow@5.3.0': {}
+
+  '@fontsource/cinzel@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

@@ -92,3 +92,36 @@ describe('liveEvents lifecycle', () => {
     expect(events).toEqual([]);
   });
 });
+
+describe('live mode and late data', () => {
+  const CROSSING_TS = new Date(at('09:00').getTime() + 21 * 1.03 * 60_000).toISOString();
+  const lateRun = {
+    workspace_id: '1001',
+    pipeline_id: 'p-ingest-a',
+    update_id: 'u-late',
+    started_at: at('08:50').toISOString(),
+    ended_at: at('09:00').toISOString(),
+    result_state: 'COMPLETED',
+    trigger_type: 'API_CALL',
+    trigger_job_id: null,
+  };
+  const crossing = (events: PlatformEvent[]): PlatformEvent | undefined =>
+    events.find((e) => e.type === 'freshness.change' && e.pastTarget && e.ts === CROSSING_TS);
+
+  it('holds a crossing newer than the ingestion lag that a bounded replay reports', async () => {
+    const world = new FixtureWorld(PROD_SCENARIOS);
+    const original = world.rowsFor.bind(world);
+    world.rowsFor = (metastore, query) =>
+      query === 'pipeline_updates' && metastore === 'primary'
+        ? [...original(metastore, query), lateRun]
+        : original(metastore, query);
+    // The stream runs from 10:00 to 10:15, so the lag cutoff stays at or before 09:15.
+    const adapter = await started(prodEnv(), world, at('10:00'));
+
+    const bounded = await drain(adapter.events(at('08:00'), at('10:16')));
+    const live = await drain(adapter.events(at('08:00')));
+
+    expect(crossing(bounded)).toBeDefined();
+    expect(crossing(live)).toBeUndefined();
+  });
+});

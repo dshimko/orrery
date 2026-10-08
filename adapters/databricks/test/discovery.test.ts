@@ -282,6 +282,19 @@ describe('foreign catalogs', () => {
     expect(result.health.unmatchedCatalogs).toEqual([]);
   });
 
+  it('hides comets when the foreignCatalogs block is missing', () => {
+    const { foreignCatalogs: _omitted, ...federation } = env.federation ?? {};
+    const silent = {
+      ...env,
+      federation: { mode: 'multi-metastore' as const, ...federation },
+    } as ResolvedEnvironment;
+
+    const result = discover(silent, [foreign]);
+
+    expect(result.topology.foreignCatalogs).toEqual([]);
+    expect(result.model.foreign.size).toBe(0);
+  });
+
   it('hides comets when foreignCatalogs.show is false', () => {
     const hidden = {
       ...env,

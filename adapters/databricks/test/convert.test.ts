@@ -11,8 +11,18 @@ import {
   parseEvidence,
   type RowSets,
 } from '../src/convert/index.js';
-import { prodEnv, withTopology, at } from './support/env.js';
-import { catalog, discover, inventory, job, pipeline, schema, write } from './support/inventory.js';
+import { buildDiscovery, type BuildInput } from '../src/discovery/build.js';
+import { CONNECTION_ENV, prodEnv, withTopology, at } from './support/env.js';
+import {
+  catalog,
+  discover,
+  inventory,
+  job,
+  pipeline,
+  schema,
+  target,
+  write,
+} from './support/inventory.js';
 
 const MIN = 60_000;
 const NOW = at('12:00');
@@ -302,6 +312,63 @@ describe('snapshot calendar and deploys', () => {
   });
 });
 
+describe('release tag key precedence', () => {
+  type Promotion = BuildInput['promotion'];
+  const jobTag: NonNullable<Promotion> = {
+    order: ['stg', 'prod'],
+    source: 'job-tag',
+    tagKey: 'train',
+  };
+  /** Deploys counted today for a job change carrying only the `tagKey` tag. */
+  const deploysTagged = (
+    tagKey: string,
+    options: Record<string, unknown> | undefined,
+    promotion: Promotion,
+  ): number => {
+    const found = buildDiscovery({
+      env: { ...env, ...(options ? { options } : {}) },
+      peers: [env],
+      targets: [target()],
+      inventories: [inventory()],
+      envVars: CONNECTION_ENV,
+      ...(promotion ? { promotion } : {}),
+    });
+    const rows: RowSets = {
+      job_changes: [
+        {
+          workspace_id: '1',
+          job_id: 'ml',
+          name: 'ml',
+          tags_json: JSON.stringify({ [tagKey]: 'r-1' }),
+          change_time: NOW.toISOString(),
+          delete_time: null,
+        },
+      ],
+    };
+    return buildSnapshot(found, parseEvidence(rows), NOW).counts.deploysToday;
+  };
+
+  it('uses promotion.tagKey for the job-tag source, over options.releaseTagKey', () => {
+    const options = { releaseTagKey: 'version' };
+
+    expect(deploysTagged('train', options, jobTag)).toBe(1);
+    expect(deploysTagged('version', options, jobTag)).toBe(0);
+    expect(deploysTagged('release', options, jobTag)).toBe(0);
+  });
+
+  it('ignores promotion.tagKey for other sources', () => {
+    const gitTag = { ...jobTag, source: 'git-tag' as const };
+
+    expect(deploysTagged('train', undefined, gitTag)).toBe(0);
+    expect(deploysTagged('release', undefined, gitTag)).toBe(1);
+  });
+
+  it('falls back to options.releaseTagKey, then release', () => {
+    expect(deploysTagged('version', { releaseTagKey: 'version' }, undefined)).toBe(1);
+    expect(deploysTagged('release', undefined, undefined)).toBe(1);
+  });
+});
+
 describe('events', () => {
   const rows: RowSets = {
     pipeline_updates: [
@@ -504,5 +571,41 @@ describe('events', () => {
     };
 
     expect(() => eventsOf(noisy)).not.toThrow();
+  });
+});
+
+describe('late system-table data', () => {
+  // One refresh finished 80 minutes ago; the ingest spoke crosses its target 21.63 minutes later,
+  // that is 58.4 minutes ago: newer than the 60 minute ingestion lag.
+  const rows: RowSets = { pipeline_updates: [update('stream', 'a', 90, 80, 'COMPLETED')] };
+  const crossings = (liveNowMs: number | undefined, extra: RowSets = {}): PlatformEvent[] =>
+    buildEvents(
+      discovery,
+      parseEvidence({ ...rows, ...extra }),
+      { since: new Date(NOW.getTime() - 180 * MIN), until: new Date(NOW.getTime() + 60 * MIN) },
+      liveNowMs === undefined ? {} : { liveNowMs },
+    )
+      .map((item) => item.event)
+      .filter((e) => e.type === 'freshness.change' && e.pastTarget);
+
+  it('holds back a crossing newer than the ingestion lag in live mode', () => {
+    expect(crossings(NOW.getTime())).toEqual([]);
+  });
+
+  it('emits the held crossing once the lag has passed and no refresh arrived', () => {
+    expect(crossings(NOW.getTime() + 5 * MIN)).toHaveLength(1);
+  });
+
+  it('never emits it when a late refresh landed inside the window', () => {
+    const refreshed: RowSets = { pipeline_updates: [update('stream', 'b', 70, 65, 'COMPLETED')] };
+    const events = crossings(NOW.getTime() + 5 * MIN, {
+      pipeline_updates: [...(rows.pipeline_updates ?? []), ...(refreshed.pipeline_updates ?? [])],
+    });
+
+    expect(events.map((e) => e.ts)).not.toContain(iso(NOW.getTime() - 80 * MIN + 21.63 * MIN));
+  });
+
+  it('leaves bounded replays unchanged', () => {
+    expect(crossings(undefined)).toHaveLength(1);
   });
 });

@@ -4,6 +4,7 @@ import { ErrorState } from '../components/ErrorState.js';
 import { GlanceTable } from '../components/GlanceTable.js';
 import { HomeAlerts } from '../components/HomeAlerts.js';
 import { HomeAnnouncer } from '../components/HomeAnnouncer.js';
+import { Brand } from '../components/Brand.js';
 import { Link } from '../components/Link.js';
 import { OrlojStage } from '../components/OrlojStage.js';
 import { SummaryDialog } from '../components/SummaryDialog.js';
@@ -13,7 +14,7 @@ import { type Bootstrap, useBootstrap } from '../hooks/useBootstrap.js';
 import { useHomeFeeds } from '../hooks/useHomeFeeds.js';
 import { useSimClock } from '../hooks/useSimClock.js';
 import { prefersReducedMotion, useSharedClock } from '../hooks/useSharedClock.js';
-import type { Api } from '../lib/api.js';
+import { logoUrlOf, type Api } from '../lib/api.js';
 import { clockLink, pageUrl } from '../lib/clock-url.js';
 import { compareUrl, defaultComparePair, MIN_COMPARE_ENVS } from '../lib/compare.js';
 import {
@@ -116,9 +117,7 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
   return (
     <div className="app">
       <header className="topbar">
-        <Link to="/" className="brand">
-          {config.product.title}
-        </Link>
+        <Brand productName={config.product.title} logoUrl={logoUrlOf(config)} />
         <h1 className="env-name">Orloj</h1>
         <p className="lbl topbar-note">One clock face per environment, in promotion order.</p>
         <div className="topbar-spacer" />

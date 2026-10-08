@@ -23,13 +23,15 @@ import { describeProblems } from './parse.js';
 import { cachedModel, fixedModel, type ModelProvider } from './provider.js';
 import { buildRuns } from './runs.js';
 import type { EventSource } from './source.js';
-import { MS_PER_DAY, type TimeWindow } from './time.js';
+import { MS_PER_DAY, MS_PER_HOUR, type TimeWindow } from './time.js';
 import { EVENT_WINDOW_MAX_MS, eventLookbackMs, snapshotLookbackMs } from './windows.js';
 
 const MAX_HEALTH_NOTES = 5;
 /** Events converted between yields to the event loop. */
 const YIELD_EVERY = 1000;
 const DISCOVERY_LOOKBACK_MS = 7 * MS_PER_DAY;
+/** Discovery reads wide and shallow: 6-hour slices keep a week within the page budget. */
+const DISCOVERY_SLICE_MS = 6 * MS_PER_HOUR;
 
 export interface OpenLineageDeps {
   /** Substituted in tests. Defaults to the global `fetch`. */
@@ -108,7 +110,9 @@ export class OpenLineageAdapter implements OrreryAdapter {
   ): Promise<Model> {
     const now = ctx.clock.now().getTime();
     const window = { since: new Date(now - DISCOVERY_LOOKBACK_MS), until: new Date(now + 1) };
-    const { events, truncated } = await source.load(window, this.disposal.signal);
+    const { events, truncated } = await source.load(window, this.disposal.signal, {
+      sliceMs: DISCOVERY_SLICE_MS,
+    });
     this.truncated = truncated;
     return buildModel(env, buildRuns(events));
   }
@@ -202,8 +206,8 @@ export class OpenLineageAdapter implements OrreryAdapter {
         { since: new Date(fromMs), until: window.until },
         signal,
       );
-      this.truncated = loaded.truncated;
-      store.add(loaded.events);
+      const evicted = store.add(loaded.events);
+      this.truncated = loaded.truncated || evicted > 0;
       store.prune(window.since.getTime() - lookback);
       loadedUntilMs = window.until.getTime();
       return buildEvents(model, buildRuns(store.all()), window);
@@ -220,7 +224,9 @@ export class OpenLineageAdapter implements OrreryAdapter {
         ...state.readNotes,
         ...model.notes,
         ...(this.truncated
-          ? ['The source returned more events than the read limit; older ones were left out.']
+          ? [
+              'The source held more events than one read covers (page budget or live store limit); older ones were left out.',
+            ]
           : []),
       ];
       if (notes.length === 0) {

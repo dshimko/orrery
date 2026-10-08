@@ -10,6 +10,8 @@ import {
   orlojSpokeSize,
   planetSize,
   simMinutesPerSecond,
+  spokeColor,
+  spokeColorMap,
   usesMeanAge,
   type MetaphorKey,
 } from '../src/metaphor.js';
@@ -125,5 +127,40 @@ describe('usesMeanAge', () => {
     expect(usesMeanAge(5, v.stability)).toBe(true);
     expect(usesMeanAge(30, v.stability)).toBe(false);
     expect(usesMeanAge(60, v.stability)).toBe(false);
+  });
+});
+
+describe('spokeColor', () => {
+  it('defaults to the reference palette: ingest first, then domains in order', () => {
+    const spokes = [
+      { id: 'ingest', role: 'ingest' },
+      { id: 'a', role: 'domain' },
+      { id: 'b', role: 'domain' },
+    ];
+    expect([...spokeColorMap(spokes, v).values()]).toEqual(['#9FC4FF', '#5FA8D3', '#7BC8A4']);
+  });
+
+  it('cycles the domain colors and never gives a domain the ingest color', () => {
+    expect(spokeColor('x', 6, 'domain', v)).toBe('#5FA8D3');
+    expect(spokeColor('x', 0, 'ingest', v)).toBe('#9FC4FF');
+  });
+
+  it('lets an explicit spokeColors entry win without shifting the others', () => {
+    const custom = Visuals.parse({ spokeColors: { a: '#112233' } });
+    const spokes = [
+      { id: 'a', role: 'domain' },
+      { id: 'b', role: 'domain' },
+    ];
+    expect([...spokeColorMap(spokes, custom).values()]).toEqual(['#112233', '#7BC8A4']);
+  });
+
+  it('uses the single palette color for every spoke when the palette has one entry', () => {
+    const one = Visuals.parse({ palette: ['#010203'] });
+    expect(spokeColor('a', 3, 'domain', one)).toBe('#010203');
+  });
+
+  it('rejects malformed colors', () => {
+    expect(() => Visuals.parse({ palette: ['red'] })).toThrow();
+    expect(() => Visuals.parse({ spokeColors: { a: 'blue' } })).toThrow();
   });
 });

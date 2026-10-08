@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Api, EnvironmentSummary } from '../lib/api.js';
 import { createEnvFeed, type EnvFeed } from '../lib/feed.js';
-import { EMPTY_FEED, type EnvFeedState, friendlyEnvError } from '../lib/home.js';
+import { EMPTY_FEED, type EnvFeedState, friendlyEnvError, isNetworkFailure } from '../lib/home.js';
 import { createThrottle } from '../lib/throttle.js';
 import type { TimeController } from '../lib/time.js';
 
@@ -41,10 +41,13 @@ export function useHomeFeeds(
             update(env.id, { topology });
           },
           onSnapshot: (snapshot) => {
-            update(env.id, { snapshot, error: null });
+            update(env.id, { snapshot, error: null, isNetworkError: false });
           },
           onError: (error) => {
-            update(env.id, { error: friendlyEnvError(error) });
+            update(env.id, {
+              error: friendlyEnvError(error),
+              isNetworkError: isNetworkFailure(error),
+            });
           },
         },
       }),

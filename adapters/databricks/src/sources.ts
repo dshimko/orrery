@@ -5,6 +5,7 @@ import { SqlError, type Row, type Target } from './contracts.js';
 import type { Priority, QueryPoller } from './poller.js';
 import type { QueryName } from './queries.js';
 import type { TimeWindow } from './time.js';
+import { MAX_VIEWERS, ViewerMap } from './viewers.js';
 
 /** Safe, short description of a query failure (never contains SQL text or tokens). */
 export function describeFailure(error: unknown): string {
@@ -22,20 +23,31 @@ function rethrowIfAborted(error: unknown, signal: AbortSignal | undefined): void
     throw error;
 }
 
-/** Optional queries that failed on the last attempt, keyed `name@metastore`. */
+/**
+ * Optional queries that failed on the last attempt, per viewer, keyed `name@metastore`. Unity
+ * Catalog permissions differ per viewer in on-behalf-of-user mode, so one viewer's missing access
+ * must not mark another viewer's health degraded. Viewers are bounded (least recently used).
+ */
 export class Degradations {
-  private readonly notes = new Map<string, string>();
+  private readonly byViewer: ViewerMap<Map<string, string>>;
 
-  record(name: string, metastore: string, reason: string): void {
-    this.notes.set(`${name}@${metastore}`, reason);
+  constructor(maxViewers: number = MAX_VIEWERS) {
+    this.byViewer = new ViewerMap(maxViewers);
   }
 
-  resolve(name: string, metastore: string): void {
-    this.notes.delete(`${name}@${metastore}`);
+  record(viewer: string, name: string, metastore: string, reason: string): void {
+    this.byViewer.getOrCreate(viewer, () => new Map()).set(`${name}@${metastore}`, reason);
   }
 
-  messages(): string[] {
-    return [...this.notes.entries()]
+  resolve(viewer: string, name: string, metastore: string): void {
+    const notes = this.byViewer.get(viewer);
+    if (!notes) return;
+    notes.delete(`${name}@${metastore}`);
+    if (notes.size === 0) this.byViewer.delete(viewer);
+  }
+
+  messages(viewer: string): string[] {
+    return [...(this.byViewer.get(viewer)?.entries() ?? [])]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, reason]) => `Optional query ${key} unavailable (${reason}).`);
   }
@@ -47,6 +59,12 @@ export class Sources {
     readonly targets: readonly Target[],
     readonly degraded: Degradations,
   ) {}
+
+  /** The current viewer's key (the first target's token cache key). */
+  viewer(): string {
+    const [first] = this.targets;
+    return first ? this.poller.viewerKey(first) : '';
+  }
 
   /** One query on one target; failures propagate. */
   required(
@@ -78,13 +96,14 @@ export class Sources {
     signal?: AbortSignal,
     priority?: Priority,
   ): Promise<Row[] | undefined> {
+    const viewer = this.poller.viewerKey(target);
     try {
       const rows = await this.poller.run(target, name, window, signal, priority);
-      this.degraded.resolve(name, target.metastore);
+      this.degraded.resolve(viewer, name, target.metastore);
       return rows;
     } catch (error) {
       rethrowIfAborted(error, signal);
-      this.degraded.record(name, target.metastore, describeFailure(error));
+      this.degraded.record(viewer, name, target.metastore, describeFailure(error));
       return undefined;
     }
   }

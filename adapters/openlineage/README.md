@@ -38,11 +38,18 @@ line or item number (never their content). A file with no valid event fails the 
 
 **Marquez source.** Only `GET /api/v1/events/lineage` is called (`sortDirection`, `after`,
 `before`, `limit`, `offset`; response `{ events, totalCount }`, from Marquez's `spec/openapi.yml`).
-Requests time out after 15 s, do not follow redirects, read at most 25 pages of 200 events (a
-truncated read is reported in health, and the oldest events are the ones left out), and cache for
-30 s. The bearer key comes from the environment and never appears in errors or logs. Topology is
+Requests time out after 15 s, do not follow redirects, stop reading a body past 20 MB, and cache
+for 30 s. A read splits its window into time slices, newest first, and pages each slice (200
+events a page): 1 hour for events and snapshots, 6 hours for topology discovery. Marquez treats
+`after` as inclusive and `before` as exclusive, so slices neither overlap nor leave gaps. A load
+reads at most 200 pages in total across its slices; when a busy server exceeds that, the oldest
+slices are left out and health says so. An aborted caller or a disposed adapter stops the reads.
+The bearer key comes from the environment and never appears in errors or logs. Topology is
 discovered from the last 7 days and refreshed hourly. Live mode polls every 30 s, re-reading a
-10-minute overlap, and de-duplicates by (runId, eventType, eventTime).
+10-minute overlap, and de-duplicates by (runId, eventType, eventTime). The runs it holds in memory
+are capped at 100,000 events (the oldest are dropped, which health reports) and pruned to the
+lookback. Marquez serves absent `inputs`, `outputs`, and `facets` as JSON `null`; the parser
+accepts that.
 
 **Replay (file sources only).** The sample's events are historical. By default the whole sample
 repeats every day, so a snapshot or event window at any time shows the same scene as the sample
@@ -67,7 +74,8 @@ Matchers in the topology decide where each thing belongs. All clauses of a match
 - **Spokes.** A dataset belongs to the first spoke whose matcher accepts it. Domain spokes are
   tried first (in config order), then ingest spokes, so an ingest spoke is the catch-all for the
   rest of its namespace. Spoke metrics: `pipelines` is the number of jobs writing it, `products`
-  its datasets, `complexity` is logarithmic in both, `volume` is 0 (events carry no sizes).
+  its datasets, `complexity` is logarithmic in both, `volume` is the terabytes (10^12 bytes) written by the latest run of each of its datasets that
+  reported `outputStatistics.size` (an estimate of what is stored; 0 when no run reports a size).
 - **Hub.** A dataset no spoke accepts that another job reads is a hub dataset; a run writing one
   from an ingest spoke draws a `transfer`. Other unmatched datasets are ignored.
 - **Source groups.** The external sources of a run are its inputs that no observed job produces
@@ -82,7 +90,7 @@ Matchers in the topology decide where each thing belongs. All clauses of a match
 
 | Run                                                        | Event                                                                       |
 | ---------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `COMPLETE`, writes an ingest spoke, from a source group    | `source.batch` (`size` is 1 to 4: one pod, plus one per 5 minutes of run)   |
+| `COMPLETE`, writes an ingest spoke, from a source group    | `source.batch` (`size` 1 to 4; see below)                                   |
 | same, job type `STREAMING`                                 | `source.stream` on every `START`, `RUNNING`, and `COMPLETE`                 |
 | `COMPLETE`, writes an ingest spoke, from anywhere else     | `transfer` (ingest to hub)                                                  |
 | `COMPLETE`, writes a domain spoke, reads elsewhere         | `copy` (hub to spoke)                                                       |
@@ -94,6 +102,19 @@ Matchers in the topology decide where each thing belongs. All clauses of a match
 | next `COMPLETE` of the same job                            | `alert.close`                                                               |
 | a spoke refreshed (completion of a run writing it)         | `freshness.change`, age 0                                                   |
 | a spoke not refreshed within target x 1.03                 | `freshness.change`, past target                                             |
+
+**Batch size** is one pod plus one per 256 MiB written to the spoke (`outputStatistics.size`),
+or, with only `rowCount`, one per million rows; without statistics, one per 5 minutes of run.
+It is capped at 4 pods.
+
+**Facets.** Read defensively; anything of an unexpected shape or out of bounds is ignored and
+never rejects an event.
+
+| Facet                                                       | Used for                                                                                                                                           |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run.facets.errorMessage.message`                           | alert text for `FAIL` and `ABORT`: plain text (control characters and line breaks flattened), at most 300 characters. The stack trace is not read. |
+| `run.facets.nominalTime.nominalStartTime`                   | the snapshot `schedule` (below); shifted with the run by replay                                                                                    |
+| `outputs[].outputFacets.outputStatistics.rowCount`, `.size` | batch size and spoke `volume`; finite, non-negative numbers below 10^18 only                                                                       |
 
 Event times are the run's own times, never the clock, so any split of a window gives the same
 events. There are no `ml.run`, `deploy`, `promotion`, or `federation.query` events.
@@ -110,12 +131,16 @@ events. There are no `ml.run`, `deploy`, `promotion`, or `federation.query` even
 - **Counts:** running runs, failed and aborted runs in the last 24 hours, spokes past target,
   open incidents. `deploysToday` is 0.
 - **Alerts** are those the stream has opened and not closed, for up to 24 hours.
-- **Not available from run events, so fixed:** `schedule: []`, `spendPerHour: 0`, and a calendar
-  with zero releases and no promotions (days are numbered and `monthEndClose` is set).
+- **Schedule** lists runs whose `nominalStartTime` is after the snapshot time and on the same UTC
+  day (15-minute windows, severity `info`, kind `transfer` for transfers, else `scripted`, at most
+  50). Most data has none, because a nominal time is the start of a run that has begun, and then
+  the schedule is empty.
+- **Not available from run events, so fixed:** `spendPerHour: 0`, and a calendar with zero
+  releases and no promotions (days are numbered and `monthEndClose` is set).
 
 ## Files
 
-`src/options.ts` (options schema), `parse.ts` and `file-source.ts` (events in), `marquez.ts`,
+`src/options.ts` (options schema), `parse.ts`, `facets.ts` and `file-source.ts` (events in), `marquez.ts`,
 `replay.ts` and `file-events.ts` (event sources), `runs.ts`, `matchers.ts`, `model.ts` and
 `build-model.ts` (topology), `convert/` (snapshot and events), `live.ts` and `event-store.ts`
 (live mode), `adapter.ts`.
@@ -123,4 +148,18 @@ events. There are no `ml.run`, `deploy`, `promotion`, or `federation.query` even
 ## Tests
 
 `pnpm vitest run adapters/openlineage` runs the unit tests and the shared contract suite against
-the public sample. No network is used: Marquez is a fake `fetch`.
+the public sample. No network is used: Marquez is a fake `fetch` that pages like the real one.
+
+`test/marquez-live.test.ts` is opt-in. It reads a real Marquez and is skipped unless
+`ORRERY_MARQUEZ_URL` is set. Seed one with Marquez's own compose files, then run the test:
+
+```sh
+git clone --depth 1 https://github.com/MarquezProject/marquez /tmp/marquez-src   # outside this repo
+/tmp/marquez-src/docker/up.sh --seed --no-web --no-search --detach --api-port 5050 --api-admin-port 5051 --db-port 5434
+ORRERY_MARQUEZ_URL=http://localhost:5050 pnpm vitest run adapters/openlineage/test/marquez-live.test.ts
+(cd /tmp/marquez-src && docker compose -f docker-compose.yml -f docker-compose.seed.yml down -v)
+```
+
+(`up.sh` takes `-d` as the database port, so use `--detach`.) It was run against Marquez 0.51.1
+(commit `180f37b`) on arm64. The seed stamps its events from the clock when it runs, so the test
+reads a window that reaches 30 minutes past the current time.

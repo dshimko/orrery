@@ -19,6 +19,7 @@ import {
   type QueryName,
 } from './queries.js';
 import type { TimeWindow } from './time.js';
+import { ViewerMap } from './viewers.js';
 
 const MAX_CACHE_ENTRIES = 256;
 /** Estimated memory bound: the cache never holds more rows than this across all entries. */
@@ -138,15 +139,21 @@ export class QueryPoller {
   private readonly tokens = new Map<string, TokenProvider>();
   private readonly gate: Semaphore;
   private cachedRows = 0;
-  private readonly truncatedNames = new Set<string>();
+  /** Row-limit flags per viewer: a viewer's own results decide whether their view is complete. */
+  private readonly truncatedByViewer = new ViewerMap<Set<string>>();
 
   constructor(private readonly deps: PollerDeps) {
     this.gate = new Semaphore(MAX_CONCURRENT_QUERIES, deps.queueTimeoutMs ?? QUEUE_TIMEOUT_MS);
   }
 
-  /** Names of queries whose last result hit its row limit (the view may be incomplete). */
-  truncated(): string[] {
-    return [...this.truncatedNames].sort();
+  /** Names of queries whose last result for `viewer` hit its row limit (the view may be incomplete). */
+  truncated(viewer: string): string[] {
+    return [...(this.truncatedByViewer.get(viewer) ?? [])].sort();
+  }
+
+  /** The viewer behind `target`'s token provider (stable for service principals). */
+  viewerKey(target: Target): string {
+    return this.tokensOf(target).cacheKey();
   }
 
   private tokensOf(target: Target): TokenProvider {
@@ -176,20 +183,17 @@ export class QueryPoller {
     const spec = QUERY_SPECS[name];
     const params = paramValues(spec, window);
     const tokens = this.tokensOf(target);
-    const key = [
-      tokens.cacheKey(),
-      target.host,
-      target.warehouseId,
-      name,
-      ...params.map((p) => p.value),
-    ].join('|');
+    const viewer = tokens.cacheKey();
+    const key = [viewer, target.host, target.warehouseId, name, ...params.map((p) => p.value)].join(
+      '|',
+    );
     const nowMs = this.deps.now().getTime();
     const hit = this.cache.get(key);
     if (hit && hit.expiresAt > nowMs) return abortable(hit.promise, signal);
 
     const entry: Entry = {
       expiresAt: nowMs + CLASS_INTERVAL_MS[spec.cls],
-      promise: this.execute(target, tokens, name, params, priority),
+      promise: this.execute(target, tokens, viewer, name, params, priority),
       rows: 0,
     };
     entry.promise.then(
@@ -210,6 +214,7 @@ export class QueryPoller {
   private execute(
     target: Target,
     tokens: TokenProvider,
+    viewer: string,
     name: QueryName,
     params: SqlParam[],
     priority: Priority,
@@ -223,10 +228,19 @@ export class QueryPoller {
         ...(this.deps.signal ? { signal: this.deps.signal } : {}),
       });
       const flag = `${name}@${target.metastore}`;
-      if (rows.length >= spec.rowLimit) this.truncatedNames.add(flag);
-      else this.truncatedNames.delete(flag);
+      this.flagTruncation(viewer, flag, rows.length >= spec.rowLimit);
       return rows;
     }, priority);
+  }
+
+  private flagTruncation(viewer: string, flag: string, isTruncated: boolean): void {
+    if (isTruncated) {
+      this.truncatedByViewer.getOrCreate(viewer, () => new Set()).add(flag);
+      return;
+    }
+    const flags = this.truncatedByViewer.get(viewer);
+    flags?.delete(flag);
+    if (flags?.size === 0) this.truncatedByViewer.delete(viewer);
   }
 
   private drop(key: string): void {

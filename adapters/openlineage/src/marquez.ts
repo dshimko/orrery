@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 // Read-only client for the Marquez HTTP API. Only GET /api/v1/events/lineage is used
 // (https://github.com/MarquezProject/marquez/blob/main/spec/openapi.yml: getLineageEvents with
-// sortDirection, before, after, limit, offset; response { events, totalCount }). Requests time
-// out, never follow redirects, are bounded in pages, and never put the API key in a message.
+// sortDirection, before, after, limit, offset; response { events, totalCount }). A load splits its
+// window into time slices, newest first, and pages each one, so a busy server cannot push the
+// oldest events out of a single capped read. Requests time out, never follow redirects, are
+// bounded in pages per load, and never put the API key in a message.
 import { normalizeEvent } from './parse.js';
-import type { EventSource, LoadResult } from './source.js';
-import { MS_PER_MINUTE, type TimeWindow } from './time.js';
+import type { EventSource, LoadOptions, LoadResult } from './source.js';
+import { MS_PER_HOUR, MS_PER_MINUTE, type TimeWindow } from './time.js';
 import type { RunEvent } from './types.js';
 
 export const REQUEST_TIMEOUT_MS = 15_000;
 export const PAGE_LIMIT = 200;
-export const MAX_PAGES = 25;
+/** Pages one load may read in total, across all its slices. */
+export const MAX_PAGES_PER_LOAD = 200;
+/** Default slice of a window; each slice is paged on its own. */
+export const EVENT_SLICE_MS = MS_PER_HOUR;
 /** Largest response body read, in characters. */
 export const MAX_BODY_CHARS = 20 * 1024 * 1024;
 /** Cached loads are reused for this long, so polling clients share one upstream read. */
@@ -43,9 +48,21 @@ export interface MarquezDeps {
   nowMs: () => number;
   /** Per-request timeout; defaults to 15 s. */
   timeoutMs?: number;
+  /** Page budget per load; defaults to 200. */
+  maxPages?: number;
 }
 
 type CacheEntry = { atMs: number; value: Promise<LoadResult> };
+
+/** Windows split newest first into slices of `sliceMs`; the oldest slice is clipped to the window. */
+export function sliceWindow(window: TimeWindow, sliceMs: number): TimeWindow[] {
+  const since = window.since.getTime();
+  const slices: TimeWindow[] = [];
+  for (let end = window.until.getTime(); end > since; end -= sliceMs) {
+    slices.push({ since: new Date(Math.max(since, end - sliceMs)), until: new Date(end) });
+  }
+  return slices;
+}
 
 const floorMinute = (ms: number): number => Math.floor(ms / MS_PER_MINUTE) * MS_PER_MINUTE;
 const ceilMinute = (ms: number): number => Math.ceil(ms / MS_PER_MINUTE) * MS_PER_MINUTE;
@@ -147,25 +164,42 @@ export class MarquezSource implements EventSource {
     }
   }
 
-  private async readPages(window: TimeWindow, signal: AbortSignal): Promise<LoadResult> {
+  /**
+   * Pages every slice of the window, newest slice first, within the page budget. Marquez treats
+   * `after` as inclusive and `before` as exclusive (observed against 0.51), so adjacent slices
+   * neither overlap nor leave a gap. When the budget runs out the oldest events are left out and
+   * the result says so.
+   */
+  private async readPages(
+    window: TimeWindow,
+    sliceMs: number,
+    signal: AbortSignal,
+  ): Promise<LoadResult> {
     const events: RunEvent[] = [];
     let skipped = 0;
-    let truncated = false;
-    for (let page = 0; page < MAX_PAGES; page += 1) {
-      const body = await this.get(this.pageUrl(window, page * PAGE_LIMIT, PAGE_LIMIT), signal);
-      const items = (body as { events?: unknown } | null)?.events;
-      if (!Array.isArray(items))
-        throw new MarquezError('format', 'Marquez returned no events list.');
-      for (const item of items) {
-        const event = normalizeEvent(item);
-        if (typeof event === 'string') skipped += 1;
-        else events.push(event);
+    let budget = this.deps.maxPages ?? MAX_PAGES_PER_LOAD;
+    const finish = (truncated: boolean): LoadResult => {
+      this.skipped = skipped;
+      return { events, truncated };
+    };
+    for (const slice of sliceWindow(window, sliceMs)) {
+      for (let offset = 0; ; offset += PAGE_LIMIT) {
+        if (budget <= 0) return finish(true);
+        budget -= 1;
+        const body = await this.get(this.pageUrl(slice, offset, PAGE_LIMIT), signal);
+        const items = (body as { events?: unknown } | null)?.events;
+        if (!Array.isArray(items)) {
+          throw new MarquezError('format', 'Marquez returned no events list.');
+        }
+        for (const item of items) {
+          const event = normalizeEvent(item);
+          if (typeof event === 'string') skipped += 1;
+          else events.push(event);
+        }
+        if (items.length < PAGE_LIMIT) break;
       }
-      if (items.length < PAGE_LIMIT) break;
-      truncated = page === MAX_PAGES - 1;
     }
-    this.skipped = skipped;
-    return { events, truncated };
+    return finish(false);
   }
 
   async check(signal?: AbortSignal): Promise<void> {
@@ -174,16 +208,23 @@ export class MarquezSource implements EventSource {
     await this.get(this.pageUrl(window, 0, 1), signal);
   }
 
-  async load(window: TimeWindow, signal?: AbortSignal): Promise<LoadResult> {
+  async load(
+    window: TimeWindow,
+    signal?: AbortSignal,
+    options: LoadOptions = {},
+  ): Promise<LoadResult> {
+    const sliceMs = Math.max(MS_PER_MINUTE, options.sliceMs ?? EVENT_SLICE_MS);
     const snapped = {
       since: new Date(floorMinute(window.since.getTime())),
       until: new Date(ceilMinute(window.until.getTime())),
     };
-    const key = `${snapped.since.getTime()}-${snapped.until.getTime()}`;
+    const key = `${snapped.since.getTime()}-${snapped.until.getTime()}-${sliceMs}`;
     const now = this.deps.nowMs();
     const hit = this.cache.get(key);
     const value =
-      hit && now - hit.atMs < CACHE_TTL_MS ? hit.value : this.fetchAndCache(key, snapped, now);
+      hit && now - hit.atMs < CACHE_TTL_MS
+        ? hit.value
+        : this.fetchAndCache(key, snapped, sliceMs, now);
     const result = await abortable(value, signal);
     const since = window.since.getTime();
     const until = window.until.getTime();
@@ -204,7 +245,12 @@ export class MarquezSource implements EventSource {
     this.cache.clear();
   }
 
-  private fetchAndCache(key: string, window: TimeWindow, now: number): Promise<LoadResult> {
+  private fetchAndCache(
+    key: string,
+    window: TimeWindow,
+    sliceMs: number,
+    now: number,
+  ): Promise<LoadResult> {
     for (const [other, entry] of this.cache) {
       if (now - entry.atMs >= CACHE_TTL_MS) this.cache.delete(other);
     }
@@ -214,7 +260,7 @@ export class MarquezSource implements EventSource {
       this.cache.delete(oldest);
     }
     // Shared by concurrent callers, so it follows disposal, not any one caller's signal.
-    const value = this.readPages(window, this.disposal.signal);
+    const value = this.readPages(window, sliceMs, this.disposal.signal);
     this.cache.set(key, { atMs: now, value });
     // A failed read must not be served again from the cache.
     value.catch(() => this.cache.delete(key));

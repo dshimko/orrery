@@ -45,6 +45,17 @@ const Colors = strictObject({
   info: color('#6EA8FF'),
 });
 
+/** Reference spoke palette: the first color is for the ingest spoke, the rest cycle over the domain spokes. */
+export const DEFAULT_PALETTE: readonly string[] = [
+  '#9FC4FF',
+  '#5FA8D3',
+  '#7BC8A4',
+  '#B79CED',
+  '#F28FAD',
+  '#E9966B',
+  '#A3B1C6',
+];
+
 const Lighting = strictObject({
   ambientColor: color('#8EA2C6'),
   ambientIntensity: z.number().min(0).default(0.42),
@@ -135,6 +146,11 @@ export const Visuals = strictObject({
   planetSize: PlanetSize.prefault({}),
   orbitSpeed: OrbitSpeed.prefault({}),
   colors: Colors.prefault({}),
+  palette: z
+    .array(HexColor)
+    .min(1)
+    .default([...DEFAULT_PALETTE]),
+  spokeColors: z.record(Id, HexColor).default({}),
   lighting: Lighting.prefault({}),
   camera: Camera.prefault({}),
   time: Time.prefault({}),

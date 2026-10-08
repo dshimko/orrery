@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CACHE_TTL_MS,
-  MAX_PAGES,
+  MAX_PAGES_PER_LOAD,
   MarquezError,
   MarquezSource,
   PAGE_LIMIT,
@@ -34,6 +34,36 @@ function event(index: number, namespace = 'jobs'): Record<string, unknown> {
   );
 }
 
+function eventAt(index: number, atMin: number): Record<string, unknown> {
+  return wire(
+    ev({
+      type: 'COMPLETE',
+      atMin,
+      run: `r${index}`,
+      job: `job${index}`,
+      outputs: [dataset(`raw.t${index}`)],
+    }),
+  );
+}
+
+/**
+ * A Marquez that answers like the real one: newest first, `after` inclusive, `before`
+ * exclusive, paged by offset and limit.
+ */
+function serve(stored: readonly Record<string, unknown>[]): (call: Call) => Response {
+  const timeOf = (item: Record<string, unknown>): number => Date.parse(String(item['eventTime']));
+  const sorted = [...stored].sort((a, b) => timeOf(b) - timeOf(a));
+  return (call) => {
+    const params = call.url.searchParams;
+    const after = Date.parse(params.get('after') ?? '');
+    const before = Date.parse(params.get('before') ?? '');
+    const offset = Number(params.get('offset'));
+    const limit = Number(params.get('limit'));
+    const inside = sorted.filter((item) => timeOf(item) >= after && timeOf(item) < before);
+    return json({ events: inside.slice(offset, offset + limit), totalCount: inside.length });
+  };
+}
+
 const events = (count: number, namespace = 'jobs'): Record<string, unknown>[] =>
   Array.from({ length: count }, (_, i) => event(i, namespace));
 
@@ -55,7 +85,7 @@ function fakeFetch(handler: (call: Call, index: number) => Response | Promise<Re
 function source(
   handler: Parameters<typeof fakeFetch>[0],
   config: Partial<MarquezConfig> = {},
-  extra: { nowMs?: () => number; timeoutMs?: number } = {},
+  extra: { nowMs?: () => number; timeoutMs?: number; maxPages?: number } = {},
 ) {
   const fake = fakeFetch(handler);
   const client = new MarquezSource(
@@ -64,6 +94,7 @@ function source(
       fetch: fake.impl,
       nowMs: extra.nowMs ?? (() => T0),
       ...(extra.timeoutMs ? { timeoutMs: extra.timeoutMs } : {}),
+      ...(extra.maxPages ? { maxPages: extra.maxPages } : {}),
     },
   );
   return { client, calls: fake.calls };
@@ -134,17 +165,10 @@ describe('MarquezSource results', () => {
       const offset = Number(call.url.searchParams.get('offset'));
       return json({ events: events(offset === 0 ? PAGE_LIMIT : 5) });
     });
-    const loaded = await client.load(window(-60, 120));
+    const loaded = await client.load(window(0, 60));
     expect(calls.map((c) => c.url.searchParams.get('offset'))).toEqual(['0', String(PAGE_LIMIT)]);
     expect(loaded.events).toHaveLength(PAGE_LIMIT + 5);
     expect(loaded.truncated).toBe(false);
-  });
-
-  it('stops at the page limit and says so', async () => {
-    const { client, calls } = source(() => json({ events: events(PAGE_LIMIT) }));
-    const loaded = await client.load(window(-60, 120));
-    expect(calls).toHaveLength(MAX_PAGES);
-    expect(loaded.truncated).toBe(true);
   });
 
   it('keeps only events of the configured namespace', async () => {
@@ -154,15 +178,87 @@ describe('MarquezSource results', () => {
         namespace: 'wanted',
       },
     );
-    const loaded = await client.load(window(-60, 120));
+    const loaded = await client.load(window(0, 60));
     expect(loaded.events.map((e) => e.job.namespace)).toEqual(['wanted', 'wanted']);
   });
 
   it('counts entries that are not RunEvents instead of failing', async () => {
     const { client } = source(() => json({ events: [event(1), { nonsense: true }, 5] }));
-    const loaded = await client.load(window(-60, 120));
+    const loaded = await client.load(window(0, 60));
     expect(loaded.events).toHaveLength(1);
     expect(client.skipped).toBe(2);
+  });
+});
+
+describe('MarquezSource time slices', () => {
+  const PAGES_FOR_BUSY_HOUR = 25;
+  const busyHour = (firstIndex: number, hour: number) =>
+    Array.from({ length: PAGES_FOR_BUSY_HOUR * PAGE_LIMIT }, (_, i) =>
+      eventAt(firstIndex + i, hour * 60 + (i % 59)),
+    );
+
+  it('keeps the oldest events of a busy server that one capped read dropped', async () => {
+    const stored = [...busyHour(0, 0), ...busyHour(100_000, 1), ...busyHour(200_000, 2)];
+    const { client } = source(serve(stored));
+    const loaded = await client.load(window(0, 180));
+    expect(loaded.events).toHaveLength(stored.length);
+    expect(loaded.truncated).toBe(false);
+    expect(loaded.events.some((e) => e.runId === 'r0')).toBe(true);
+  });
+
+  it('asks for contiguous one-hour slices, newest first, covering exactly the window', async () => {
+    const { client, calls } = source(serve([]));
+    await client.load(window(0, 150));
+    const ranges = calls.map((c) => [
+      Date.parse(c.url.searchParams.get('after') ?? '') - T0,
+      Date.parse(c.url.searchParams.get('before') ?? '') - T0,
+    ]);
+    expect(ranges).toEqual([
+      [90 * MIN, 150 * MIN],
+      [30 * MIN, 90 * MIN],
+      [0, 30 * MIN],
+    ]);
+  });
+
+  it('uses the slice length the caller asks for', async () => {
+    const { client, calls } = source(serve([]));
+    await client.load(window(0, 24 * 60), undefined, { sliceMs: 6 * 60 * MIN });
+    expect(calls).toHaveLength(4);
+  });
+
+  it('stops at the page budget, keeps the newest slices, and reports truncation', async () => {
+    const stored = Array.from({ length: 10 }, (_, hour) => eventAt(hour, hour * 60 + 5));
+    const fake = source(serve(stored), {}, { maxPages: 4 });
+    const loaded = await fake.client.load(window(0, 600));
+    expect(fake.calls).toHaveLength(4);
+    expect(loaded.truncated).toBe(true);
+    expect(loaded.events.map((e) => e.runId).sort()).toEqual(['r6', 'r7', 'r8', 'r9']);
+  });
+
+  it('does not report truncation when the budget is used up exactly', async () => {
+    const stored = Array.from({ length: 4 }, (_, hour) => eventAt(hour, hour * 60 + 5));
+    const { client } = source(serve(stored), {}, { maxPages: 4 });
+    const loaded = await client.load(window(0, 240));
+    expect(loaded.events).toHaveLength(4);
+    expect(loaded.truncated).toBe(false);
+  });
+
+  it('has a 200-page default budget per load', async () => {
+    const { client, calls } = source(serve([]));
+    await client.load(window(0, 300 * 60), undefined, { sliceMs: 60 * MIN });
+    expect(MAX_PAGES_PER_LOAD).toBe(200);
+    expect(calls).toHaveLength(MAX_PAGES_PER_LOAD);
+  });
+
+  it('stops requesting when the caller aborts between slices', async () => {
+    const controller = new AbortController();
+    const handler = serve([]);
+    const { client, calls } = source((call) => {
+      if (calls.length === 2) controller.abort(new Error('gone'));
+      return handler(call);
+    });
+    await expect(client.load(window(0, 600), controller.signal)).rejects.toThrow('gone');
+    expect(calls.length).toBeLessThanOrEqual(3);
   });
 });
 

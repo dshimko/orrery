@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { FastifyInstance } from 'fastify';
+import { LOGO_URL, SVG_CONTENT_SECURITY_POLICY } from '../branding.js';
+import { errorBody } from '../errors.js';
 import { cachedHealthOf } from '../registry.js';
 import type { RouteContext } from './context.js';
 
@@ -14,6 +16,7 @@ export function registerMetaRoutes(app: FastifyInstance, context: RouteContext):
         product: config.product,
         visuals: config.visuals,
         promotion: config.promotion ?? null,
+        branding: { logoUrl: context.logo ? LOGO_URL : null },
         environments: context.runtimes.map(({ env }) => ({
           id: env.id,
           name: env.name,
@@ -21,6 +24,17 @@ export function registerMetaRoutes(app: FastifyInstance, context: RouteContext):
         })),
       },
     };
+  });
+
+  app.get(LOGO_URL, async (_request, reply) => {
+    const { logo } = context;
+    if (!logo) return reply.code(404).send(errorBody('not_found', 'Not found.'));
+    reply
+      .header('Content-Type', logo.contentType)
+      .header('Cache-Control', 'public, max-age=3600')
+      .header('X-Content-Type-Options', 'nosniff');
+    if (logo.isSvg) reply.header('Content-Security-Policy', SVG_CONTENT_SECURITY_POLICY);
+    return reply.send(logo.body);
   });
 
   app.get('/api/environments', async () => {

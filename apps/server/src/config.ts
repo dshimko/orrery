@@ -3,6 +3,7 @@ import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ConfigError, parseConfig, type OrreryConfig } from '@orrery/core';
+import { applyTheme } from './theme.js';
 
 /** Repository root, found relative to this file (`src/` and `dist/` sit at the same depth). */
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -39,12 +40,18 @@ export interface LoadedConfig {
   source: string;
   /** True when `ORRERY_CONFIG` was unset and the demo config was used. */
   isDefault: boolean;
+  /** The theme file merged over the config's visuals, when one applied. */
+  themeSource?: string;
 }
 
 /**
  * Reads and validates the config named by `ORRERY_CONFIG` (relative paths resolve against the
- * working directory). Throws `ConfigError` or `Error`. */
-export async function loadConfig(env: Record<string, string | undefined>): Promise<LoadedConfig> {
+ * working directory), then applies a fork theme override if one exists (`ORRERY_THEME` or
+ * `config/private/theme.yaml`). Throws `ConfigError` or `Error`. */
+export async function loadConfig(
+  env: Record<string, string | undefined>,
+  cwd: string = process.cwd(),
+): Promise<LoadedConfig> {
   const configured = env.ORRERY_CONFIG?.trim();
   const isDefault = !configured;
   const source = configured ? path.resolve(configured) : await resolveDefaultConfig();
@@ -57,7 +64,13 @@ export async function loadConfig(env: Record<string, string | undefined>): Promi
   }
   const result = parseConfig(text);
   if (!result.ok) throw new ConfigError(source, result.issues);
-  return { config: result.config, source, isDefault };
+  const themed = await applyTheme(result.config, env, cwd);
+  return {
+    config: themed.config,
+    source,
+    isDefault,
+    ...(themed.source ? { themeSource: themed.source } : {}),
+  };
 }
 
 export interface ListenOptions {

@@ -116,6 +116,7 @@ async function bootAdapter(
     signal,
     ...(deps.peers ? { peers: deps.peers } : {}),
     ...(deps.userToken ? { userToken: deps.userToken } : {}),
+    ...(config.promotion ? { promotion: config.promotion } : {}),
   };
   await adapter.init(env, context);
   return { env, adapter };

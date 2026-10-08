@@ -3,6 +3,7 @@ import { FixedClock, collect, createMemoryLogger } from '@orrery/testkit';
 import { describe, expect, it } from 'vitest';
 import { OpenLineageAdapter } from '../src/adapter.js';
 import { LIVE_OVERLAP_MS, LIVE_POLL_MS } from '../src/live.js';
+import { MAX_PAGES_PER_LOAD, PAGE_LIMIT } from '../src/marquez.js';
 import type { RunEvent } from '../src/types.js';
 import { MIN, T0, context, dataset, ev, makeEnv, wire } from './helpers.js';
 
@@ -57,11 +58,13 @@ function marquez(events: () => RunEvent[]) {
     const offset = Number(url.searchParams.get('offset'));
     const limit = Number(url.searchParams.get('limit'));
     const hits = events()
-      .filter((e) => e.timeMs >= after && e.timeMs <= before)
-      .sort((a, b) => b.timeMs - a.timeMs)
-      .map(wire);
+      .filter((e) => e.timeMs >= after && e.timeMs < before)
+      .sort((a, b) => b.timeMs - a.timeMs);
     return new Response(
-      JSON.stringify({ events: hits.slice(offset, offset + limit), totalCount: hits.length }),
+      JSON.stringify({
+        events: hits.slice(offset, offset + limit).map(wire),
+        totalCount: hits.length,
+      }),
     );
   }) as typeof fetch;
   return { impl, requests, fail: (value: boolean) => (failing = value) };
@@ -89,8 +92,10 @@ describe('Marquez source through the adapter', () => {
       ['mart', 1],
     ]);
     expect(server.requests.every((r) => r.authorization === `Bearer ${KEY}`)).toBe(true);
+    const discoveryReads = server.requests.length;
+    expect(discoveryReads).toBeGreaterThan(0);
     await adapter.topology();
-    expect(server.requests).toHaveLength(1);
+    expect(server.requests).toHaveLength(discoveryReads);
   });
 
   it('answers snapshots and event windows from the events in the window', async () => {
@@ -155,7 +160,7 @@ sourceGroups:
   });
 
   it('flags a truncated read in health', async () => {
-    const many: RunEvent[] = Array.from({ length: 25 * 200 + 5 }, (_, i) =>
+    const many: RunEvent[] = Array.from({ length: MAX_PAGES_PER_LOAD * PAGE_LIMIT + 5 }, (_, i) =>
       ev({
         type: 'COMPLETE',
         atMin: 1 + (i % 20),
@@ -167,7 +172,9 @@ sourceGroups:
     const server = marquez(() => many);
     const adapter = await start(server, clockAt(30));
     await adapter.topology();
-    expect((await adapter.health()).message).toContain('older ones were left out');
+    const health = await adapter.health();
+    expect(health.status).toBe('degraded');
+    expect(health.message).toContain('older ones were left out');
   });
 });
 
@@ -178,11 +185,14 @@ describe('Marquez live stream', () => {
     const live = await collect(adapter.events(new Date(T0 + 3 * MIN)));
     expect(live.length).toBeGreaterThan(0);
     const spans = server.requests.map((r) => r.before - r.after);
-    // Discovery (7 days) and the first read (the lookback), then short overlapping reads.
-    expect(spans[0]).toBeGreaterThanOrEqual(7 * 24 * 60 * MIN);
-    expect(spans[1]).toBeGreaterThanOrEqual(24 * 60 * MIN);
+    // Discovery covers 7 days in slices of at most 6 hours, then the lookback in 1-hour
+    // slices, then short overlapping reads.
+    expect(Math.min(...server.requests.map((r) => r.after))).toBeLessThanOrEqual(
+      T0 + 10 * MIN - 7 * 24 * 60 * MIN,
+    );
+    expect(Math.max(...spans)).toBeLessThanOrEqual(6 * 60 * MIN);
     expect(spans.length).toBeGreaterThan(5);
-    for (const span of spans.slice(2)) expect(span).toBeLessThanOrEqual(LIVE_OVERLAP_MS + 2 * MIN);
+    for (const span of spans.slice(-3)) expect(span).toBeLessThanOrEqual(LIVE_OVERLAP_MS + 2 * MIN);
   });
 
   it('picks up events that arrive between polls', async () => {

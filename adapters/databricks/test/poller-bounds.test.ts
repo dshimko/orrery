@@ -11,6 +11,8 @@ import {
 } from '../src/contracts.js';
 import { QueryPoller } from '../src/poller.js';
 import { MAX_CONCURRENT_QUERIES } from '../src/queries.js';
+import { Degradations } from '../src/sources.js';
+import { ViewerMap } from '../src/viewers.js';
 import { staticTokens } from './support/fixture-client.js';
 import { target } from './support/inventory.js';
 
@@ -142,6 +144,52 @@ describe('truncation flags', () => {
     await r.poller.run(full, 'catalogs');
     await r.poller.run(small, 'catalogs');
 
-    expect(r.poller.truncated()).toEqual(['catalogs@a']);
+    expect(r.poller.truncated('sp')).toEqual(['catalogs@a']);
+  });
+
+  it("keeps flags per viewer, so one viewer's full result never flags another", async () => {
+    let viewer = 'obo:alice';
+    const clock = { ms: BASE };
+    const poller = new QueryPoller({
+      queries,
+      clientFor: () => ({
+        execute: async (): Promise<Row[]> =>
+          Array.from({ length: viewer === 'obo:alice' ? 5000 : 1 }, () => ({ a: '1' })),
+      }),
+      tokensFor: () => ({ token: async () => 't', cacheKey: () => viewer }),
+      now: () => new Date(clock.ms),
+    });
+    const t = target('a');
+
+    await poller.run(t, 'catalogs');
+    viewer = 'obo:bob';
+    await poller.run(t, 'catalogs');
+
+    expect(poller.truncated('obo:alice')).toEqual(['catalogs@a']);
+    expect(poller.truncated('obo:bob')).toEqual([]);
+  });
+});
+
+describe('viewer maps', () => {
+  it('evicts the least recently used viewer beyond the cap', () => {
+    const map = new ViewerMap<number>(2);
+    map.getOrCreate('a', () => 1);
+    map.getOrCreate('b', () => 2);
+    map.get('a');
+    map.getOrCreate('c', () => 3);
+
+    expect(map.get('b')).toBeUndefined();
+    expect(map.get('a')).toBe(1);
+    expect(map.size).toBe(2);
+  });
+
+  it('bounds degradation notes by viewer', () => {
+    const notes = new Degradations(2);
+    notes.record('v1', 'q', 'primary', 'denied');
+    notes.record('v2', 'q', 'primary', 'denied');
+    notes.record('v3', 'q', 'primary', 'denied');
+
+    expect(notes.messages('v1')).toEqual([]);
+    expect(notes.messages('v3')).toHaveLength(1);
   });
 });

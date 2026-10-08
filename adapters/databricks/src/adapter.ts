@@ -24,6 +24,7 @@ import {
   buildEvents,
   buildSnapshot,
   parseEvidence,
+  type BuildEventsOptions,
   type IdentifiedEvent,
 } from './convert/index.js';
 import { buildDiscovery, loadInventory, type Discovery } from './discovery/index.js';
@@ -123,6 +124,7 @@ export class DatabricksAdapter implements OrreryAdapter {
       targets,
       inventories,
       envVars: ctx.env,
+      ...(ctx.promotion ? { promotion: ctx.promotion } : {}),
     });
   }
 
@@ -159,17 +161,23 @@ export class DatabricksAdapter implements OrreryAdapter {
         signal: merged,
         clock: state.ctx.clock,
         logger: state.ctx.logger,
-        poll: (window) => this.window(window.since, window.until, merged),
+        poll: (window) =>
+          this.window(window.since, window.until, merged, { liveNowMs: window.until.getTime() }),
       });
     }
     return this.bounded(since, until, merged);
   }
 
-  private async window(since: Date, until: Date, signal: AbortSignal): Promise<IdentifiedEvent[]> {
+  private async window(
+    since: Date,
+    until: Date,
+    signal: AbortSignal,
+    options: BuildEventsOptions = {},
+  ): Promise<IdentifiedEvent[]> {
     const { sources } = this.ready();
     const discovery = await this.discoverOrThrow(signal);
     const rows = await fetchEventRows(sources, { since, until }, signal);
-    return buildEvents(discovery, parseEvidence(rows), { since, until });
+    return buildEvents(discovery, parseEvidence(rows), { since, until }, options);
   }
 
   private async *bounded(
@@ -196,7 +204,7 @@ export class DatabricksAdapter implements OrreryAdapter {
   }
 
   async health(): Promise<AdapterHealth> {
-    const { ctx, degraded, poller } = this.ready();
+    const { ctx, degraded, poller, sources } = this.ready();
     const checkedAt = ctx.clock.now().toISOString();
     let discovery: Discovery;
     try {
@@ -205,17 +213,18 @@ export class DatabricksAdapter implements OrreryAdapter {
       if (this.disposal.signal.aborted) throw error;
       return { status: 'error', message: describeFailure(error), checkedAt };
     }
+    const viewer = sources.viewer();
+    const degradedNotes = degraded.messages(viewer);
+    const truncatedNames = poller.truncated(viewer);
     const notes = [
       ...discovery.health.messages,
-      ...degraded.messages(),
-      ...poller
-        .truncated()
-        .map((name) => `Query ${name} hit its row limit; results may be incomplete.`),
+      ...degradedNotes,
+      ...truncatedNames.map(
+        (name) => `Query ${name} hit its row limit; results may be incomplete.`,
+      ),
     ];
     const impaired =
-      discovery.health.status !== 'ok' ||
-      degraded.messages().length > 0 ||
-      poller.truncated().length > 0;
+      discovery.health.status !== 'ok' || degradedNotes.length > 0 || truncatedNames.length > 0;
     const status = discovery.health.status === 'error' ? 'error' : impaired ? 'degraded' : 'ok';
     return {
       status,

@@ -3,6 +3,7 @@ import {
   orbitRadius,
   orlojSpokeDistance,
   orlojSpokeSize,
+  spokeColor,
   type Snapshot,
   type Topology,
   type Visuals,
@@ -29,17 +30,9 @@ const SPOKE_CODES: Readonly<Record<string, string>> = {
   finance: 'Fi',
 };
 
-const INGEST_COLOR = '#9FC4FF';
-const DOMAIN_COLORS = ['#5FA8D3', '#7BC8A4', '#B79CED', '#F28FAD', '#E9966B', '#A3B1C6'] as const;
 const SOURCE_NOON_COLOR = '#E3A06B';
 const STUDIO_NOON_COLOR = '#B7ADFF';
 const OFFICE_NOON_COLOR = '#9FC4FF';
-
-/** Stable spoke colors: one for ingest, then the domain palette in topology order. */
-function spokeColor(role: string, domainIndex: number): string {
-  if (role === 'ingest') return INGEST_COLOR;
-  return DOMAIN_COLORS[domainIndex % DOMAIN_COLORS.length] ?? INGEST_COLOR;
-}
 
 /** Zodiac rotation in radians: `turnsPerDay` full turns per simulated UTC day. */
 export function zodiacRotation(at: Date, turnsPerDay: number): number {
@@ -64,7 +57,7 @@ export function buildSpokes(
   let domainIndex = 0;
   const spokes: SpokeModel[] = [];
   topology.spokes.forEach((spoke, slot) => {
-    const color = spokeColor(spoke.role, domainIndex);
+    const color = spokeColor(spoke.id, domainIndex, spoke.role, visuals);
     if (spoke.role !== 'ingest') domainIndex += 1;
     const state = states.get(spoke.id);
     if (!state) return;

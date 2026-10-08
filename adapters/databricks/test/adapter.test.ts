@@ -208,6 +208,32 @@ describe('on-behalf-of-user isolation', () => {
     expect(world.callsTo('catalogs').length).toBe(2);
   });
 
+  it('reports degraded optional queries and row limits only to the viewer who hit them', async () => {
+    const world = new FixtureWorld(STG_SCENARIOS);
+    let viewer = 'obo:alice';
+    const adapter = await started(
+      stgEnv(),
+      world,
+      at('10:15'),
+      {},
+      { tokensFor: () => ({ token: async () => 't', cacheKey: () => viewer }) },
+    );
+    world.failQuery('*', 'billing_usage', denied);
+    await adapter.snapshot(at('10:15'));
+    world.clearFailures();
+    viewer = 'obo:bob';
+    await adapter.snapshot(at('10:15'));
+
+    const bob = await adapter.health();
+    viewer = 'obo:alice';
+    const alice = await adapter.health();
+
+    expect(bob.status).toBe('ok');
+    expect(bob.message ?? '').not.toContain('billing_usage');
+    expect(alice.status).toBe('degraded');
+    expect(alice.message).toContain('billing_usage@primary');
+  });
+
   it('shares results between calls of the same service principal', async () => {
     const world = new FixtureWorld(STG_SCENARIOS);
     const adapter = await started(
@@ -224,6 +250,22 @@ describe('on-behalf-of-user isolation', () => {
     await adapter.snapshot(at('10:15'));
 
     expect(world.callsTo('job_runs')).toHaveLength(1);
+  });
+});
+
+describe('promotion tag key', () => {
+  it('reads releases from the context promotion.tagKey when the source is job-tag', async () => {
+    const promotion = { order: ['stg', 'prod'], source: 'job-tag' as const, tagKey: 'train' };
+    const plain = await started(prodEnv(), new FixtureWorld(PROD_SCENARIOS));
+    const keyed = await started(prodEnv(), new FixtureWorld(PROD_SCENARIOS), at('10:15'), {
+      promotion,
+    });
+
+    const before = await plain.snapshot(at('10:15'));
+    const after = await keyed.snapshot(at('10:15'));
+
+    expect(before.counts.deploysToday).toBeGreaterThan(0);
+    expect(after.counts.deploysToday).toBe(0);
   });
 });
 

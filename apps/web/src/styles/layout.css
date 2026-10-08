@@ -17,8 +17,18 @@
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font: 700 22px/1 var(--font-display);
   text-decoration: none;
+}
+
+.brand-logo {
+  max-height: 28px;
+  max-width: 120px;
+  width: auto;
+  object-fit: contain;
 }
 
 .env-name {

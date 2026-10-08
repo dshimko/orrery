@@ -7,11 +7,16 @@ import {
   runWithUserToken,
   trustsForwardedToken,
 } from './user-token.js';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyServerOptions,
+} from 'fastify';
 import { systemClock } from './clock.js';
 import { ApiError, errorBody } from './errors.js';
 import { createJsonLogger, errorMessage } from './logger.js';
-import { DEFAULT_RATE_LIMIT, TokenBucket, type RateLimitOptions } from './rate-limit.js';
+import { loadLogo } from './branding.js';
+import { RateLimiter, type RateLimiterOptions } from './rate-limit.js';
 import { startEnvironments, withTimeout, DISPOSE_TIMEOUT_MS } from './registry.js';
 import type { RouteContext } from './routes/context.js';
 import { registerEnvRoutes } from './routes/env.js';
@@ -27,7 +32,10 @@ export interface BuildServerOptions {
   clock?: Clock;
   webDir?: string;
   logger?: Logger;
-  rateLimit?: RateLimitOptions;
+  /** Per-client and global limits for each environment; see `RateLimiter`. */
+  rateLimit?: Omit<RateLimiterOptions, 'nowMs'>;
+  /** Working directory for fork assets (`public/private/`); defaults to `process.cwd()`. */
+  cwd?: string;
   /** Per-adapter init timeout; defaults to 10 s. */
   initTimeoutMs?: number;
 }
@@ -37,6 +45,11 @@ const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
 };
+
+/** Whether X-Forwarded-For can be believed for `request.ip`: behind a trusted proxy only. */
+function trustsProxy(env: Readonly<Record<string, string | undefined>>): boolean {
+  return env.ORRERY_TRUST_PROXY === '1' || Boolean(env.DATABRICKS_APP_PORT);
+}
 
 function isApiPath(url: string): boolean {
   const pathname = url.split('?')[0] ?? '';
@@ -87,18 +100,42 @@ export async function buildServer(options: BuildServerOptions): Promise<FastifyI
     userToken: currentUserToken,
     ...(options.initTimeoutMs === undefined ? {} : { initTimeoutMs: options.initTimeoutMs }),
   });
-  const limit = options.rateLimit ?? DEFAULT_RATE_LIMIT;
-  const buckets = new Map(runtimes.map(({ env }) => [env.id, new TokenBucket(limit)]));
+  const limiter = new RateLimiter(
+    runtimes.map(({ env }) => env.id),
+    options.rateLimit,
+  );
+  const logo = await loadLogo(env, options.cwd ?? process.cwd());
   const context: RouteContext = {
     config,
     runtimes,
     clock,
     logger,
     signal: shutdown.signal,
-    buckets,
+    limiter,
+    ...(logo ? { logo } : {}),
   };
 
-  const app = Fastify({ logger: false });
+  const serverOptions: FastifyServerOptions = {
+    logger: false,
+    // Trust exactly one proxy hop: the client address is the entry that proxy appended
+    // (rightmost), never a value the client wrote into X-Forwarded-For itself.
+    trustProxy: trustsProxy(env) ? (_address: string, hop: number) => hop === 0 : false,
+    frameworkErrors: (error, _request, frameworkReply) => {
+      // The callback's reply is typed with the route generics; this handler needs none.
+      const reply = frameworkReply as unknown as FastifyReply;
+      const status = (error as { statusCode?: number }).statusCode;
+      const isClientError = typeof status === 'number' && status >= 400 && status < 500;
+      for (const [name, value] of Object.entries(SECURITY_HEADERS)) reply.header(name, value);
+      return reply
+        .code(isClientError ? status : 500)
+        .send(
+          isClientError
+            ? errorBody('bad_request', 'The request is not valid.')
+            : errorBody('internal_error', 'Something went wrong.'),
+        );
+    },
+  };
+  const app = Fastify(serverOptions);
   app.addHook('onRequest', async (_request, reply) => {
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) reply.header(name, value);
   });

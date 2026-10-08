@@ -25,3 +25,10 @@ the open backlog is in `TODO.md`. Run every gate before calling a milestone done
   of every new tool against Node 22.
 - **CI runners are slower than a laptop.** Tests that fast-forward a clock must take
   timestamps from that clock, and e2e tests wait for `data-ready` signals, not fixed sleeps.
+- **Proxy headers:** trust exactly one hop. `X-Forwarded-For` entries to the left of the one the
+  proxy appended are client-controlled.
+- **Real backends differ from their specs:** Marquez returns JSON `null` for absent fields. A
+  fake `fetch` modeled on an OpenAPI spec is not validation, so run adapters against the real
+  service in Docker when you can.
+- **Fonts:** `document.fonts.ready` resolves at once if nothing has asked for a face, so call
+  `document.fonts.load()` for each face before drawing to a canvas.

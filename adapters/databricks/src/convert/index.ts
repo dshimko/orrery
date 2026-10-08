@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-export { buildEvents, type IdentifiedEvent } from './events.js';
+export { buildEvents, type BuildEventsOptions, type IdentifiedEvent } from './events.js';
 export { buildSnapshot } from './snapshot.js';
 export { parseEvidence, releaseOf, type Evidence, type RowSets } from './evidence.js';
 export { deriveAlerts, openAlertsAt, ALERT_WINDOW_MS } from './alerts.js';

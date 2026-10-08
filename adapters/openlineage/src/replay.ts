@@ -40,9 +40,14 @@ export function replicaRange(
 
 /** Copy `k` of a run's events, with a replica run id so copies never merge. */
 export function replicaOf(events: readonly RunEvent[], k: number, plan: ReplayPlan): RunEvent[] {
+  const shiftMs = plan.baseShiftMs + k * plan.periodMs;
   return events.map((event) => ({
     ...event,
     runId: `${event.runId}@${k}`,
-    timeMs: event.timeMs + plan.baseShiftMs + k * plan.periodMs,
+    timeMs: event.timeMs + shiftMs,
+    // The schedule moves with the run, so replayed nominal times stay consistent.
+    ...(event.nominalStartMs !== undefined
+      ? { nominalStartMs: event.nominalStartMs + shiftMs }
+      : {}),
   }));
 }

@@ -6,11 +6,20 @@ export type Tags = Readonly<Record<string, string>>;
 /** OpenLineage run states; anything else (or a missing type) is `OTHER`. */
 export type RunEventType = 'START' | 'RUNNING' | 'COMPLETE' | 'ABORT' | 'FAIL' | 'OTHER';
 
+export interface DatasetStats {
+  /** `outputStatistics.rowCount` of the run that wrote the dataset. */
+  rowCount?: number;
+  /** `outputStatistics.size`: bytes the run wrote. */
+  sizeBytes?: number;
+}
+
 export interface DatasetRef {
   namespace: string;
   name: string;
   /** From the dataset `tags` facet, when present. */
   tags: Tags;
+  /** From the `outputStatistics` output facet, on outputs only. */
+  stats?: DatasetStats;
 }
 
 export interface JobRef {
@@ -30,6 +39,10 @@ export interface RunEvent {
   job: JobRef;
   inputs: DatasetRef[];
   outputs: DatasetRef[];
+  /** `run.facets.errorMessage.message`, as plain text of at most 300 characters. */
+  errorMessage?: string;
+  /** `run.facets.nominalTime.nominalStartTime` in epoch milliseconds. */
+  nominalStartMs?: number;
 }
 
 export const datasetKey = (ref: Pick<DatasetRef, 'namespace' | 'name'>): string =>

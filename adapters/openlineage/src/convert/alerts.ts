@@ -38,7 +38,7 @@ function alertFor(model: Model, run: Run): { alert: Alert; writesIngest: boolean
       severity: writesIngest ? 'incident' : 'warning',
       kind: aborted ? 'run-aborted' : 'run-failed',
       title: `${run.job.name} ${aborted ? 'aborted' : 'failed'}`,
-      text: `The run ended as ${aborted ? 'aborted' : 'failed'}.`,
+      text: `The run ended as ${aborted ? 'aborted' : 'failed'}.${run.errorMessage ? ` ${run.errorMessage}` : ''}`,
       openedAt: new Date(run.endMs).toISOString(),
       targets: targetsOf(model, run),
     },

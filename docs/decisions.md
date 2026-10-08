@@ -343,3 +343,41 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
     (unverified, `docs/databricks-sources.md`). `@types/node` tracks 22, so code stays within
     the floor. This supersedes the Node 20 reasoning in decision 5. Vite stays on 7.3 for the
     license reason in decision 6, and Vitest 4.1 still works; moving to Vitest 5 is optional.
+
+## Backlog pass (after milestone 7)
+
+75. **Rate limits are per client, with a global cap per environment.** The client is a hash of
+    the trusted viewer token, else the request IP. Behind a trusted proxy (`DATABRICKS_APP_PORT`
+    or `ORRERY_TRUST_PROXY=1`) exactly one hop is trusted, so the client is the address that
+    proxy appended, never a value the client wrote. Client buckets are kept in an LRU of 10,000
+    per environment.
+76. **Fork theming is implemented:**
+    - **Theme:** `config/private/theme.yaml` (or `ORRERY_THEME`) deep-merges a partial
+      `visuals` over the config and is validated with the core schema.
+    - **Logo:** `public/private/logo.{svg,png,webp}` (or `ORRERY_LOGO`) is served at
+      `/branding/logo`. An SVG gets a sandboxing CSP, and logos are capped at 512 KB.
+      `/api/config` gains `branding.logoUrl`, an additive field.
+    - **Header:** the web app shows the logo in the header.
+77. **Spoke colors live in config:** `visuals.palette`, with ingest first and then the domain
+    colors, plus `visuals.spokeColors` for overrides. A core helper resolves them for both the
+    renderer and the Orloj view (this supersedes decision 37). The web app self-hosts Cinzel
+    and Barlow (OFL-1.1, `@fontsource`), and the Orloj canvas waits for the fonts, up to 2.5 s.
+78. **Databricks:**
+    - degradation notes and row-limit flags are kept per viewer (LRU of 1,000);
+    - live mode holds back past-target crossings for a 60-minute ingestion lag;
+    - comets are opt-in (`foreignCatalogs.show: true`);
+    - the release tag key comes from `promotion.tagKey` (when `source` is `job-tag`), then
+      `options.releaseTagKey`, then `release`.
+79. **OpenLineage:**
+    - **Validated against a real Marquez** (0.51.1, run in Docker). Marquez sends absent lists
+      and facets as JSON `null`, which the parser now accepts; before this, every real event was
+      rejected.
+    - **Reads are time-sliced and budgeted:** 1-hour slices for events and 6-hour slices for
+      discovery, at most 200 pages per load, and truncation is reported in health. Marquez
+      treats `after` as inclusive and `before` as exclusive.
+    - **Run facets are used:** error messages become alert text, nominal times fill the
+      schedule, and output statistics drive batch size and spoke volume.
+    - **The live store is capped** at 100,000 events.
+80. **Validated but unapplied config keys are marked "Reserved"** in the generated reference:
+    `product.timezone`, `visuals.theme`, `visuals.workloads[].source`, and
+    `visuals.stability.meanAgeCadenceMinutes`.

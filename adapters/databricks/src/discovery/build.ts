@@ -2,6 +2,7 @@
 // Builds the topology and the internal model from per-metastore inventories: environment scope,
 // spoke/source-group/use-case matching, medallion tiers, metrics, metastores, and comets.
 import {
+  type AdapterContext,
   type ResolvedEnvironment,
   type ScopedCatalog,
   type Spoke,
@@ -38,7 +39,21 @@ const SCHEMA_WEIGHT = 0.4;
 const DEFAULT_RELEASE_KEY = 'release';
 const DEFAULT_SHIPYARD = { name: 'Release shipyard', utcOffset: 0 };
 
-export type BuildInput = OwnershipInput;
+export interface BuildInput extends OwnershipInput {
+  /** The config's `promotion` block, when set. */
+  promotion?: AdapterContext['promotion'];
+}
+
+/**
+ * The job tag that marks a release: `promotion.tagKey` when `promotion.source` is `job-tag`,
+ * else `options.releaseTagKey`, else `release`.
+ */
+export function releaseTagKeyOf(input: BuildInput): string {
+  const { promotion, env } = input;
+  if (promotion?.source === 'job-tag' && promotion.tagKey) return promotion.tagKey;
+  const option = env.options?.['releaseTagKey'];
+  return typeof option === 'string' && option !== '' ? option : DEFAULT_RELEASE_KEY;
+}
 
 /** Complexity on a 0 to 5 scale: logarithmic in pipelines and schemas, so it grows slowly. */
 export function complexityOf(pipelines: number, schemas: number): number {
@@ -231,10 +246,11 @@ export function buildDiscovery(input: BuildInput): Discovery {
   const objectList = [...objects.values()];
   const hubMetastore = input.targets[0]?.metastore ?? 'primary';
   const spokes = topo.spokes.map((s) => buildSpoke(s, schemaList, objectList, input, hubMetastore));
+  // Comets are opt-in: only `federation.foreignCatalogs.show: true` draws them (as in the mock).
   const foreignCatalogs =
-    env.federation?.foreignCatalogs?.show === false
-      ? []
-      : ownership.foreign.map((c) => ({ id: foreignId(c.name), name: c.name }));
+    env.federation?.foreignCatalogs?.show === true
+      ? ownership.foreign.map((c) => ({ id: foreignId(c.name), name: c.name }))
+      : [];
   const topology: Topology = {
     envId: env.id,
     hub: { id: topo.hub.id, name: topo.hub.name, metastore: hubMetastore },
@@ -267,15 +283,13 @@ export function buildDiscovery(input: BuildInput): Discovery {
     })),
     foreignCatalogs,
   };
-  const releaseKey = env.options?.['releaseTagKey'];
   const model: Model = {
     envId: env.id,
     hubId: topo.hub.id,
     ingestId,
     defaultGroupId: topo.sourceGroups[0]?.id,
     groupSites: new Map(topo.sourceGroups.map((g) => [g.id, `${g.id}-1`])),
-    releaseTagKey:
-      typeof releaseKey === 'string' && releaseKey !== '' ? releaseKey : DEFAULT_RELEASE_KEY,
+    releaseTagKey: releaseTagKeyOf(input),
     spokes: new Map(
       topo.spokes.map((s) => [
         s.id,

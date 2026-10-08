@@ -14,6 +14,7 @@ import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE, utcDayStart } from '../time.js'
 import { ALERT_WINDOW_MS, deriveAlerts, openAlertsAt, type RunAlert } from './alerts.js';
 import { classifyRun, hasHubOutput, serveReads, writtenSpokes } from './classify.js';
 import { ageMinutesAt, isPastTarget, refreshesBySpoke } from './refresh.js';
+import { scheduleOf } from './schedule.js';
 
 /** A run without a final state counts as running while its latest event is this recent. */
 export const RUNNING_STALE_MS = 90 * MS_PER_MINUTE;
@@ -206,7 +207,7 @@ export function buildSnapshot(model: Model, runs: readonly Run[], at: Date): Sna
         a.openedMs < dayStart,
     ),
     alerts: open.map((a) => a.alert),
-    schedule: [],
+    schedule: scheduleOf(model, runs, atMs),
     calendar: calendarOf(atMs),
   };
 }

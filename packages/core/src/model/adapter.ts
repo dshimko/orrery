@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ResolvedEnvironment } from '../config/load.js';
+import type { OrreryConfigInput } from '../config/root.js';
 import type { PlatformEvent } from './events.js';
 import type { Snapshot } from './snapshot.js';
 import type { Topology } from './topology.js';
@@ -27,6 +28,8 @@ export interface AdapterContext {
   signal?: AbortSignal;
   /** Every configured environment, so an adapter can detect catalogs claimed twice. */
   peers?: readonly ResolvedEnvironment[];
+  /** The config's `promotion` block (order, source, tagKey), when one is set. */
+  promotion?: OrreryConfigInput['promotion'];
   /**
    * The current viewer's forwarded access token, when the server runs in on-behalf-of-user
    * mode. Adapters call it per query; it returns undefined outside a user request.

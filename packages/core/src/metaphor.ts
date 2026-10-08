@@ -108,6 +108,7 @@ const MIN_AGE_MINUTES = 1;
 const RADIANS_PER_TURN = 2 * Math.PI;
 const KEPLER_EXPONENT = 1.5;
 const MINUTES_PER_DAY = 1440;
+const FALLBACK_SPOKE_COLOR = '#9FC4FF';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -154,6 +155,39 @@ export function orlojSpokeSize(
   cfg: Visuals['orloj']['spokeSize'],
 ): number {
   return cfg.base + cfg.scale * Math.sqrt(sizeRatio(pipelines, maxPipelines));
+}
+
+/**
+ * A spoke's color: an explicit `spokeColors` entry wins; otherwise ingest takes `palette[0]` and
+ * domain spokes cycle through the rest by `domainIndex` (their order among non-ingest spokes).
+ */
+export function spokeColor(
+  spokeId: string,
+  domainIndex: number,
+  role: string,
+  visuals: Pick<Visuals, 'palette' | 'spokeColors'>,
+): string {
+  const explicit = visuals.spokeColors[spokeId];
+  if (explicit !== undefined) return explicit;
+  const { palette } = visuals;
+  const first = palette[0] ?? FALLBACK_SPOKE_COLOR;
+  if (role === 'ingest' || palette.length < 2) return first;
+  return palette[1 + (domainIndex % (palette.length - 1))] ?? first;
+}
+
+/** Colors for every spoke in topology order, keyed by spoke id. */
+export function spokeColorMap(
+  spokes: readonly { id: string; role: string }[],
+  visuals: Pick<Visuals, 'palette' | 'spokeColors'>,
+): Map<string, string> {
+  let domainIndex = 0;
+  return new Map(
+    spokes.map((spoke) => {
+      const color = spokeColor(spoke.id, domainIndex, spoke.role, visuals);
+      if (spoke.role !== 'ingest') domainIndex += 1;
+      return [spoke.id, color] as const;
+    }),
+  );
 }
 
 /** Simulated minutes that elapse per real second at the given speed multiplier. */

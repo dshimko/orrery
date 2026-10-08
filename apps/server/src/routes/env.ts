@@ -61,12 +61,12 @@ function checkWindow(since: Date, until: Date): void {
 /** Per-environment data routes. All are GET and read-only. */
 export function registerEnvRoutes(app: FastifyInstance, context: RouteContext): void {
   app.get('/api/env/:id/topology', async (request) => {
-    const { adapter, envId } = requireAdapter(context, request.params);
+    const { adapter, envId } = requireAdapter(context, request);
     return { data: await readFromAdapter(context, envId, () => adapter.topology()) };
   });
 
   app.get('/api/env/:id/snapshot', async (request) => {
-    const { adapter, envId } = requireAdapter(context, request.params);
+    const { adapter, envId } = requireAdapter(context, request);
     const query = parseInput(SnapshotQuery, request.query, 'query');
     const at = query.at ?? context.clock.now();
     return { data: await readFromAdapter(context, envId, () => adapter.snapshot(at)) };
@@ -75,7 +75,7 @@ export function registerEnvRoutes(app: FastifyInstance, context: RouteContext): 
   app.get('/api/env/:id/events', async (request) => {
     const { since, until } = parseInput(EventsQuery, request.query, 'query');
     checkWindow(since, until);
-    const { adapter, envId } = requireAdapter(context, request.params, eventsCost(since, until));
+    const { adapter, envId } = requireAdapter(context, request, eventsCost(since, until));
     const controller = new AbortController();
     const abort = (): void => controller.abort();
     request.raw.once('close', abort);
@@ -102,7 +102,7 @@ export function registerEnvRoutes(app: FastifyInstance, context: RouteContext): 
         'A live stream can start at most 15 minutes ago. Use /events for older data.',
       );
     }
-    const { adapter, envId } = requireAdapter(context, request.params);
+    const { adapter, envId } = requireAdapter(context, request);
     const open = openStreams.get(envId) ?? 0;
     if (open >= MAX_STREAMS_PER_ENV) {
       throw new ApiError(503, 'too_many_streams', 'Too many live streams for this environment.');

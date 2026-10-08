@@ -25,6 +25,7 @@ async function main(): Promise<void> {
   if (loaded.isDefault) {
     logger.warn('ORRERY_CONFIG is not set; using the demo config', { config: loaded.source });
   }
+  if (loaded.themeSource) logger.info('theme applied', { theme: loaded.themeSource });
   const webDir = process.env.ORRERY_WEB_DIR;
   const app = await buildServer({ config: loaded.config, logger, ...(webDir ? { webDir } : {}) });
   let isStopping = false;

@@ -39,9 +39,31 @@ function niche(ctx: Ctx, x: number, y: number): void {
   ctx.stroke();
 }
 
+const CAPTION_VALUE_DY = 28;
+const CAPTION_LABEL_DY = 43;
+const CAPTION_LINE_HEIGHT = 11;
+const CAPTION_LABEL_PX = 9.5;
+/** Labels longer than this would spill out of the 54-unit niche, so they wrap onto two lines. */
+const CAPTION_MAX_LINE_CHARS = 11;
+
+/** Splits a long label at the space nearest its middle; short labels stay on one line. */
+export function wrapCaption(label: string): string[] {
+  if (label.length <= CAPTION_MAX_LINE_CHARS) return [label];
+  const middle = label.length / 2;
+  let best = -1;
+  for (let i = label.indexOf(' '); i !== -1; i = label.indexOf(' ', i + 1)) {
+    if (best === -1 || Math.abs(i - middle) < Math.abs(best - middle)) best = i;
+  }
+  if (best === -1) return [label];
+  return [label.slice(0, best), label.slice(best + 1)];
+}
+
 function caption(ctx: Ctx, x: number, y: number, value: string, label: string, color = INK): void {
-  text(ctx, value, x, y + 30, serif(700, 15), color);
-  text(ctx, label, x, y + 46, sans(500, 10), MUTED);
+  text(ctx, value, x, y + CAPTION_VALUE_DY, serif(700, 15), color);
+  wrapCaption(label).forEach((line, i) => {
+    const dy = CAPTION_LABEL_DY + i * CAPTION_LINE_HEIGHT;
+    text(ctx, line, x, y + dy, sans(500, CAPTION_LABEL_PX), MUTED);
+  });
 }
 
 function drawMiser(ctx: Ctx, model: FaceModel, env: DrawEnv): void {

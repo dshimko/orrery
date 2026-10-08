@@ -5,6 +5,13 @@ export const MS_PER_MINUTE = 60_000;
 export const MS_PER_HOUR = 3_600_000;
 export const MS_PER_DAY = 86_400_000;
 
+/**
+ * How late system tables may deliver a row (documented up to about an hour). A "past target"
+ * crossing newer than `now - INGESTION_LAG_MS` may still be cancelled by a refresh that has not
+ * landed yet, so live mode holds it back until the lag has passed.
+ */
+export const INGESTION_LAG_MS = 60 * MS_PER_MINUTE;
+
 export interface TimeWindow {
   since: Date;
   until: Date;

@@ -28,6 +28,8 @@ const DEFAULT_METASTORE = 'main';
 const MAX_COMPLEXITY = 5;
 const PIPELINE_WEIGHT = 0.8;
 const SCHEMA_WEIGHT = 0.4;
+const BYTES_PER_TB = 1e12;
+const VOLUME_DECIMALS = 1e6;
 const DEFAULT_SHIPYARD = { name: 'Release shipyard', utcOffset: 0 };
 
 type ResolvedTopology = ResolvedEnvironment['resolvedTopology'];
@@ -61,6 +63,8 @@ function discoverDatasets(runs: readonly Run[]): Map<string, DatasetInfo> {
     for (const ref of run.outputs) {
       const info = touch(ref);
       info.producers.add(run.jobKey);
+      // Runs are ordered by end time, so the last one reporting a size is the latest.
+      if (ref.stats?.sizeBytes !== undefined) info.sizeBytes = ref.stats.sizeBytes;
       const tags = JSON.stringify(run.job.tags);
       if (!info.producerTags.some((known) => JSON.stringify(known) === tags)) {
         info.producerTags.push(run.job.tags);
@@ -119,6 +123,10 @@ function buildSpokes(
   const spokes = topology.spokes.map((spoke) => {
     const datasets = datasetsBySpoke.get(spoke.id) ?? new Set<string>();
     const pipelines = jobsBySpoke.get(spoke.id)?.size ?? 0;
+    const bytes = [...datasets].reduce(
+      (sum, key) => sum + (base.datasets.get(key)?.sizeBytes ?? 0),
+      0,
+    );
     const schemas = new Set(
       [...datasets].map((key) => (key.split('\u0000')[1] ?? '').split('.')[0] ?? ''),
     ).size;
@@ -132,7 +140,8 @@ function buildSpokes(
         pipelines,
         products: datasets.size,
         complexity: complexityOf(pipelines, schemas),
-        volume: 0,
+        // Terabytes written by each dataset's latest run: an estimate of what is stored.
+        volume: Math.round((bytes / BYTES_PER_TB) * VOLUME_DECIMALS) / VOLUME_DECIMALS,
       },
       hasMl: false,
       isShared: false,

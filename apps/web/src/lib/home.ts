@@ -18,6 +18,8 @@ export interface EnvFeedState {
   snapshot: Snapshot | null;
   /** A friendly message when the environment is failing; null when it is healthy. */
   error: string | null;
+  /** True when `error` is a transport failure (the server was unreachable), not an answer. */
+  isNetworkError?: boolean;
 }
 
 export const EMPTY_FEED: EnvFeedState = { topology: null, snapshot: null, error: null };
@@ -44,6 +46,11 @@ export function orderEnvironments<T extends { id: string }>(
   return [...ranked, ...environments.filter((env) => !ranked.includes(env))];
 }
 
+/** Whether a failed load never reached the server. */
+export function isNetworkFailure(error: unknown): boolean {
+  return error instanceof ApiError && error.code === 'network_error';
+}
+
 /** A short, friendly reason an environment failed to load. */
 export function friendlyEnvError(error: unknown): string {
   if (error instanceof ApiError) {
@@ -57,22 +64,29 @@ export function friendlyEnvError(error: unknown): string {
 }
 
 /** The message for a health status of `error` in `/api/environments`, otherwise null. */
+export const HEALTH_FALLBACK_MESSAGE = 'The data source reports an error.';
+
 export function healthError(health: unknown): string | null {
   if (typeof health !== 'object' || health === null) return null;
   const { status, message } = health as { status?: unknown; message?: unknown };
   if (status !== 'error') return null;
-  return typeof message === 'string' && message !== ''
-    ? message
-    : 'The data source reports an error.';
+  return typeof message === 'string' && message !== '' ? message : HEALTH_FALLBACK_MESSAGE;
 }
 
-/** Treats an environment the health check calls failing as failing until it has data. */
+/**
+ * Treats an environment the health check calls failing as failing until it has data. The adapter's
+ * own message replaces the generic one a failed fetch produces, except for network failures, where
+ * the health listing is not trustworthy company for "could not reach the server".
+ */
 export function withHealth(
   feed: EnvFeedState | undefined,
   healthMessage: string | undefined,
 ): EnvFeedState {
   const base = feed ?? EMPTY_FEED;
-  if (base.error !== null || base.snapshot !== null || healthMessage === undefined) return base;
+  if (base.snapshot !== null || healthMessage === undefined) return base;
+  if (base.error === null) return { ...base, error: healthMessage };
+  const hasAdapterMessage = healthMessage !== HEALTH_FALLBACK_MESSAGE;
+  if (!hasAdapterMessage || base.isNetworkError === true) return base;
   return { ...base, error: healthMessage };
 }
 

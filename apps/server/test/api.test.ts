@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { OrreryConfig } from '@orrery/core';
+import { CONTENT_SECURITY_POLICY } from '../src/app.js';
 import { afterEach, describe, expect, it } from 'vitest';
 import { closeApps, getJson, loadExample, startApp } from './helpers.js';
 
@@ -209,12 +210,26 @@ describe('validation', () => {
 describe('rate limiting', () => {
   it('returns 429 once the per-environment burst is spent, without affecting other environments', async () => {
     const app = await startApp(loadExample('demo.yaml'), {
-      rateLimit: { ratePerSecond: 0.001, burst: 3 },
+      rateLimit: { client: { ratePerSecond: 0.001, burst: 3 } },
     });
     const statuses: number[] = [];
     for (let i = 0; i < 5; i += 1)
       statuses.push((await getJson(app, '/api/env/dev/topology')).status);
     expect(statuses).toEqual([200, 200, 200, 429, 429]);
     expect((await getJson(app, '/api/env/prod/topology')).status).toBe(200);
+  });
+});
+
+describe('malformed URLs', () => {
+  it('answers GET /% with the error envelope and the security headers', async () => {
+    const app = await startApp(loadExample('demo.yaml'));
+    const response = await app.inject({ method: 'GET', url: '/%' });
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toEqual({
+      error: { code: 'bad_request', message: 'The request is not valid.' },
+    });
+    expect(response.headers['content-security-policy']).toBe(CONTENT_SECURITY_POLICY);
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['referrer-policy']).toBe('no-referrer');
   });
 });

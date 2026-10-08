@@ -220,7 +220,7 @@ describe('QueryPoller limits', () => {
 
     await h.poller.run(t, 'catalogs');
 
-    expect(h.poller.truncated()).toEqual(['catalogs@primary']);
+    expect(h.poller.truncated('sp')).toEqual(['catalogs@primary']);
   });
 
   it('lets a caller stop waiting without cancelling the shared statement', async () => {

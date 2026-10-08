@@ -25,6 +25,7 @@
     "@orrery/adapter-mock": "workspace:*",
     "@orrery/core": "workspace:*",
     "fastify": "5.12.5",
+    "yaml": "2.9.1",
     "zod": "4.6.5",
     "@orrery/adapter-databricks": "workspace:*",
     "@orrery/adapter-openlineage": "workspace:*"

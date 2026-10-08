@@ -16,6 +16,8 @@ export interface DatasetInfo {
   consumers: Set<string>;
   /** Tag maps of the producing jobs, for `jobTag` and `pipelineTag` matchers. */
   producerTags: Tags[];
+  /** Bytes written by the latest run that reported `outputStatistics.size` for this dataset. */
+  sizeBytes?: number;
 }
 
 export interface SpokeModel {

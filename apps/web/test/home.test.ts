@@ -8,8 +8,10 @@ import {
   buildFace,
   buildGlanceRow,
   type EnvFeedState,
+  HEALTH_FALLBACK_MESSAGE,
   friendlyEnvError,
   healthError,
+  isNetworkFailure,
   isFirstLoadDone,
   nextEvent,
   orderEnvironments,
@@ -233,8 +235,28 @@ describe('errors, health, and faces', () => {
   test('health only marks an environment that has no data yet', () => {
     expect(withHealth(undefined, 'bad').error).toBe('bad');
     expect(withHealth(feed(snapshot()), 'bad').error).toBeNull();
-    expect(withHealth(feed(null, 'own'), 'bad').error).toBe('own');
+    expect(withHealth(feed(null, 'own'), HEALTH_FALLBACK_MESSAGE).error).toBe('own');
     expect(withHealth(undefined, undefined).error).toBeNull();
+  });
+
+  test('the adapter message replaces the generic failed-fetch text', () => {
+    const generic = feed(null, 'This environment is unavailable right now.');
+    const message = 'The databricks adapter failed to start.';
+    expect(withHealth(generic, message).error).toBe(message);
+    expect(buildFace(PROD, withHealth(generic, message), {}).error).toBe(message);
+    expect(buildGlanceRow(PROD, withHealth(generic, message), NOW).error).toBe(message);
+  });
+
+  test('network failures keep the generic text', () => {
+    const offline: EnvFeedState = {
+      ...feed(null, 'Could not reach the server.'),
+      isNetworkError: true,
+    };
+    expect(withHealth(offline, 'The databricks adapter failed to start.').error).toBe(
+      'Could not reach the server.',
+    );
+    expect(isNetworkFailure(new ApiError('x', 0, 'network_error'))).toBe(true);
+    expect(isNetworkFailure(new ApiError('x', 503, 'adapter_unavailable'))).toBe(false);
   });
 
   test('builds a face with the shared seed and tier color, and sets error only on failure', () => {

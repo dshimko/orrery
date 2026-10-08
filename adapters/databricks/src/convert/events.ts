@@ -6,7 +6,7 @@ import { DEFAULT_EVENT_WORKLOAD, type PlatformEvent } from '@orrery/core';
 import { schemaMatches } from '../discovery/matchers.js';
 import type { Discovery, Model, Tier } from '../discovery/types.js';
 import { schemaKey } from '../rows.js';
-import { MS_PER_MINUTE, type TimeWindow } from '../time.js';
+import { INGESTION_LAG_MS, MS_PER_MINUTE, type TimeWindow } from '../time.js';
 import { ALERT_WINDOW_MS, deriveAlerts } from './alerts.js';
 import { classifyObject, classifyWrite, type RunClass } from './classify.js';
 import { releaseOf, type Evidence } from './evidence.js';
@@ -129,8 +129,17 @@ function runEvents(out: Collector, discovery: Discovery, evidence: Evidence): vo
   }
 }
 
-/** A spoke crosses its target when no run refreshes it within target x 1.03 minutes. */
-function crossingEvents(out: Collector, model: Model, evidence: Evidence): void {
+/**
+ * A spoke crosses its target when no run refreshes it within target x 1.03 minutes. Crossings
+ * later than `holdBackAfterMs` are skipped (live mode: a late-arriving refresh may still cancel
+ * them); a later poll emits them once they are older than the ingestion lag and still valid.
+ */
+function crossingEvents(
+  out: Collector,
+  model: Model,
+  evidence: Evidence,
+  holdBackAfterMs: number,
+): void {
   for (const spoke of model.spokes.values()) {
     const times = evidence.runs
       .filter(
@@ -142,6 +151,7 @@ function crossingEvents(out: Collector, model: Model, evidence: Evidence): void 
       const crossesAt = startMs + limitMs;
       const next = times[i + 1];
       if (next !== undefined && next <= crossesAt) return;
+      if (crossesAt > holdBackAfterMs) return;
       out.add(`late:${spoke.id}:${startMs}`, crossesAt, {
         type: 'freshness.change',
         spokeId: spoke.id,
@@ -234,16 +244,32 @@ function deployEvents(out: Collector, model: Model, evidence: Evidence): void {
   }
 }
 
-/** All events with `since <= ts < until`, sorted by timestamp, with stable identities. */
+export interface BuildEventsOptions {
+  /**
+   * Live mode only: the current time. Past-target crossings newer than `now - INGESTION_LAG_MS`
+   * are held back. Omit for bounded replays, which never hold anything back.
+   */
+  liveNowMs?: number;
+}
+
+/**
+ * All events with `since <= ts < until`, sorted by timestamp, with stable identities. A bounded
+ * window ending at or before `now - INGESTION_LAG_MS` is fully deterministic. A window that
+ * reaches into the lag zone reflects the rows present at query time, so a crossing in it can
+ * disappear on a later replay if a late run arrives.
+ */
 export function buildEvents(
   discovery: Discovery,
   evidence: Evidence,
   window: TimeWindow,
+  options: BuildEventsOptions = {},
 ): IdentifiedEvent[] {
   const { model } = discovery;
   const out = new Collector(model.envId, window);
   runEvents(out, discovery, evidence);
-  crossingEvents(out, model, evidence);
+  const holdBackAfterMs =
+    options.liveNowMs === undefined ? Infinity : options.liveNowMs - INGESTION_LAG_MS;
+  crossingEvents(out, model, evidence, holdBackAfterMs);
   alertEvents(out, model, evidence);
   writeEvents(out, model, evidence);
   readEvents(out, discovery, evidence);

@@ -8,6 +8,7 @@ import {
   type OrlojView,
 } from '@orrery/orloj';
 import { useEffect, useRef, useState } from 'react';
+import { whenFontsReady } from '../lib/fonts.js';
 
 export interface OrlojStageProps {
   faces: readonly OrlojFace[];
@@ -43,10 +44,21 @@ export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: Or
   latest.current = { faces, time, onSelect };
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [areFontsReady, setAreFontsReady] = useState(false);
+
+  useEffect(() => {
+    let isCancelled = false;
+    void whenFontsReady().then(() => {
+      if (!isCancelled) setAreFontsReady(true);
+    });
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !areFontsReady) return;
     let view: OrlojView;
     try {
       view = createOrlojView(container, {
@@ -73,7 +85,7 @@ export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: Or
       viewRef.current = null;
       view.dispose();
     };
-  }, [visuals, reducedMotion]);
+  }, [visuals, reducedMotion, areFontsReady]);
 
   useEffect(() => {
     viewRef.current?.setFaces(faces);
@@ -85,7 +97,7 @@ export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: Or
         ref={containerRef}
         className="orloj"
         data-testid="orloj"
-        data-ready={isReady(faces) ? 'true' : 'false'}
+        data-ready={areFontsReady && isReady(faces) ? 'true' : 'false'}
         role="img"
         aria-label="One astronomical clock face per environment, showing schedules, freshness, and incidents. The table below is a text equivalent."
         onPointerLeave={() => {

@@ -20,6 +20,8 @@ const RELEASE_LINE_PER_COUNT = 3;
 const CENTER_DISC = 40;
 const CENTER_FILL = '#10141D';
 const LABEL_STEP = 5;
+/** The center disc is 40 units in radius; two short lines keep clear of the day numerals ring. */
+const CENTER_LABEL_PX = 9;
 
 function dayColor(isToday: boolean, isPast: boolean): string {
   if (isToday) return GOLD;
@@ -88,8 +90,9 @@ export function drawCalendar(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
   ctx.strokeStyle = model.tierColor;
   ctx.lineWidth = 2;
   ctx.stroke();
-  text(ctx, String(cal.totalReleases), cx, cy - 4, serif(700, 20), INK);
-  text(ctx, 'releases this month', cx, cy + 15, sans(500, 9.5), MUTED);
+  text(ctx, String(cal.totalReleases), cx, cy - 9, serif(700, 20), INK);
+  text(ctx, 'releases', cx, cy + 7, sans(500, CENTER_LABEL_PX), MUTED);
+  text(ctx, 'this month', cx, cy + 7 + CENTER_LABEL_PX + 1, sans(500, CENTER_LABEL_PX), MUTED);
   text(ctx, 'Release calendar', cx, cy + CR + 26, serif(600, 13), GOLD);
   text(ctx, `Next: ${cal.nextText}`, cx, cy + CR + 50, sans(500, 12.5), NOTE);
 }

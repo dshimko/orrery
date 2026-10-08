@@ -16,7 +16,17 @@ export interface PublicConfig {
   product: { title: string; timezone: string };
   visuals: Visuals;
   promotion: unknown;
+  /** Absent on older servers; read it with `logoUrlOf`. */
+  branding?: { logoUrl?: string | null };
   environments: EnvironmentSummary[];
+}
+
+/** The fork's header logo URL, or null when `branding` is missing, malformed, or has no logo. */
+export function logoUrlOf(config: Pick<PublicConfig, 'branding'>): string | null {
+  const { branding } = config as { branding?: unknown };
+  if (typeof branding !== 'object' || branding === null) return null;
+  const { logoUrl } = branding as { logoUrl?: unknown };
+  return typeof logoUrl === 'string' && logoUrl !== '' ? logoUrl : null;
 }
 
 /** A failed API call: server error envelope, transport failure, or malformed body. */

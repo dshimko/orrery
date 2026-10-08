@@ -13,7 +13,7 @@ import { useIncidentAnnouncer } from '../hooks/useIncidentAnnouncer.js';
 import { useSharedClock, prefersReducedMotion } from '../hooks/useSharedClock.js';
 import { useSimClock } from '../hooks/useSimClock.js';
 import { useSystemData } from '../hooks/useSystemData.js';
-import type { Api } from '../lib/api.js';
+import { logoUrlOf, type Api } from '../lib/api.js';
 import { clockLink, pageUrl } from '../lib/clock-url.js';
 import type { DeepLink } from '../lib/params.js';
 import { envPath, navigate } from '../lib/router.js';
@@ -129,6 +129,7 @@ export function SystemReady({ api, envId, data, link, isWall }: SystemReadyProps
     <div className="app" style={{ ['--tier' as string]: tierColor }}>
       <Header
         productName={data.config.product.title}
+        logoUrl={logoUrlOf(data.config)}
         env={env}
         environments={data.environments}
         tierColor={tierColor}

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseConfig, type OrreryConfig } from '@orrery/core';
@@ -18,6 +19,8 @@ export function loadExample(name: string): OrreryConfig {
 }
 
 const open: FastifyInstance[] = [];
+/** An empty working directory, so a developer's own `public/private/` never leaks into tests. */
+const EMPTY_CWD = mkdtempSync(path.join(tmpdir(), 'orrery-cwd-'));
 
 export async function startApp(
   config: OrreryConfig,
@@ -26,6 +29,7 @@ export async function startApp(
   const app = await buildServer({
     config,
     env: {},
+    cwd: EMPTY_CWD,
     clock: new FixedClock(NOW),
     logger: silentLogger,
     ...extra,

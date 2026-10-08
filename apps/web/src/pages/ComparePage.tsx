@@ -2,12 +2,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ComparePane } from '../components/ComparePane.js';
 import { ErrorState } from '../components/ErrorState.js';
+import { Brand } from '../components/Brand.js';
 import { Link } from '../components/Link.js';
 import { TimeControls } from '../components/TimeControls.js';
 import { type Bootstrap, useBootstrap } from '../hooks/useBootstrap.js';
 import { prefersReducedMotion, useSharedClock } from '../hooks/useSharedClock.js';
 import { useSimClock } from '../hooks/useSimClock.js';
-import type { Api } from '../lib/api.js';
+import { logoUrlOf, type Api } from '../lib/api.js';
 import { clockLink, pageUrl } from '../lib/clock-url.js';
 import {
   MAX_COMPARE_ENVS,
@@ -79,9 +80,7 @@ function CompareReady({ api, data, query }: { api: Api; data: Bootstrap; query: 
   return (
     <div className="app">
       <header className="topbar">
-        <Link to="/" className="brand">
-          {config.product.title}
-        </Link>
+        <Brand productName={config.product.title} logoUrl={logoUrlOf(config)} />
         <h1 className="env-name">Compare environments</h1>
         <div className="topbar-spacer" />
         <Link to="/" className="btn sm">

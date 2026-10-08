@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, test, vi } from 'vitest';
-import { ApiError, createApi, type FetchFn } from '../src/lib/api.js';
+import { ApiError, createApi, logoUrlOf, type FetchFn } from '../src/lib/api.js';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status });
@@ -47,5 +47,20 @@ describe('api client', () => {
     const aborted = new DOMException('aborted', 'AbortError');
     const fetchFn = vi.fn<FetchFn>().mockRejectedValue(aborted);
     await expect(createApi(fetchFn).config(controller.signal)).rejects.toBe(aborted);
+  });
+});
+
+describe('logoUrlOf', () => {
+  test('returns the configured logo URL', () => {
+    expect(logoUrlOf({ branding: { logoUrl: '/assets/logo.svg' } })).toBe('/assets/logo.svg');
+  });
+
+  test('treats a missing, null, empty, or malformed branding as no logo', () => {
+    expect(logoUrlOf({})).toBeNull();
+    expect(logoUrlOf({ branding: { logoUrl: null } })).toBeNull();
+    expect(logoUrlOf({ branding: {} })).toBeNull();
+    expect(logoUrlOf({ branding: { logoUrl: '' } })).toBeNull();
+    expect(logoUrlOf({ branding: { logoUrl: 5 } } as never)).toBeNull();
+    expect(logoUrlOf({ branding: 'x' } as never)).toBeNull();
   });
 });

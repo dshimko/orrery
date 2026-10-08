@@ -27,6 +27,10 @@ export interface Run {
    * (START, RUNNING, COMPLETE). Ascending.
    */
   refreshes: number[];
+  /** Plain-text error message of a failed or aborted run, from its latest event that has one. */
+  errorMessage?: string;
+  /** Scheduled (nominal) start of the run, from its latest event that carries one. */
+  nominalStartMs?: number;
 }
 
 const TERMINAL: Readonly<Partial<Record<RunEventType, RunState>>> = {
@@ -49,7 +53,11 @@ function mergeDatasets(into: Map<string, DatasetRef>, refs: readonly DatasetRef[
   for (const ref of refs) {
     const key = datasetKey(ref);
     const known = into.get(key);
-    into.set(key, known ? { ...known, tags: { ...known.tags, ...ref.tags } } : ref);
+    const stats = known?.stats || ref.stats ? { ...known?.stats, ...ref.stats } : undefined;
+    into.set(
+      key,
+      known ? { ...known, tags: { ...known.tags, ...ref.tags }, ...(stats ? { stats } : {}) } : ref,
+    );
   }
 }
 
@@ -65,6 +73,15 @@ function refreshTimes(
     return [...new Set(beats.map((event) => event.timeMs))];
   }
   return terminal && TERMINAL[terminal.eventType] === 'complete' ? [terminal.timeMs] : [];
+}
+
+/** The value of `pick` from the newest event that has one. */
+function latest<T>(ordered: readonly RunEvent[], pick: (event: RunEvent) => T | undefined) {
+  for (let i = ordered.length - 1; i >= 0; i -= 1) {
+    const value = pick(ordered[i] as RunEvent);
+    if (value !== undefined) return value;
+  }
+  return undefined;
 }
 
 function foldRun(runKey: string, events: readonly RunEvent[]): Run {
@@ -83,16 +100,21 @@ function foldRun(runKey: string, events: readonly RunEvent[]): Run {
   const start = ordered.find((event) => event.eventType === 'START');
   // The newest event carries the freshest job facets.
   const job = (terminal ?? last).job;
+  const state = terminal ? (TERMINAL[terminal.eventType] as RunState) : 'running';
+  const errorMessage = latest(ordered, (event) => event.errorMessage);
+  const nominalStartMs = latest(ordered, (event) => event.nominalStartMs);
   return {
     runKey,
     job,
     jobKey: jobKey(job),
-    state: terminal ? (TERMINAL[terminal.eventType] as RunState) : 'running',
+    state,
     startMs: (start ?? first).timeMs,
     endMs: (terminal ?? last).timeMs,
     inputs: [...inputs.values()],
     outputs: [...outputs.values()],
     refreshes: refreshTimes(ordered, job.streaming, terminal),
+    ...(errorMessage !== undefined && state !== 'complete' ? { errorMessage } : {}),
+    ...(nominalStartMs !== undefined ? { nominalStartMs } : {}),
   };
 }
 

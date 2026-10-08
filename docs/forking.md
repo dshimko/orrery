@@ -6,12 +6,12 @@ names to keep out of the code stay in a private repository. Everything else trac
 
 What is private lives in paths that `.gitignore` already excludes:
 
-| Path                | Purpose                                                      |
-| ------------------- | ------------------------------------------------------------ |
-| `config/private/*`  | Your `orrery.config.yaml` and query overrides                |
-| `.orrery-denylist`  | Terms that must never appear in a contribution               |
-| `adapters-private/` | Adapters that only your organization uses                    |
-| `public/private/`   | Reserved for private static assets (see "Not yet supported") |
+| Path                | Purpose                                            |
+| ------------------- | -------------------------------------------------- |
+| `config/private/*`  | Your `orrery.config.yaml` and query overrides      |
+| `.orrery-denylist`  | Terms that must never appear in a contribution     |
+| `adapters-private/` | Adapters that only your organization uses          |
+| `public/private/`   | Your logo (`logo.svg`, `logo.png`, or `logo.webp`) |
 
 ## 1. Create the private repository and keep `upstream`
 
@@ -115,7 +115,8 @@ packages:
 
 ## 5. Look and feel
 
-Everything you can restyle today is a `visuals` key in your config file. The reference in
+Everything you can restyle today is a `visuals` key in your config file or in a theme file
+(below). The reference in
 `docs/configuration.md` lists them all:
 
 - `visuals.colors` (tier plaque and band colors by tier id, bronze, silver, gold, workload and
@@ -126,15 +127,48 @@ Everything you can restyle today is a `visuals` key in your config file. The ref
 - `visuals.orloj` (clock face geometry, breakpoints, and procession)
 - `visuals.sizeBy` (what sizes planets: pipelines, products, complexity, or volume)
 
+### Theme overrides in `config/private/theme.yaml`
+
+To keep look-and-feel changes out of your main config, put them in `config/private/theme.yaml`
+(or point `ORRERY_THEME` at another file). The file has one top-level key, `visuals`, holding
+any part of the visuals block:
+
+```yaml
+# config/private/theme.yaml
+visuals:
+  lighting:
+    ambientIntensity: 0.6
+  camera:
+    fovDeg: 42
+  time:
+    speeds: [1, 3, 6]
+```
+
+At startup the server merges it over the `visuals` of your main config: objects merge key by
+key, while arrays and scalars replace the value (so `speeds` above is exactly `[1, 3, 6]`). The
+merged result is validated with the same schema as the main config, so a typo or a bad value
+stops startup with the file name and the path (for example `visuals.camera.fovDeg`), and an
+unknown key is rejected. Any other top-level key in the file is rejected too. The server logs
+`theme applied` with the file it used, and `/api/config` returns the merged visuals. With no
+theme file nothing changes.
+
+### Logo in `public/private/`
+
+Put a `logo.svg`, `logo.png`, or `logo.webp` in `public/private/` (or set `ORRERY_LOGO` to a
+file path). The server serves it at `/branding/logo`, and `/api/config` reports
+`branding: { logoUrl }`, which is `"/branding/logo"` when a logo exists and `null` otherwise. The
+web app shows it in the header when it is set.
+
+The file must be at most 512 KB and must not be a symlink that leaves its directory, or startup
+fails with the reason. SVG logos are served with a `Content-Security-Policy` that disables
+scripts, but keep them to plain shapes and text anyway.
+
 The concept-to-scene mapping is data in `packages/core/src/metaphor.ts`, which a fork can restyle
 without touching the renderer.
 
 **Not yet supported**
 
-- `config/private/theme.yaml`. There is no theme file. The spec reserved it, but nothing reads
-  one. Use the `visuals` block in your main config file instead.
-- Logos and other private assets in `public/private/`. The path is git-ignored in anticipation, but
-  the web app does not load anything from it yet.
+- Private assets in `public/private/` other than the logo.
 - `visuals.theme: light`. The key is accepted and validated, but the views are dark in every case.
 - Spoke colors. They come from a built-in palette in the renderer, not from config (decision 37).
 - Custom fonts. The Cinzel and Barlow web fonts are not bundled yet, so text uses fallback fonts

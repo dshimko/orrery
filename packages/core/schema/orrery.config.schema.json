@@ -1389,6 +1389,35 @@
           },
           "additionalProperties": false
         },
+        "palette": {
+          "default": [
+            "#9FC4FF",
+            "#5FA8D3",
+            "#7BC8A4",
+            "#B79CED",
+            "#F28FAD",
+            "#E9966B",
+            "#A3B1C6"
+          ],
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "spokeColors": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
         "lighting": {
           "default": {},
           "type": "object",

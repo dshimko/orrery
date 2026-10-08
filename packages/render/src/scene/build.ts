@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Assembles every scene part into one Three.js scene and owns its disposal.
+import { spokeColorMap } from '@orrery/core';
 import { Group, Scene, type Material, type Object3D } from 'three';
 import type { SceneModel } from '../sim/model.js';
 import { buildAlerts } from './alerts.js';
@@ -9,7 +10,6 @@ import { buildHub } from './hub.js';
 import { buildIngest } from './ingest.js';
 import { buildVehicles } from './instancing.js';
 import type { LabelLayer } from './labels.js';
-import { spokeColors } from './palette.js';
 import { buildSites } from './sites.js';
 import { buildSpokes } from './spokes.js';
 import { buildStatic } from './static.js';
@@ -36,7 +36,7 @@ export function buildScene(model: SceneModel, labels: LabelLayer): BuiltScene {
     fades: new FadeRegistry(),
     labels,
     pickables: [],
-    spokeColors: spokeColors(model.topology),
+    spokeColors: spokeColorMap(model.topology.spokes, model.visuals),
   };
   const parts: Part[] = [buildSites(ctx), buildHub(ctx), buildSpokes(ctx)];
   const ingest = buildIngest(ctx);

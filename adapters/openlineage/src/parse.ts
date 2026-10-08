@@ -2,22 +2,30 @@
 // Parses OpenLineage RunEvents from a JSON array or newline-delimited JSON. Problems name a line
 // or item number and a reason, never the content (it may be customer data).
 import { z } from 'zod';
+import { outputStatisticsOf, runFacetsOf } from './facets.js';
 import type { DatasetRef, JobRef, RunEvent, RunEventType, Tags } from './types.js';
 
 const MAX_NAME_LENGTH = 512;
 const MAX_REPORTED_PROBLEMS = 20;
 const EVENT_TYPES: ReadonlySet<string> = new Set(['START', 'RUNNING', 'COMPLETE', 'ABORT', 'FAIL']);
 
-const Facets = z.record(z.string(), z.unknown()).optional();
+// Marquez serves absent lists and facet maps as JSON null, so every optional field is nullish.
+const Facets = z.record(z.string(), z.unknown()).nullish();
 const Name = z.string().min(1).max(MAX_NAME_LENGTH);
-const Dataset = z.looseObject({ namespace: Name, name: Name, facets: Facets });
+const Dataset = z.looseObject({
+  namespace: Name,
+  name: Name,
+  facets: Facets,
+  // Read defensively by outputStatisticsOf, so an odd shape never rejects the event.
+  outputFacets: z.unknown().optional(),
+});
 const WireEvent = z.looseObject({
   eventType: z.string().max(32).optional(),
   eventTime: z.string().min(1).max(64),
-  run: z.looseObject({ runId: Name }),
+  run: z.looseObject({ runId: Name, facets: z.unknown().optional() }),
   job: z.looseObject({ namespace: Name, name: Name, facets: Facets }),
-  inputs: z.array(Dataset).optional(),
-  outputs: z.array(Dataset).optional(),
+  inputs: z.array(Dataset).nullish(),
+  outputs: z.array(Dataset).nullish(),
 });
 
 export interface ParseResult {
@@ -29,7 +37,7 @@ export interface ParseResult {
 }
 
 /** `tags` facet entries (`[{ key, value }]`) as a map. Tolerates a missing or odd shape. */
-function tagsOf(facets: Record<string, unknown> | undefined): Record<string, string> {
+function tagsOf(facets: Record<string, unknown> | null | undefined): Record<string, string> {
   const facet = facets?.['tags'];
   const list =
     typeof facet === 'object' && facet !== null ? (facet as { tags?: unknown }).tags : undefined;
@@ -43,7 +51,7 @@ function tagsOf(facets: Record<string, unknown> | undefined): Record<string, str
   return tags;
 }
 
-function jobTypeOf(facets: Record<string, unknown> | undefined): {
+function jobTypeOf(facets: Record<string, unknown> | null | undefined): {
   tags: Record<string, string>;
   streaming: boolean;
 } {
@@ -59,7 +67,13 @@ function jobTypeOf(facets: Record<string, unknown> | undefined): {
 }
 
 function datasetOf(raw: z.infer<typeof Dataset>): DatasetRef {
-  return { namespace: raw.namespace, name: raw.name, tags: tagsOf(raw.facets) };
+  const stats = outputStatisticsOf(raw.outputFacets);
+  return {
+    namespace: raw.namespace,
+    name: raw.name,
+    tags: tagsOf(raw.facets),
+    ...(stats ? { stats } : {}),
+  };
 }
 
 function jobOf(raw: z.infer<typeof WireEvent>['job']): JobRef {
@@ -96,6 +110,7 @@ export function normalizeEvent(value: unknown): RunEvent | string {
     job: jobOf(parsed.data.job),
     inputs: (parsed.data.inputs ?? []).map(datasetOf),
     outputs: (parsed.data.outputs ?? []).map(datasetOf),
+    ...runFacetsOf(parsed.data.run.facets),
   };
 }
 
