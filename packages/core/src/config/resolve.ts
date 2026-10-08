@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-import { Topology, type TopologyInput, type TopologyOverrides } from './topology.js';
+import { TopologyConfig, type TopologyInput, type TopologyOverrides } from './topology.js';
 import { formatPath, type ConfigIssue } from './errors.js';
 
 type Listed = { id: string } & Record<string, unknown>;
 type ListKey = 'spokes' | 'sourceGroups' | 'useCases';
 const LIST_KEYS: readonly ListKey[] = ['spokes', 'sourceGroups', 'useCases'];
 
-export type ResolveResult = { ok: true; topology: Topology } | { ok: false; issues: ConfigIssue[] };
+export type ResolveResult =
+  { ok: true; topology: TopologyConfig } | { ok: false; issues: ConfigIssue[] };
 
 /** Merges `overlay` items into `base` by id: matching ids merge field-wise, new ids append. */
 export function mergeById<T extends Listed>(
@@ -37,6 +38,7 @@ function applyLayer(base: TopologyInput, layer: TopologyOverrides): TopologyInpu
     ...lists,
     hub: { ...base.hub, ...layer.hub },
     ...(layer.medallion ? { medallion: layer.medallion } : {}),
+    ...(layer.shipyard ? { shipyard: layer.shipyard } : {}),
   };
 }
 
@@ -80,7 +82,7 @@ export function resolveTopology(
   const withOverrides = overrides ? applyLayer(layered, overrides) : layered;
   const { extends: _extends, exclude: _exclude, ...candidate } = withOverrides;
 
-  const parsed = Topology.safeParse(candidate);
+  const parsed = TopologyConfig.safeParse(candidate);
   if (parsed.success) return { ok: true, topology: parsed.data };
   return {
     ok: false,

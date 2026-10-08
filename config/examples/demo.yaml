@@ -1,0 +1,137 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=../../packages/core/schema/orrery.config.schema.json
+# All-mock demo matching the reference prototypes: seven spokes, five source regions, six use
+# cases, and three environment profiles. Used by the quick start, screenshots, and tests.
+version: 1
+product:
+  title: Orrery
+  timezone: UTC
+
+topologies:
+  base:
+    hub: { id: core, name: Core platform }
+    shipyard: { name: Engineering studio, utcOffset: 5.5 }
+    spokes:
+      - id: ingest
+        name: Regional ingest
+        role: ingest
+        match: { tag: { domain: ingest } }
+        freshness: { cadenceMinutes: 15, targetMinutes: 21 }
+      - id: supply
+        name: Supply
+        role: domain
+        match: { schema: '*_supply_*' }
+        freshness: { cadenceMinutes: 60, targetMinutes: 80 }
+      - id: operations
+        name: Operations
+        role: domain
+        match: { tag: { domain: operations } }
+        freshness: { cadenceMinutes: 5, targetMinutes: 9 }
+      - id: quality
+        name: Quality
+        role: domain
+        match: { tag: { domain: quality } }
+        freshness: { cadenceMinutes: 30, targetMinutes: 40 }
+      - id: customer
+        name: Customer
+        role: domain
+        metastore: secondary
+        match: { tag: { domain: customer } }
+        freshness: { cadenceMinutes: 2, targetMinutes: 4 }
+      - id: sales
+        name: Sales
+        role: domain
+        metastore: secondary
+        match: { schema: '*_sales_*' }
+        freshness: { cadenceMinutes: 240, targetMinutes: 280 }
+      - id: finance
+        name: Finance
+        role: domain
+        match: { tag: { domain: finance } }
+        freshness: { cadenceMinutes: 1440, targetMinutes: 1560, offsetMinutes: 120 }
+    sourceGroups:
+      - {
+          id: region-a,
+          name: Region A,
+          utcOffset: -6,
+          match: { pipelineTag: { source_region: a } },
+        }
+      - {
+          id: region-b,
+          name: Region B,
+          utcOffset: -3,
+          match: { pipelineTag: { source_region: b } },
+        }
+      - { id: region-c, name: Region C, utcOffset: 2, match: { pipelineTag: { source_region: c } } }
+      - { id: region-d, name: Region D, utcOffset: 1, match: { pipelineTag: { source_region: d } } }
+      - { id: region-e, name: Region E, utcOffset: 8, match: { pipelineTag: { source_region: e } } }
+    useCases:
+      - id: exec
+        name: Executive overview
+        site: Office 1
+        utcOffset: -4
+        match: { dashboardTag: { use_case: exec } }
+      - id: demand
+        name: Demand planning
+        site: Office 1
+        utcOffset: -4
+        match: { dashboardTag: { use_case: demand } }
+      - id: risk
+        name: Quality risk watch
+        site: Office 1
+        utcOffset: -4
+        match: { dashboardTag: { use_case: risk } }
+      - id: campaign
+        name: Campaign performance
+        site: Office 2
+        utcOffset: -7
+        match: { dashboardTag: { use_case: campaign } }
+      - id: inbound
+        name: Inbound risk
+        site: Office 3
+        utcOffset: 2
+        match: { dashboardTag: { use_case: inbound } }
+      - id: models
+        name: Asset health models
+        site: Engineering studio
+        utcOffset: 5.5
+        match: { dashboardTag: { use_case: models } }
+
+environments:
+  - id: dev
+    name: Development
+    tier: dev
+    topology: base
+    overrides: { exclude: [finance, region-c, region-d, region-e] }
+    adapter: mock
+    federation: { mode: single-workspace }
+    mock: { seed: 11, scale: 0.3, failureRate: 0.12, deploysPerHour: 3, agingFactor: 5 }
+  - id: stg
+    name: Staging
+    tier: stg
+    topology: base
+    overrides: { exclude: [region-d, region-e] }
+    adapter: mock
+    federation: { mode: multi-workspace }
+    mock: { seed: 22, scale: 0.55, failureRate: 0.05, deploysPerHour: 1.5, agingFactor: 2 }
+  - id: prod
+    name: Production
+    tier: prod
+    topology: base
+    adapter: mock
+    federation:
+      mode: multi-metastore
+      metastores:
+        - { id: primary, name: Primary metastore }
+        - { id: secondary, name: Secondary metastore }
+      foreignCatalogs: { show: true }
+    mock: { seed: 33, scale: 1, failureRate: 0.015, deploysPerHour: 0.6, agingFactor: 1 }
+
+promotion:
+  order: [dev, stg, prod]
+  source: job-tag
+  tagKey: release
+
+visuals:
+  sizeBy: pipelines
+  theme: dark

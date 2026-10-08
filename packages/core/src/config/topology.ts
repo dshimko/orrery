@@ -46,7 +46,15 @@ const SourceGroupFields = {
 const UseCaseFields = {
   name: z.string().min(1),
   match: Matcher,
+  /** Office or team location; drawn as a small sun on the Orloj view. */
+  site: z.string().min(1).optional(),
+  utcOffset: z.number().min(-12).max(14).optional(),
 };
+
+const Shipyard = strictObject({
+  name: z.string().min(1),
+  utcOffset: z.number().min(-12).max(14).default(0),
+});
 
 const Medallion = strictObject({
   strategy: z.enum(['schema-suffix', 'catalog-prefix', 'tag']),
@@ -58,12 +66,13 @@ const Medallion = strictObject({
 const Hub = strictObject({ id: Id, name: z.string().min(1) });
 
 /** A fully resolved topology, after `extends` and overrides are applied. */
-export const Topology = strictObject({
+export const TopologyConfig = strictObject({
   hub: Hub,
   spokes: z.array(strictObject({ id: Id, ...SpokeFields })).min(1),
   sourceGroups: z.array(strictObject({ id: Id, ...SourceGroupFields })).default([]),
   useCases: z.array(strictObject({ id: Id, ...UseCaseFields })).default([]),
   medallion: Medallion.optional(),
+  shipyard: Shipyard.optional(),
 });
 
 function partialItem<T extends z.ZodRawShape>(fields: T) {
@@ -85,12 +94,13 @@ export const TopologyInput = strictObject({
   sourceGroups: z.array(partialItem(SourceGroupFields)).optional(),
   useCases: z.array(partialItem(UseCaseFields)).optional(),
   medallion: Medallion.optional(),
+  shipyard: Shipyard.optional(),
 });
 
 /** Overrides an environment applies on top of its named topology. */
 export const TopologyOverrides = TopologyInput.omit({ extends: true });
 
 export type Matcher = z.infer<typeof Matcher>;
-export type Topology = z.infer<typeof Topology>;
+export type TopologyConfig = z.infer<typeof TopologyConfig>;
 export type TopologyInput = z.infer<typeof TopologyInput>;
 export type TopologyOverrides = z.infer<typeof TopologyOverrides>;

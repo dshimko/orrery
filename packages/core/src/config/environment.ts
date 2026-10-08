@@ -5,13 +5,23 @@ import { TopologyOverrides } from './topology.js';
 
 export const BUILTIN_ADAPTERS = ['mock', 'databricks', 'openlineage'] as const;
 
+const ObjectRefString = z
+  .string()
+  .regex(
+    /^(hub|spoke|sourceGroup|site|useCase|foreign|metastore|shipyard)(:[a-z0-9][a-z0-9_-]*)?$/,
+    'Use kind:id, for example spoke:sales or useCase:exec (or a bare kind such as shipyard).',
+  );
+
 const ScriptedIncident = strictObject({
   id: Id,
   at: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use a 24-hour UTC time such as 02:30.'),
-  durationMinutes: z.number().positive(),
+  durationMinutes: z.number().positive().max(1440),
   severity: z.enum(['incident', 'warning', 'info']),
+  /** Behavior the mock simulates, such as transfer-hold or schema-drift; any string is allowed. */
   kind: z.string().min(1),
-  target: z.string().min(1).optional(),
+  title: z.string().min(1),
+  text: z.string().default(''),
+  targets: z.array(ObjectRefString).min(1),
 });
 
 const MockProfile = strictObject({
@@ -20,6 +30,8 @@ const MockProfile = strictObject({
   failureRate: z.number().min(0).max(1).default(0.05),
   deploysPerHour: z.number().min(0).default(1),
   agingFactor: z.number().positive().default(1),
+  /** Environment that releases from this one promote to (default by tier: dev to stg to prod). */
+  promotesTo: Id.optional(),
   incidents: z.array(ScriptedIncident).optional(),
 });
 
@@ -36,8 +48,9 @@ const Connection = strictObject({
 
 const Metastore = strictObject({
   id: Id,
-  host: ValueOrEnvRef,
-  warehouseId: ValueOrEnvRef,
+  name: z.string().min(1).optional(),
+  host: ValueOrEnvRef.optional(),
+  warehouseId: ValueOrEnvRef.optional(),
 });
 
 const Federation = strictObject({
@@ -70,6 +83,8 @@ export const Environment = strictObject({
 export const AdapterRegistry = z.record(Id, strictObject({ package: z.string().min(1) }));
 
 export type Environment = z.infer<typeof Environment>;
+export type MockProfile = z.infer<typeof MockProfile>;
+export type ScriptedIncident = z.infer<typeof ScriptedIncident>;
 
 export function adapterList(env: Pick<Environment, 'adapter'>): readonly string[] {
   return typeof env.adapter === 'string' ? [env.adapter] : env.adapter;

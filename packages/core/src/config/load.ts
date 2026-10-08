@@ -4,10 +4,10 @@ import { ConfigError, fromZodIssues, type ConfigIssue } from './errors.js';
 import type { Environment } from './environment.js';
 import { resolveTopology } from './resolve.js';
 import { OrreryConfigInput } from './root.js';
-import type { Topology } from './topology.js';
+import type { TopologyConfig } from './topology.js';
 
 export interface ResolvedEnvironment extends Environment {
-  resolvedTopology: Topology;
+  resolvedTopology: TopologyConfig;
 }
 
 export interface OrreryConfig extends Omit<OrreryConfigInput, 'environments'> {

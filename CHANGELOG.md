@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Domain model in `@orrery/core`: `Topology`, `Snapshot`, the `PlatformEvent` union, and the
+  `OrreryAdapter` contract; the metaphor map with orbit, size, and speed formulas; stability
+  helpers; seeded randomness.
+- `@orrery/adapter-mock`: a deterministic, seeded, time-of-day driven mock ported from the
+  reference prototypes, with three environment profiles, per-tier incident scripts, the
+  freshness model, and the `MOCK_SEED` and `MOCK_SPEED` variables.
+- `@orrery/testkit`: fixed and scaled clocks, and the shared adapter contract suite.
+- `config/examples/demo.yaml`: an all-mock demo matching the reference prototypes.
 - pnpm workspace skeleton: `apps/web`, `apps/server`, `packages/{core,render,orloj,testkit}`,
   and `adapters/{mock,databricks,openlineage}`.
 - Config schema in `@orrery/core` (zod, with generated JSON Schema), with strict unknown-key

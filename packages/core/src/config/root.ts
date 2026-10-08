@@ -93,6 +93,15 @@ function checkAdapterBlocks(root: Root, ctx: Ctx): void {
           message: 'multi-metastore mode needs at least one entry in federation.metastores.',
         });
       }
+      federation.metastores?.forEach((metastore, msIndex) => {
+        if (!metastore.host || !metastore.warehouseId) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['environments', index, 'federation', 'metastores', msIndex],
+            message: `The databricks adapter needs host and warehouseId for metastore "${metastore.id}".`,
+          });
+        }
+      });
       return;
     }
     if (!env.connection?.host || !env.connection.warehouseId) {

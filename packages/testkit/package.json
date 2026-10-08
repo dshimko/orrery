@@ -21,5 +21,11 @@
   },
   "dependencies": {
     "@orrery/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "vitest": "4.1.11"
+  },
+  "devDependencies": {
+    "vitest": "4.1.11"
   }
 }

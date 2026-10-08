@@ -21,5 +21,8 @@
   },
   "dependencies": {
     "@orrery/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@orrery/testkit": "workspace:*"
   }
 }

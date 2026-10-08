@@ -78,3 +78,51 @@ ambiguity. Newest milestone last.
 18. **The pre-commit hook runs gitleaks from the local binary, or from the pinned container
     image when Docker is available, and fails when neither exists** rather than skipping the
     scan silently. CI downloads a pinned gitleaks release and verifies its checksum.
+
+## Milestone 2: core model and mock adapter
+
+### Spec differences
+
+19. **New event type `federation.query`.** The spec's `PlatformEvent` union has no event for
+    queries against foreign catalogs, yet the scene draws them as comet beams. This is an
+    additive change.
+20. **Scripted incidents carry `targets` (a list of `kind:id` refs), `title`, and `text`**
+    in place of a single `target`. The reference anchors several objects per incident, for
+    example a station and three sites. Refs use the deep-link form (`spoke:sales`).
+21. **Schema additions needed by the reference:** use cases take an optional `site` and
+    `utcOffset` (the Orloj suns), topologies take an optional `shipyard`, and the mock profile
+    takes `promotesTo`. `federation.metastores[].host` and `warehouseId` are now optional in
+    the schema and required only for the databricks adapter.
+22. **The config's `Topology` is renamed `TopologyConfig`.** `Topology` now names the domain
+    type that adapters return.
+
+### Mock adapter
+
+23. **`config/examples/demo.yaml` is the all-mock config that matches the references**
+    (seven spokes, five regions, six use cases, seeds 11/22/33). `three-env.yaml` stays as
+    the spec's sample. Freshness targets equal cadence + 2 × the reference's lag, which
+    reproduces the spec's sample numbers (for example ingest 15 → 21).
+24. **A built-in world fixture supplies what a real adapter would discover**: metrics, sites
+    per region, which spokes a use case reads, activity curves, and station notes. These are
+    keyed by the ids in `demo.yaml`. Unknown ids get stable seeded defaults, so the mock runs
+    any topology.
+25. **Freshness sawtooth uses absolute time.** Cycles longer than a day (cadence ×
+    `agingFactor`) continue across days instead of restarting at midnight as in the
+    reference. Results are identical to the reference whenever the cycle divides 24 hours,
+    which covers every prod spoke.
+26. **Past target is computed without state:** age > target × (1 + 3%). `freshness.change`
+    fires when that flips and when a refresh lands, so events and snapshots always agree.
+    Mock ages only rise between refreshes, so the one-sided band cannot flicker. The renderer
+    applies full two-sided hysteresis (`withHysteresis`) to its own displayed state.
+27. **Events use counter-based randomness per one-minute bucket**, keyed by seed, emitter,
+    and minute. Any split of a range yields identical events. Mean rates equal the
+    reference's rates ÷ 12, since the reference rates are per real second and one second at
+    1× is 12 simulated minutes. Exact counts differ from the reference, which used
+    `Math.random`.
+28. **`MOCK_SEED` overrides every environment's seed**, hashed with the environment id.
+    **`MOCK_SPEED` multiplies simulated time from `init()`** for `snapshot()` without a time
+    and for the live event stream.
+29. **The mock uses the spec's stability defaults as constants** (30-minute mean-age cadence,
+    3% band), because adapters do not receive the `visuals` config.
+30. **Fast-aging tiers get a looser target**, target × max(1, `agingFactor` × 0.6), as in
+    the reference. Otherwise dev would show every spoke past target.

@@ -59,6 +59,10 @@ importers:
       '@orrery/core':
         specifier: workspace:*
         version: link:../../packages/core
+    devDependencies:
+      '@orrery/testkit':
+        specifier: workspace:*
+        version: link:../../packages/testkit
 
   adapters/openlineage:
     dependencies:
@@ -112,6 +116,10 @@ importers:
       '@orrery/core':
         specifier: workspace:*
         version: link:../core
+    devDependencies:
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(vite@7.3.7(@types/node@20.19.43)(yaml@2.9.1))
 
 packages:
 

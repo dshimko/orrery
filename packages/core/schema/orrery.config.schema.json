@@ -354,6 +354,15 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                "site": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "utcOffset": {
+                  "type": "number",
+                  "minimum": -12,
+                  "maximum": 14
                 }
               },
               "required": [
@@ -403,6 +412,25 @@
               "bronze",
               "silver",
               "gold"
+            ],
+            "additionalProperties": false
+          },
+          "shipyard": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "utcOffset": {
+                "default": 0,
+                "type": "number",
+                "minimum": -12,
+                "maximum": 14
+              }
+            },
+            "required": [
+              "name"
             ],
             "additionalProperties": false
           }
@@ -733,6 +761,15 @@
                         }
                       },
                       "additionalProperties": false
+                    },
+                    "site": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "utcOffset": {
+                      "type": "number",
+                      "minimum": -12,
+                      "maximum": 14
                     }
                   },
                   "required": [
@@ -782,6 +819,25 @@
                   "bronze",
                   "silver",
                   "gold"
+                ],
+                "additionalProperties": false
+              },
+              "shipyard": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "utcOffset": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": -12,
+                    "maximum": 14
+                  }
+                },
+                "required": [
+                  "name"
                 ],
                 "additionalProperties": false
               }
@@ -834,6 +890,10 @@
                 "type": "number",
                 "exclusiveMinimum": 0
               },
+              "promotesTo": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+              },
               "incidents": {
                 "type": "array",
                 "items": {
@@ -849,7 +909,8 @@
                     },
                     "durationMinutes": {
                       "type": "number",
-                      "exclusiveMinimum": 0
+                      "exclusiveMinimum": 0,
+                      "maximum": 1440
                     },
                     "severity": {
                       "type": "string",
@@ -863,9 +924,21 @@
                       "type": "string",
                       "minLength": 1
                     },
-                    "target": {
+                    "title": {
                       "type": "string",
                       "minLength": 1
+                    },
+                    "text": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "targets": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^(hub|spoke|sourceGroup|site|useCase|foreign|metastore|shipyard)(:[a-z0-9][a-z0-9_-]*)?$"
+                      }
                     }
                   },
                   "required": [
@@ -873,7 +946,9 @@
                     "at",
                     "durationMinutes",
                     "severity",
-                    "kind"
+                    "kind",
+                    "title",
+                    "targets"
                   ],
                   "additionalProperties": false
                 }
@@ -938,6 +1013,10 @@
                       "type": "string",
                       "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
                     },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
                     "host": {
                       "type": "string",
                       "minLength": 1
@@ -948,9 +1027,7 @@
                     }
                   },
                   "required": [
-                    "id",
-                    "host",
-                    "warehouseId"
+                    "id"
                   ],
                   "additionalProperties": false
                 }
