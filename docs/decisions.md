@@ -392,3 +392,7 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
     adapter). Example use cases now use `tag: { use_case: … }`; Databricks resolves a use case
     by reads of schemas carrying that tag. Supersedes the `dashboardTag` parts of decisions 10,
     52 and 81.
+
+83. **The Databricks job schedule and promotion events are out of scope.** The schedule stays
+    empty (no verified job trigger format), and the adapter emits no promotion events. The
+    backlog item was dropped by the project owner.

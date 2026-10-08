@@ -15,9 +15,6 @@ post-milestone-7 backlog pass are recorded in `docs/decisions.md` (75–80).
 
 ## Needs a design decision
 
-- **The job schedule and promotion events for Databricks:** there is no verified
-  system-table source for the job trigger format. Promotion events need a rule for detecting a
-  release in the next environment.
 - **Fork adapter package names go straight to `import()`** (`apps/server/src/registry.ts`).
   Config is operator-controlled, so this is acceptable today. Validate names if config ever
   comes from a less-trusted source.
