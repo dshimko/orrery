@@ -28,6 +28,7 @@
     "test:visual:update": "sh scripts/visual-baselines.sh"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.0",
     "@size-limit/file": "14.2.0",

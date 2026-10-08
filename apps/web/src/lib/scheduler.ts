@@ -24,6 +24,8 @@ export interface SchedulerOptions {
   sink: SchedulerSink;
   /** The snapshot already loaded for the starting time. */
   initialSnapshotAt: Date;
+  /** Set to false for views that only draw snapshots (home); default true. */
+  fetchEvents?: boolean;
 }
 
 export interface Scheduler {
@@ -43,6 +45,7 @@ export interface Scheduler {
  */
 export function createScheduler(options: SchedulerOptions): Scheduler {
   const { api, envId, sink } = options;
+  const shouldFetchEvents = options.fetchEvents !== false;
   let timer: ReturnType<typeof setInterval> | undefined;
   let controller = new AbortController();
   let snapshotAt = options.initialSnapshotAt.getTime();
@@ -103,7 +106,12 @@ export function createScheduler(options: SchedulerOptions): Scheduler {
     if (!snapshotBusy && Math.abs(nowMs - snapshotAt) >= SNAPSHOT_REFRESH_MS) {
       refreshSnapshot(now);
     }
-    if (!eventsBusy && Date.now() >= eventsRetryAt && eventsUntil - nowMs < EVENT_WINDOW_MS) {
+    if (
+      shouldFetchEvents &&
+      !eventsBusy &&
+      Date.now() >= eventsRetryAt &&
+      eventsUntil - nowMs < EVENT_WINDOW_MS
+    ) {
       prefetchEvents(new Date(Math.max(eventsUntil, nowMs)));
     }
   }

@@ -3,8 +3,9 @@ import { useMemo } from 'react';
 import { ErrorState } from '../components/ErrorState.js';
 import { useEnvLoad } from '../hooks/useEnvLoad.js';
 import type { Api, ApiError } from '../lib/api.js';
-import { DEFAULT_START_MINUTE, parseDate, parseDeepLink, startOfDayAt } from '../lib/params.js';
-import type { Query } from '../lib/router.js';
+import { parseDeepLink } from '../lib/params.js';
+import { isWallQuery, type Query } from '../lib/router.js';
+import { sharedClockStart } from '../lib/shared-clock.js';
 import { SystemReady } from './SystemReady.js';
 
 export interface SystemPageProps {
@@ -25,14 +26,7 @@ function friendlyMessage(error: ApiError): string {
 export function SystemPage({ api, envId, query }: SystemPageProps) {
   // The deep link is read once per environment; later URL updates must not reload the page.
   const link = useMemo(() => parseDeepLink(query), [envId]);
-  const startAt = useMemo(
-    () =>
-      startOfDayAt(
-        (link.date !== null ? parseDate(link.date) : null) ?? new Date(),
-        link.minuteOfDay ?? DEFAULT_START_MINUTE,
-      ),
-    [link],
-  );
+  const startAt = useMemo(() => sharedClockStart(link), [link]);
   const load = useEnvLoad(api, envId, startAt);
 
   if (load.status === 'loading') {
@@ -45,5 +39,14 @@ export function SystemPage({ api, envId, query }: SystemPageProps) {
   if (load.status === 'error') {
     return <ErrorState title="Environment unavailable" message={friendlyMessage(load.error)} />;
   }
-  return <SystemReady key={envId} api={api} envId={envId} data={load.data} link={link} />;
+  return (
+    <SystemReady
+      key={envId}
+      api={api}
+      envId={envId}
+      data={load.data}
+      link={link}
+      isWall={isWallQuery(query)}
+    />
+  );
 }

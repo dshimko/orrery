@@ -28,7 +28,7 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-function setup() {
+function setup(extra: { fetchEvents?: boolean } = {}) {
   let nowMs = START.getTime();
   const eventCalls: { since: Date; until: Date; signal: AbortSignal | undefined }[] = [];
   const snapshotCalls: { at: Date; signal: AbortSignal | undefined }[] = [];
@@ -60,6 +60,7 @@ function setup() {
     now: () => new Date(nowMs),
     initialSnapshotAt: START,
     sink,
+    ...extra,
   });
   return {
     scheduler,
@@ -96,6 +97,16 @@ describe('scheduler', () => {
     ctx.pendingEvents[0]?.resolve(events);
     await flush();
     expect(ctx.sink.onEvents).toHaveBeenCalledWith(events);
+  });
+
+  test('skips event windows when fetchEvents is false but still refreshes snapshots', async () => {
+    const ctx = setup({ fetchEvents: false });
+    ctx.scheduler.tick();
+    expect(ctx.eventCalls).toHaveLength(0);
+    ctx.setNow(START.getTime() + SNAPSHOT_REFRESH_MS);
+    ctx.scheduler.tick();
+    expect(ctx.eventCalls).toHaveLength(0);
+    expect(ctx.snapshotCalls).toHaveLength(1);
   });
 
   test('runs one event request at a time', async () => {

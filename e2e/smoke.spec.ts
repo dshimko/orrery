@@ -9,7 +9,7 @@ test('home page renders with a main landmark and heading', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle('Orrery');
   await expect(page.getByRole('main')).toBeVisible();
-  await expect(page.getByRole('heading', { level: 1, name: 'Orrery' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Orloj' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

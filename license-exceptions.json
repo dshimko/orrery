@@ -5,6 +5,16 @@
       "package": "minimatch",
       "license": "BlueOak-1.0.0",
       "reason": "Permissive license. Required by ESLint and typescript-eslint (lint tooling only); never bundled or shipped."
+    },
+    {
+      "package": "axe-core",
+      "license": "MPL-2.0",
+      "reason": "Accessibility test tooling (dev-only, approved by the project owner). Used by Playwright tests; never bundled or shipped."
+    },
+    {
+      "package": "@axe-core/playwright",
+      "license": "MPL-2.0",
+      "reason": "Accessibility test tooling (dev-only, approved by the project owner). Used by Playwright tests; never bundled or shipped."
     }
   ]
 }

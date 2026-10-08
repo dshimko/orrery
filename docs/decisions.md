@@ -21,7 +21,8 @@ ambiguity. Newest milestone last.
    permissive but not on the allowlist. It is lint tooling and never bundled. The exception
    lives in `license-exceptions.json`, and the gate still fails if an excepted package
    enters the production tree.
-4. **The accessibility gate cannot use axe yet. Needs a decision.** `axe-core` and
+4. **Accessibility gate: axe is a dev-only exception (MPL-2.0), approved by the project owner
+   at milestone 4.** Original note: `axe-core` and
    `@axe-core/playwright` are MPL-2.0, which the allowlist forbids. Milestone 1 has no UI
    to audit, and its Playwright smoke test checks landmarks, headings, and keyboard
    reachability. The options are a dev-only exception for axe (test tooling, never
@@ -166,3 +167,36 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
 38. **Two new deep-link params for reproducible views**, alongside `t`: `date=YYYY-MM-DD` and
     `paused=1`.
 39. **The page CSP adds `script-src 'self'`.** The server sends the same CSP as a header.
+
+## Milestone 4: Orloj clock view and navigation
+
+40. **Orloj parity is reviewed side by side, as for the system view.** The opt-in
+    `e2e/reference-compare.spec.ts` captures both homes. The pixel gate compares against our
+    own seeded baseline (`orloj-home-chromium-linux.png`). Cinzel and Barlow are not bundled
+    yet, so text uses fallback serif and sans-serif fonts.
+41. **The faces read only `Snapshot` and `Topology`**, unlike the reference, which computed its
+    own mock health. The arcs come from `snapshot.schedule`, the moon is `backlog`, and the
+    figures use `spendPerHour`, `counts`, and `consumerActivity`. The calendar is
+    `snapshot.calendar`, and the rooster follows `previousDayClean`.
+42. **Breakpoints apply to the width of the faces container**: 3 columns at ≥ 1,150 px, 2 at
+    ≥ 720 px, otherwise 1, never more columns than faces, and scale capped at 1.25. They are
+    checked in e2e from the canvas aspect ratio.
+43. **An environment shows an error face** when its adapter is unavailable, a fetch fails, or
+    health reports an error with no data yet. The other faces keep rendering. In e2e this is
+    a second server on `three-env.yaml`, where stg and prod use the not-yet-available
+    databricks adapter.
+44. **One simulated clock is shared across home, system view, compare, and wall mode.** In-app
+    navigation keeps the current simulated time. A URL with `t`, `date`, `speed`, or `paused`
+    starts a fresh clock, and a paused clock writes its exact time into the URL.
+45. **Compare mode is `/compare?envs=a,b[,c]`** (our reading of the spec's "compare mode"): two
+    or three system views side by side on one clock, each with its own data, tier band, and
+    incident count.
+46. **Wall display mode (`wall=1`)** cycles home and then each environment in promotion order,
+    20 s per stop. It holds on an environment with an open warning or incident for up to 3
+    stops. Any input pauses the cycle for 60 s, and Escape exits at once.
+47. **New deep-link param `view=<camera view>`**, alongside `t`, `date`, `paused`, `speed`,
+    `tier`, `workload`, and `focus`. `focus` takes precedence over `view`.
+48. **The accessibility gate runs axe** (a dev-only MPL-2.0 exception, decision 4) on the home
+    page and the system view and fails on any serious or critical violation. The
+    keyboard-only walkthrough covers controls, the summary dialog (Escape returns focus), and
+    canvas camera keys.

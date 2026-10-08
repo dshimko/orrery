@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { PickTarget, TierFilter } from '@orrery/render';
+import type { CameraViewKey, PickTarget, TierFilter } from '@orrery/render';
 import type { Query } from './router.js';
 
 /**
  * Deep-link parameters of the system view:
  * `t=HH:MM` UTC time of day, `speed`, `tier`, `workload`, `focus=kind:id` (spoke, site, useCase,
- * foreign) or `focus=hub` / `focus=shipyard`. Invalid values are ignored.
+ * foreign) or `focus=hub` / `focus=shipyard`, `view=<camera view key>`, `date=YYYY-MM-DD`, and
+ * `paused=1`. Invalid values are ignored.
  */
 export interface DeepLink {
   /** Minutes since 00:00 UTC. */
@@ -14,6 +15,8 @@ export interface DeepLink {
   tier: TierFilter;
   workload: string;
   focus: PickTarget | null;
+  /** Camera preset to start from; `focus` takes precedence when both are given. */
+  view: CameraViewKey | null;
   /** UTC date to show (`date=YYYY-MM-DD`); null means today. */
   date: string | null;
   /** Start paused (`paused=1`), e.g. for reproducible screenshots. */
@@ -31,6 +34,15 @@ export function parseDate(text: string | undefined): Date | null {
 
 export const DEFAULT_START_MINUTE = 10 * 60 + 40;
 export const TIERS: readonly TierFilter[] = ['all', 'bronze', 'silver', 'gold', 'use'];
+export const CAMERA_VIEW_KEYS: readonly CameraViewKey[] = [
+  'over',
+  'belt',
+  'ingest',
+  'earth',
+  'planets',
+  'stations',
+  'yard',
+];
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const WORKLOAD_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const FOCUS_KINDS = ['spoke', 'site', 'useCase', 'foreign'] as const;
@@ -75,6 +87,7 @@ export function parseDeepLink(query: Query): DeepLink {
     tier: tier ?? 'all',
     workload: workload !== undefined && WORKLOAD_PATTERN.test(workload) ? workload : 'all',
     focus: parseFocus(query.focus),
+    view: CAMERA_VIEW_KEYS.find((candidate) => candidate === query.view) ?? null,
     date: parseDate(query.date) ? (query.date ?? null) : null,
     paused: query.paused === '1',
   };
@@ -95,5 +108,8 @@ export function toQuery(link: Partial<DeepLink>): Query {
   if (link.workload && link.workload !== 'all') query.workload = link.workload;
   const focus = serializeFocus(link.focus ?? null);
   if (focus) query.focus = focus;
+  if (link.view) query.view = link.view;
+  if (link.date) query.date = link.date;
+  if (link.paused) query.paused = '1';
   return query;
 }

@@ -5,14 +5,16 @@ import type { PickTarget } from '@orrery/render';
 const SEVERITY_RANK: Record<Severity, number> = { incident: 0, warning: 1, info: 2 };
 
 /** Most severe first, then most recently opened first, then id for a stable order. */
+export function compareAlerts(a: Alert, b: Alert): number {
+  const bySeverity = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
+  if (bySeverity !== 0) return bySeverity;
+  const byTime = Date.parse(b.openedAt) - Date.parse(a.openedAt);
+  if (byTime !== 0 && !Number.isNaN(byTime)) return byTime;
+  return a.id.localeCompare(b.id);
+}
+
 export function sortAlerts(alerts: readonly Alert[]): Alert[] {
-  return [...alerts].sort((a, b) => {
-    const bySeverity = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
-    if (bySeverity !== 0) return bySeverity;
-    const byTime = Date.parse(b.openedAt) - Date.parse(a.openedAt);
-    if (byTime !== 0 && !Number.isNaN(byTime)) return byTime;
-    return a.id.localeCompare(b.id);
-  });
+  return [...alerts].sort(compareAlerts);
 }
 
 /** Maps an object reference to something the view can focus, if it is focusable. */

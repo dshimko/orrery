@@ -5,7 +5,7 @@ view, shows one astronomical clock face per environment (for example dev, stg, p
 there you can fly into any environment's **system view**: a 3D solar system of sources,
 pipelines, data products, freshness, workloads, and consumers, live or in replay.
 
-> Status: milestone 3 (system view). The views and adapters land in later milestones; see
+> Status: milestone 4 (Orloj clock view and navigation). The views and adapters land in later milestones; see
 > `docs/BUILD_PROMPT.md`.
 
 ## Quick start
@@ -15,7 +15,7 @@ corepack enable
 pnpm install
 pnpm build
 ORRERY_CONFIG=config/examples/demo.yaml node apps/server/dist/main.js
-# open http://127.0.0.1:8787/env/prod
+# open http://127.0.0.1:8787/ (Orloj home) or /env/prod
 ```
 
 For development, run `pnpm dev:server` and `pnpm --filter @orrery/web dev` together. Vite

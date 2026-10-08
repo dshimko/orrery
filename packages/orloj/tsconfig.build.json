@@ -4,7 +4,8 @@
     "rootDir": "src",
     "outDir": "dist",
     "customConditions": ["source"],
-    "types": ["node"]
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": ["src"],
   "exclude": ["src/**/*.test.ts"]

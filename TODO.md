@@ -17,8 +17,15 @@ Cross-milestone backlog. Each item: where, what, and the fix direction.
 
 ## Product follow-ups
 
+- **Spoke palette is duplicated** in `packages/render/src/scene/palette.ts` and
+  `packages/orloj/src/constants.ts`. Move it into core `visuals` config (together with
+  decision 37).
+- **[LOW] Orloj text polish:** "releases this month" overlaps a calendar numeral, and "spend
+  per hour" is clipped by its niche. Bundle Cinzel and Barlow (OFL-1.1) and tune positions.
+- **[LOW] Watch the Orloj visual baseline for flakiness.** One of four container runs failed
+  (the first one, while Corepack was downloading). Add an app-side "ready" signal if it recurs.
+- **Failing-environment faces show a generic message.** Pass the adapter's client-safe health
+  message (for example "The databricks adapter is not available yet.") through to the face.
 - **Spoke colors** come from `packages/render/src/scene/palette.ts`. Move them into
   `visuals` config (decision 37).
 - **Measure 60 fps on Intel and AMD integrated GPUs** with `ORRERY_PERF=1` (decision 33).
-- **Accessibility gate:** decide between a dev-only axe exception (MPL-2.0) and an
-  allowlisted alternative before milestone 4 (decision 4).

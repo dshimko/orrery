@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `@orrery/orloj`: framework-free Canvas 2D Orloj clock faces with the sky, 24-hour ring
+  arcs, sun and star hands, spoke medallions, moon, procession, figures, calendar dial,
+  rooster, tooltips, and error faces.
+- The Orloj home page with an environments-at-a-glance table, cross-environment alerts, a
+  summary dialog, a shared clock, wall display mode, compare mode (`/compare`), and the
+  `view` deep link.
+- axe accessibility checks and milestone 4 Playwright tests (layout breakpoints, failure
+  isolation, deep links).
 - `@orrery/render`: the framework-free 3D system view ported from the reference, with a
   headless simulation layer, six-axis camera, instanced vehicles, alerts, tier and workload
   filters, and DOM labels throttled to 4 Hz.

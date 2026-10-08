@@ -7,30 +7,30 @@ import { Header } from '../components/Header.js';
 import { SceneHost } from '../components/SceneHost.js';
 import { StatusPanel } from '../components/StatusPanel.js';
 import { TimeControls } from '../components/TimeControls.js';
+import { WallToggle } from '../components/WallToggle.js';
 import type { EnvData } from '../hooks/useEnvLoad.js';
 import { useIncidentAnnouncer } from '../hooks/useIncidentAnnouncer.js';
+import { useSharedClock, prefersReducedMotion } from '../hooks/useSharedClock.js';
 import { useSimClock } from '../hooks/useSimClock.js';
 import { useSystemData } from '../hooks/useSystemData.js';
 import type { Api } from '../lib/api.js';
-import { type DeepLink, toQuery } from '../lib/params.js';
-import { buildUrl, envPath, navigate } from '../lib/router.js';
-import { createTimeController } from '../lib/time.js';
+import { clockLink, pageUrl } from '../lib/clock-url.js';
+import type { DeepLink } from '../lib/params.js';
+import { envPath, navigate } from '../lib/router.js';
 
 export interface SystemReadyProps {
   api: Api;
   envId: string;
   data: EnvData;
   link: DeepLink;
+  /** Wall display mode is on (`wall=1`); keep it in the URL. */
+  isWall: boolean;
 }
 
 const FALLBACK_TIER_COLOR = '#6EA8FF';
 
-function prefersReducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
 /** The interactive system view for one loaded environment. */
-export function SystemReady({ api, envId, data, link }: SystemReadyProps) {
+export function SystemReady({ api, envId, data, link, isWall }: SystemReadyProps) {
   const { visuals } = data.config;
   const env = data.environments.find((item) => item.id === envId) ?? {
     id: envId,
@@ -40,14 +40,7 @@ export function SystemReady({ api, envId, data, link }: SystemReadyProps) {
   const tierColor = visuals.colors.tiers[env.tier] ?? FALLBACK_TIER_COLOR;
   const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
 
-  const [controller] = useState(() =>
-    createTimeController({
-      start: data.startAt,
-      secondsPerSimDay: visuals.time.secondsPerSimDay,
-      speed: link.speed !== null && visuals.time.speeds.includes(link.speed) ? link.speed : 1,
-      paused: link.paused || prefersReducedMotion(),
-    }),
-  );
+  const controller = useSharedClock(link, visuals.time);
   const { time, refresh } = useSimClock(controller);
 
   const viewRef = useRef<SystemView | null>(null);
@@ -61,10 +54,13 @@ export function SystemReady({ api, envId, data, link }: SystemReadyProps) {
   const [workload, setWorkload] = useState(link.workload);
   const [focusAlerts, setFocusAlerts] = useState(false);
   const [focus, setFocus] = useState<PickTarget | null>(link.focus);
-  const [selected, setSelected] = useState<PickTarget | null>(null);
-  const [urlMinute, setUrlMinute] = useState(link.minuteOfDay);
+  const [viewKey, setViewKey] = useState<CameraViewKey | null>(link.view);
+  const [selected, setSelected] = useState<PickTarget | null>(link.focus);
+  const [pinned, setPinned] = useState({ minuteOfDay: link.minuteOfDay, date: link.date });
   const focusRef = useRef(focus);
   focusRef.current = focus;
+  const viewKeyRef = useRef(viewKey);
+  viewKeyRef.current = viewKey;
 
   const onView = useCallback((view: SystemView | null) => {
     viewRef.current = view;
@@ -82,23 +78,32 @@ export function SystemReady({ api, envId, data, link }: SystemReadyProps) {
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
+    // A deep link restores a camera preset first; a focus target wins over it.
+    if (viewKeyRef.current) view.goView(viewKeyRef.current);
     if (focusRef.current) view.focus(focusRef.current);
     return view.onPick((target) => {
       setSelected(target);
-      if (target) setFocus(target);
+      if (target) {
+        setFocus(target);
+        setViewKey(null);
+      }
     });
   }, [viewVersion]);
 
+  const url = pageUrl(envPath(envId), clockLink(time, pinned), {}, isWall, {
+    tier,
+    workload,
+    focus,
+    view: viewKey,
+  });
   useEffect(() => {
-    const query = toQuery({ minuteOfDay: urlMinute, speed: time.speed, tier, workload, focus });
-    const url = buildUrl(envPath(envId), query);
     if (url !== window.location.pathname + window.location.search) navigate(url, { replace: true });
-  }, [envId, urlMinute, time.speed, tier, workload, focus]);
+  }, [url]);
 
   const onScrub = (minute: number): void => {
     controller.seekMinute(minute);
     refresh();
-    setUrlMinute(minute);
+    setPinned((current) => ({ ...current, minuteOfDay: minute }));
     system.jump();
   };
   const onTogglePlay = (): void => {
@@ -112,9 +117,12 @@ export function SystemReady({ api, envId, data, link }: SystemReadyProps) {
   const onFocus = (target: PickTarget): void => {
     viewRef.current?.focus(target);
     setFocus(target);
+    setViewKey(null);
   };
   const onViewKey = (key: CameraViewKey): void => {
     viewRef.current?.goView(key);
+    setViewKey(key);
+    setFocus(null);
   };
 
   return (
@@ -124,6 +132,7 @@ export function SystemReady({ api, envId, data, link }: SystemReadyProps) {
         env={env}
         environments={data.environments}
         tierColor={tierColor}
+        actions={<WallToggle />}
       />
       <div className="layout">
         <main className="stage-col">

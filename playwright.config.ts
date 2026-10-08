@@ -2,6 +2,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
+export const FAILING_PORT = 4174;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -25,10 +26,24 @@ export default defineConfig({
     },
   ],
   // The real server: built web app plus the API over the all-mock demo config.
-  webServer: {
-    command: `node apps/server/dist/main.js`,
-    url: `http://127.0.0.1:${PORT}/api/health`,
-    reuseExistingServer: !process.env.CI,
-    env: { ORRERY_CONFIG: 'config/examples/demo.yaml', PORT: String(PORT), HOST: '127.0.0.1' },
-  },
+  webServer: [
+    {
+      command: `node apps/server/dist/main.js`,
+      url: `http://127.0.0.1:${PORT}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      env: { ORRERY_CONFIG: 'config/examples/demo.yaml', PORT: String(PORT), HOST: '127.0.0.1' },
+    },
+    // three-env.yaml: dev is mock; stg and prod use the not-yet-available databricks adapter,
+    // so they are real failing environments for the error-face tests.
+    {
+      command: `node apps/server/dist/main.js`,
+      url: `http://127.0.0.1:${FAILING_PORT}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        ORRERY_CONFIG: 'config/examples/three-env.yaml',
+        PORT: String(FAILING_PORT),
+        HOST: '127.0.0.1',
+      },
+    },
+  ],
 });

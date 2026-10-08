@@ -8,6 +8,7 @@ import {
 } from '@orrery/render';
 import { useEffect, useRef } from 'react';
 import { loadCamera, saveCamera } from '../lib/camera-store.js';
+import { seedFor } from '../lib/seed.js';
 
 export interface SceneHostProps {
   envId: string;
@@ -20,15 +21,6 @@ export interface SceneHostProps {
   /** Called when a view is created and with null when it is disposed. */
   onView: (view: SystemView | null) => void;
   onFailure: (message: string) => void;
-}
-
-/** FNV-1a hash of the environment id: a stable per-environment seed (stability rule 5). */
-export function seedFor(envId: string): number {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < envId.length; index += 1) {
-    hash = Math.imul(hash ^ envId.charCodeAt(index), 0x01000193) >>> 0;
-  }
-  return hash;
 }
 
 /**

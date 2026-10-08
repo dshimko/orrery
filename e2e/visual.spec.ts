@@ -16,3 +16,14 @@ for (const envId of ['dev', 'stg', 'prod']) {
     });
   });
 }
+
+test('Orloj home matches its baseline', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto('/?date=2026-10-07&t=10:45&paused=1');
+  await page.getByTestId('orloj').locator('canvas').waitFor();
+  await page.waitForTimeout(2500);
+  await expect(page.getByTestId('orloj')).toHaveScreenshot('orloj-home.png', {
+    maxDiffPixelRatio: 0.01,
+    animations: 'disabled',
+  });
+});

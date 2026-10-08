@@ -18,6 +18,7 @@ describe('parseDeepLink', () => {
       tier: 'all',
       workload: 'all',
       focus: null,
+      view: null,
       date: null,
       paused: false,
     });
@@ -37,9 +38,15 @@ describe('parseDeepLink', () => {
       tier: 'gold',
       workload: 'ml',
       focus: { kind: 'spoke', id: 'sales' },
+      view: null,
       date: null,
       paused: false,
     });
+  });
+
+  test('parses view and drops unknown camera views', () => {
+    expect(parseDeepLink({ view: 'belt' }).view).toBe('belt');
+    expect(parseDeepLink({ view: 'moon' }).view).toBeNull();
   });
 
   test('ignores invalid values', () => {
@@ -105,5 +112,38 @@ describe('toQuery', () => {
       date: null,
       paused: false,
     });
+  });
+});
+
+describe('deep link round trip', () => {
+  test('parse then serialize returns the same query', () => {
+    const query = {
+      date: '2026-10-07',
+      focus: 'spoke:sales',
+      paused: '1',
+      speed: '2',
+      t: '11:00',
+      tier: 'gold',
+      view: 'planets',
+      workload: 'ml',
+    };
+    expect(toQuery(parseDeepLink(query))).toEqual(query);
+  });
+
+  test('serialize then parse returns the same link', () => {
+    const link = parseDeepLink({ t: '09:05', focus: 'useCase:finance', view: 'yard', speed: '4' });
+    expect(parseDeepLink(toQuery(link))).toEqual(link);
+  });
+
+  test('focus kinds without ids round-trip', () => {
+    expect(toQuery(parseDeepLink({ focus: 'hub' }))).toEqual({ focus: 'hub' });
+    expect(toQuery(parseDeepLink({ focus: 'shipyard' }))).toEqual({ focus: 'shipyard' });
+  });
+
+  test('a restored link starts at the requested time and focus', () => {
+    const link = parseDeepLink({ t: '11:00', focus: 'spoke:sales' });
+    const start = startOfDayAt(new Date('2026-03-04T05:00:00Z'), link.minuteOfDay ?? 0);
+    expect(start.toISOString()).toBe('2026-03-04T11:00:00.000Z');
+    expect(link.focus).toEqual({ kind: 'spoke', id: 'sales' });
   });
 });

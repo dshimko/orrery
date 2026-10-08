@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 import { envPath, navigate } from '../lib/router.js';
 import { Link } from './Link.js';
+import { TierBadge } from './TierBadge.js';
 
 export interface HeaderEnv {
   id: string;
@@ -14,10 +15,12 @@ export interface HeaderProps {
   env: HeaderEnv;
   environments: readonly HeaderEnv[];
   tierColor: string;
+  /** Extra controls placed before the Home link, e.g. the wall display toggle. */
+  actions?: ReactNode;
 }
 
 /** Product title, environment name and tier badge, environment switcher, and Home link. */
-export function Header({ productName, env, environments, tierColor }: HeaderProps) {
+export function Header({ productName, env, environments, tierColor, actions }: HeaderProps) {
   const onChange = (event: ChangeEvent<HTMLSelectElement>): void => {
     if (event.target.value === env.id) return;
     navigate(envPath(event.target.value));
@@ -28,10 +31,7 @@ export function Header({ productName, env, environments, tierColor }: HeaderProp
         {productName}
       </Link>
       <h1 className="env-name">{env.name}</h1>
-      <span className="tier-badge" style={{ borderColor: tierColor, color: tierColor }}>
-        <i style={{ background: tierColor }} aria-hidden="true" />
-        Tier: {env.tier.toUpperCase()}
-      </span>
+      <TierBadge tier={env.tier} color={tierColor} />
       <div className="topbar-spacer" />
       <label className="field">
         <span className="lbl">Environment</span>
@@ -43,6 +43,7 @@ export function Header({ productName, env, environments, tierColor }: HeaderProp
           ))}
         </select>
       </label>
+      {actions}
       <Link to="/" className="btn sm">
         Home
       </Link>

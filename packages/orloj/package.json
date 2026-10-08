@@ -18,5 +18,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@orrery/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@orrery/testkit": "workspace:*",
+    "@orrery/adapter-mock": "workspace:*"
   }
 }

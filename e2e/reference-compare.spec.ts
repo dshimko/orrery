@@ -23,3 +23,14 @@ for (const envId of ['dev', 'stg', 'prod']) {
     await info.attach(`port-${envId}`, { body: await page.screenshot(), contentType: 'image/png' });
   });
 }
+
+test('reference vs port: Orloj home at 10:40', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(pathToFileURL(resolve('reference/orloj-home.html')).href);
+  await page.waitForTimeout(1500);
+  await info.attach('reference-orloj', { body: await page.screenshot(), contentType: 'image/png' });
+  await page.goto('/?date=2026-10-07&t=10:40&paused=1');
+  await page.getByTestId('orloj').locator('canvas').waitFor();
+  await page.waitForTimeout(2000);
+  await info.attach('port-orloj', { body: await page.screenshot(), contentType: 'image/png' });
+});

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Minimal history-API router. Routes: `/` (home) and `/env/:id` (system view).
- * Query parameters are plain strings; navigation, compare, and wall mode come later.
+ * Minimal history-API router. Routes: `/` (home), `/env/:id` (system view), and `/compare`.
+ * Query parameters are plain strings.
  */
 
-export type Route = { name: 'home' } | { name: 'env'; id: string } | { name: 'notFound' };
+export type Route =
+  { name: 'home' } | { name: 'env'; id: string } | { name: 'compare' } | { name: 'notFound' };
 export type Query = Readonly<Record<string, string>>;
 
 export const NAVIGATE_EVENT = 'orrery:navigate';
@@ -12,6 +13,7 @@ const ENV_PATH = /^\/env\/([^/]+)\/?$/;
 
 export function matchRoute(pathname: string): Route {
   if (pathname === '/' || pathname === '') return { name: 'home' };
+  if (pathname === '/compare' || pathname === '/compare/') return { name: 'compare' };
   const match = ENV_PATH.exec(pathname);
   if (!match?.[1]) return { name: 'notFound' };
   try {
@@ -43,6 +45,21 @@ export function buildUrl(path: string, query: Query = {}): string {
 
 export function envPath(id: string): string {
   return `/env/${encodeURIComponent(id)}`;
+}
+
+export const COMPARE_PATH = '/compare';
+
+/** Query key that turns wall display mode on (`wall=1`). */
+export const WALL_PARAM = 'wall';
+
+export function isWallQuery(query: Query): boolean {
+  return query[WALL_PARAM] === '1';
+}
+
+/** Adds or removes `wall=1`, leaving other parameters as they are. */
+export function withWall(query: Query, wall: boolean): Query {
+  const { [WALL_PARAM]: _removed, ...rest } = query;
+  return wall ? { ...rest, [WALL_PARAM]: '1' } : rest;
 }
 
 /** Pushes (or replaces) a history entry and notifies subscribers. */
