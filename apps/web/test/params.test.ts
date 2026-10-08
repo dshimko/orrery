@@ -21,6 +21,7 @@ describe('parseDeepLink', () => {
       view: null,
       date: null,
       paused: false,
+      replay: false,
     });
   });
 
@@ -41,6 +42,7 @@ describe('parseDeepLink', () => {
       view: null,
       date: null,
       paused: false,
+      replay: false,
     });
   });
 
@@ -145,5 +147,15 @@ describe('deep link round trip', () => {
     const start = startOfDayAt(new Date('2026-03-04T05:00:00Z'), link.minuteOfDay ?? 0);
     expect(start.toISOString()).toBe('2026-03-04T11:00:00.000Z');
     expect(link.focus).toEqual({ kind: 'spoke', id: 'sales' });
+  });
+
+  test('mode=replay parses and round-trips only when no time param pins replay', () => {
+    const marker = parseDeepLink({ mode: 'replay' });
+    expect(marker.replay).toBe(true);
+    expect(toQuery(marker)).toEqual({ mode: 'replay' });
+    expect(parseDeepLink({}).replay).toBe(false);
+    expect(parseDeepLink({ mode: 'other' }).replay).toBe(false);
+    expect(toQuery(parseDeepLink({ mode: 'replay', t: '09:05' }))).toEqual({ t: '09:05' });
+    expect(toQuery(parseDeepLink({ mode: 'replay', paused: '1' }))).toEqual({ paused: '1' });
   });
 });

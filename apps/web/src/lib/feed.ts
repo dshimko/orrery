@@ -19,17 +19,21 @@ export interface FeedOptions {
   /** Current shared simulated time. */
   now: () => Date;
   sink: FeedSink;
+  /** True while the shared clock is live; see `SchedulerOptions.isLive`. */
+  isLive?: () => boolean;
 }
 
 export interface EnvFeed {
-  /** Sim time jumped (scrub): refetch the snapshot now. */
+  /** Sim time jumped (scrub) or the clock went live: refetch the snapshot now. */
   jump(): void;
+  /** Live mode: poll now, e.g. when the tab becomes visible. */
+  refresh(): void;
   stop(): void;
 }
 
 /**
  * Loads one environment's topology once (retrying on failure), then keeps its snapshot fresh
- * with the shared scheduler: every 5 simulated minutes and after a jump. Events are not fetched
+ * with the shared scheduler: every 5 simulated minutes (every 30 s when live) and after a jump. Events are not fetched
  * because the Orloj faces draw snapshots only.
  */
 export function createEnvFeed(options: FeedOptions): EnvFeed {
@@ -46,6 +50,7 @@ export function createEnvFeed(options: FeedOptions): EnvFeed {
       now,
       initialSnapshotAt: now(),
       fetchEvents: false,
+      ...(options.isLive ? { isLive: options.isLive } : {}),
       sink: {
         onSnapshot: sink.onSnapshot,
         onEvents: () => undefined,
@@ -78,6 +83,9 @@ export function createEnvFeed(options: FeedOptions): EnvFeed {
   return {
     jump() {
       scheduler?.jump();
+    },
+    refresh() {
+      scheduler?.refresh();
     },
     stop() {
       stopped = true;

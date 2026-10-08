@@ -23,6 +23,11 @@ export interface TimeState {
   /** Playback multiplier (1, 2, 4). */
   speed: number;
   paused: boolean;
+  /**
+   * Live mode: `at` follows the wall clock. Orbits then advance at real time, and vehicles
+   * travel at their normal (1x) visible pace regardless of `speed`.
+   */
+  live?: boolean;
 }
 
 export interface CameraState {

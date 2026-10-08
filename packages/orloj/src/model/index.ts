@@ -12,6 +12,7 @@ import type { FaceModel } from './types.js';
 
 export type * from './types.js';
 export { faceHits, type SpokeDistances } from './hits.js';
+export { type LocalTimeContext } from './local-time.js';
 
 const MOON_PHASE_OFFSET = Math.PI * 0.62;
 const MINUTES_PER_HOUR = 60;

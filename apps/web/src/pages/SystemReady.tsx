@@ -1,22 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { CameraViewKey, Filters, PickTarget, SystemView, TierFilter } from '@orrery/render';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertBanner } from '../components/AlertBanner.js';
 import { ControlsPanel } from '../components/ControlsPanel.js';
 import { DataTable } from '../components/DataTable.js';
+import { FreshnessIndicator } from '../components/FreshnessIndicator.js';
 import { Header } from '../components/Header.js';
 import { SceneHost } from '../components/SceneHost.js';
 import { StatusPanel } from '../components/StatusPanel.js';
 import { TimeControls } from '../components/TimeControls.js';
+import { UpcomingPanel } from '../components/UpcomingPanel.js';
 import { WallToggle } from '../components/WallToggle.js';
 import type { EnvData } from '../hooks/useEnvLoad.js';
+import { useAlertWatch } from '../hooks/useAlertWatch.js';
+import { useFreshness } from '../hooks/useFreshness.js';
 import { useIncidentAnnouncer } from '../hooks/useIncidentAnnouncer.js';
 import { useSharedClock, prefersReducedMotion } from '../hooks/useSharedClock.js';
 import { useSimClock } from '../hooks/useSimClock.js';
 import { useSystemData } from '../hooks/useSystemData.js';
+import { useTabTitle } from '../hooks/useTabTitle.js';
 import { logoUrlOf, type Api } from '../lib/api.js';
+import { countAttention } from '../lib/alerts.js';
 import { clockLink, pageUrl } from '../lib/clock-url.js';
+import { alertHref, FALLBACK_TIER_COLOR, type HomeAlert } from '../lib/home.js';
 import type { DeepLink } from '../lib/params.js';
 import { envPath, navigate } from '../lib/router.js';
+import { upcomingEvents } from '../lib/upcoming.js';
 
 export interface SystemReadyProps {
   api: Api;
@@ -26,8 +35,6 @@ export interface SystemReadyProps {
   /** Wall display mode is on (`wall=1`); keep it in the URL. */
   isWall: boolean;
 }
-
-const FALLBACK_TIER_COLOR = '#6EA8FF';
 
 /** The interactive system view for one loaded environment. */
 export function SystemReady({ api, envId, data, link, isWall }: SystemReadyProps) {
@@ -46,9 +53,27 @@ export function SystemReady({ api, envId, data, link, isWall }: SystemReadyProps
   const viewRef = useRef<SystemView | null>(null);
   const [viewVersion, setViewVersion] = useState(0);
   const [sceneError, setSceneError] = useState<string | null>(null);
-  const system = useSystemData(api, envId, controller, data.snapshot, viewRef);
+  const isLive = time.live === true;
+  const freshness = useFreshness();
+  const system = useSystemData(api, envId, controller, data.snapshot, viewRef, isLive, freshness);
   const { snapshot } = system;
-  const announcement = useIncidentAnnouncer(snapshot.alerts);
+  const incidentAnnouncement = useIncidentAnnouncer(snapshot.alerts);
+  const openAlerts = useMemo<HomeAlert[]>(
+    () =>
+      snapshot.alerts.map((alert) => ({
+        key: `${envId}:${alert.id}`,
+        env,
+        alert,
+        href: alertHref(envId, alert, new Date(snapshot.at)),
+      })),
+    [snapshot, envId, env],
+  );
+  const watch = useAlertWatch([envId], openAlerts, isLive);
+  useTabTitle(isLive ? countAttention(snapshot.alerts) : 0);
+  const upcoming = useMemo(
+    () => upcomingEvents([{ env, snapshot }], time.at),
+    [snapshot, time.at, env],
+  );
 
   const [tier, setTier] = useState<TierFilter>(link.tier);
   const [workload, setWorkload] = useState(link.workload);
@@ -106,6 +131,12 @@ export function SystemReady({ api, envId, data, link, isWall }: SystemReadyProps
     setPinned((current) => ({ ...current, minuteOfDay: minute }));
     system.jump();
   };
+  const onGoLive = (): void => {
+    controller.goLive();
+    refresh();
+    setPinned({ minuteOfDay: null, date: null });
+    system.jump();
+  };
   const onTogglePlay = (): void => {
     controller.setPaused(!controller.state().paused);
     refresh();
@@ -157,12 +188,21 @@ export function SystemReady({ api, envId, data, link, isWall }: SystemReadyProps
               {system.refreshError}
             </p>
           )}
+          <AlertBanner items={watch.items} onDismiss={watch.dismiss} />
           <TimeControls
             time={time}
             speeds={visuals.time.speeds}
             onTogglePlay={onTogglePlay}
             onSpeed={onSpeed}
             onScrub={onScrub}
+            onGoLive={onGoLive}
+            status={
+              <FreshnessIndicator
+                isLive={isLive}
+                summary={freshness.summary()}
+                nowMs={Date.now()}
+              />
+            }
           />
           <DataTable topology={data.topology} snapshot={snapshot} />
         </main>
@@ -182,6 +222,13 @@ export function SystemReady({ api, envId, data, link, isWall }: SystemReadyProps
             onResetCamera={() => viewRef.current?.resetCamera()}
             onLevelHorizon={() => viewRef.current?.levelHorizon()}
           />
+          <UpcomingPanel
+            items={upcoming}
+            now={time.at}
+            tierColors={visuals.colors.tiers}
+            fallbackColor={FALLBACK_TIER_COLOR}
+            showEnv={false}
+          />
           <StatusPanel
             topology={data.topology}
             snapshot={snapshot}
@@ -197,7 +244,7 @@ export function SystemReady({ api, envId, data, link, isWall }: SystemReadyProps
         </div>
       </div>
       <div className="sr-only" role="status" aria-live="polite">
-        {announcement}
+        {watch.announcement || incidentAnnouncement}
       </div>
     </div>
   );

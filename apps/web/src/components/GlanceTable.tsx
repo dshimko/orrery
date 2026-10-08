@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import { formatIsoClock, formatPercent } from '../lib/format.js';
+import { formatIsoDual, formatPercent } from '../lib/format.js';
 import type { GlanceRow } from '../lib/home.js';
 import { TierBadge } from './TierBadge.js';
 
@@ -29,7 +29,7 @@ function Cells({ row }: { row: GlanceRow }) {
       </td>
       <td className="n">{formatPercent(row.backlog ?? 0)}</td>
       <td>
-        {row.next ? `${row.next.title}, ${formatIsoClock(row.next.at)} UTC` : 'Nothing more today'}
+        {row.next ? `${row.next.title}, ${formatIsoDual(row.next.at)}` : 'Nothing in the next 24 h'}
       </td>
     </>
   );

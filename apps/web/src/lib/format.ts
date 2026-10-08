@@ -37,3 +37,53 @@ export function formatIsoClock(iso: string): string {
   const at = new Date(iso);
   return Number.isNaN(at.getTime()) ? iso : formatClock(at);
 }
+
+const MS_PER_MINUTE = 60_000;
+
+/** `HH:MM ZZZ` in the given IANA zone (default: the browser's), e.g. `06:45 EDT`. */
+export function formatLocalClock(at: Date, timeZone?: string): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZoneName: 'short',
+    ...(timeZone ? { timeZone } : {}),
+  }).formatToParts(at);
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('hour')}:${part('minute')} ${part('timeZoneName')}`.trim();
+}
+
+/** `10:45 UTC · 06:45 EDT`; just the UTC part when the local zone is UTC. */
+export function formatDualClock(at: Date, timeZone?: string): string {
+  const utc = `${formatClock(at)} UTC`;
+  const local = formatLocalClock(at, timeZone);
+  return local === utc ? utc : `${utc} · ${local}`;
+}
+
+/** Like `formatDualClock` for an ISO timestamp; returns the input when unparsable. */
+export function formatIsoDual(iso: string, timeZone?: string): string {
+  const at = new Date(iso);
+  return Number.isNaN(at.getTime()) ? iso : formatDualClock(at, timeZone);
+}
+
+/** `12 s ago`, `3 min ago`, `2 h ago` for an elapsed time in ms. */
+export function formatElapsed(elapsedMs: number): string {
+  const seconds = Math.max(0, Math.floor(elapsedMs / 1000));
+  if (seconds < 60) return `${seconds} s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  return `${Math.floor(minutes / 60)} h ago`;
+}
+
+/** Time until `startMs`: `in 23 min`, `in 2 h 5 min`, `in <1 min`, or `now`. */
+export function formatCountdown(startMs: number, nowMs: number): string {
+  const remaining = startMs - nowMs;
+  if (remaining <= 0) return 'now';
+  const minutes = Math.floor(remaining / MS_PER_MINUTE);
+  if (minutes < 1) return 'in <1 min';
+  if (minutes < 60) return `in ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `in ${hours} h` : `in ${hours} h ${rest} min`;
+}

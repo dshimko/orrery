@@ -141,6 +141,12 @@ function CompareReady({ api, data, query }: { api: Api; data: Bootstrap; query: 
             controller.setSpeed(speed);
             refresh();
           }}
+          onGoLive={() => {
+            controller.goLive();
+            refresh();
+            setPinned({ minuteOfDay: null, date: null });
+            setJumpEpoch((epoch) => epoch + 1);
+          }}
           onScrub={(minute) => {
             controller.seekMinute(minute);
             refresh();
@@ -160,6 +166,7 @@ function CompareReady({ api, data, query }: { api: Api; data: Bootstrap; query: 
                 controller={controller}
                 reducedMotion={reducedMotion}
                 jumpEpoch={jumpEpoch}
+                isLive={time.live === true}
               />
             ) : null;
           })}

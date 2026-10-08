@@ -24,6 +24,7 @@ export function createOrlojView(container: HTMLElement, options: OrlojOptions): 
   const { visuals } = options;
   const geo = geometryFor(visuals);
   const doc = container.ownerDocument;
+  const timeZone = options.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const isReduced = options.reducedMotion ?? prefersReducedMotion();
   const gate = createTextGate(visuals.stability.domHz);
 
@@ -84,7 +85,7 @@ export function createOrlojView(container: HTMLElement, options: OrlojOptions): 
       nextHits.push(
         ...toPixelHits(
           model.envId,
-          faceHits(model, geo, spokeDistances(state)),
+          faceHits(model, geo, spokeDistances(state), { at: time.at, timeZone }),
           origin.x,
           origin.y,
           layout.scale,

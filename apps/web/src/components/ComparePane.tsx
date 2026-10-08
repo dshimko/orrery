@@ -19,6 +19,8 @@ export interface ComparePaneProps {
   reducedMotion: boolean;
   /** Increments when the shared clock was scrubbed; each pane refetches. */
   jumpEpoch: number;
+  /** The shared clock follows the wall clock: events come from the live stream. */
+  isLive: boolean;
 }
 
 type PaneLoad =
@@ -119,7 +121,7 @@ function PaneScene(props: PaneSceneProps) {
   const { api, env, visuals, controller, reducedMotion, jumpEpoch, tierColor, topology } = props;
   const viewRef = useRef<SystemView | null>(null);
   const [sceneError, setSceneError] = useState<string | null>(null);
-  const system = useSystemData(api, env.id, controller, props.initial, viewRef);
+  const system = useSystemData(api, env.id, controller, props.initial, viewRef, props.isLive);
   const { jump } = system;
   const { counts } = system.snapshot;
   const onView = useCallback((view: SystemView | null) => {

@@ -4,7 +4,7 @@ import { DEFAULT_START_MINUTE, parseDate, startOfDayAt } from './params.js';
 import { createTimeController, type TimeController } from './time.js';
 
 /** The clock parameters of a deep link. */
-export type ClockLink = Pick<DeepLink, 'minuteOfDay' | 'date' | 'speed' | 'paused'>;
+export type ClockLink = Pick<DeepLink, 'minuteOfDay' | 'date' | 'speed' | 'paused' | 'replay'>;
 
 export interface ClockSettings {
   secondsPerSimDay: number;
@@ -15,13 +15,23 @@ export interface ClockSettings {
 
 let shared: TimeController | null = null;
 
-/** True when the link pins the clock, which makes a page start a fresh one. */
+/** True when the link pins the clock (replay), which makes a page start a fresh one. */
 export function hasExplicitClock(link: ClockLink): boolean {
-  return link.minuteOfDay !== null || link.date !== null || link.speed !== null || link.paused;
+  return (
+    link.minuteOfDay !== null ||
+    link.date !== null ||
+    link.speed !== null ||
+    link.paused ||
+    link.replay
+  );
 }
 
-/** The start time a link asks for: its date (or today) at its time (or the default). */
+/**
+ * The replay start a link asks for: its date (or today) at its time. A date without a time
+ * starts at the default minute; `mode=replay` alone starts at the current instant.
+ */
 export function linkStart(link: ClockLink, now: Date = new Date()): Date {
+  if (link.minuteOfDay === null && link.date === null) return now;
   const day = (link.date !== null ? parseDate(link.date) : null) ?? now;
   return startOfDayAt(day, link.minuteOfDay ?? DEFAULT_START_MINUTE);
 }
@@ -45,11 +55,13 @@ export function acquireClock(
   now: Date = new Date(),
 ): TimeController {
   if (shared && !hasExplicitClock(link)) return shared;
+  const replay = hasExplicitClock(link) || settings.startPaused;
   return createTimeController({
     start: linkStart(link, now),
     secondsPerSimDay: settings.secondsPerSimDay,
     speed: link.speed !== null && settings.speeds.includes(link.speed) ? link.speed : 1,
     paused: link.paused || settings.startPaused,
+    mode: replay ? 'replay' : 'live',
   });
 }
 

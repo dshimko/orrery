@@ -3,6 +3,7 @@
 import { MockAdapter } from '@orrery/adapter-mock';
 import {
   Visuals,
+  orbitSpeed,
   createTextGate,
   type PlatformEvent,
   type Snapshot,
@@ -195,5 +196,54 @@ describe('stability rules', () => {
       previous = current;
     }
     expect(worst).toBeLessThanOrEqual(1);
+  });
+
+  describe('live mode', () => {
+    const live = (speed = 1) => ({ at: AT, speed, paused: false, live: true });
+    const angle = (m: SceneModel) => m.spokeById.get('sales')?.angle ?? NaN;
+
+    it('advances orbital angles by real time regardless of speed', () => {
+      const model = fresh();
+      const spoke = model.spokeById.get('sales');
+      const before = angle(model);
+      step(model, createPools(), FRAME, live(4));
+      const orbit = spoke?.orbit ?? 0;
+      expect(angle(model) - before).toBeCloseTo(
+        orbitSpeed(orbit, visuals.orbitSpeed) * (FRAME / 3600),
+        12,
+      );
+    });
+
+    it('moves vehicles at 1x pace even when speed is 4', () => {
+      const [fast, normal] = [fresh(), fresh()];
+      const [pf, pn] = [createPools(), createPools()];
+      const gold = events.find((e) => e.type === 'product.publish') ?? events[0];
+      if (!gold) throw new Error('no events');
+      spawn(fast, pf, gold, 0);
+      spawn(normal, pn, gold, 0);
+      step(fast, pf, FRAME, live(4));
+      step(normal, pn, FRAME, { at: AT, speed: 1, paused: false });
+      expect(fast.animTime).toBeCloseTo(normal.animTime, 12);
+      expect(pf).toEqual(pn);
+    });
+
+    it('differs from replay at the same speed', () => {
+      const [a, b] = [fresh(), fresh()];
+      step(a, createPools(), FRAME, live(4));
+      step(b, createPools(), FRAME, { at: AT, speed: 4, paused: false });
+      expect(b.animTime).toBeGreaterThan(a.animTime);
+      expect(angle(b)).toBeGreaterThan(angle(a));
+    });
+
+    it('freezes everything when paused (rule 8)', () => {
+      const model = fresh();
+      const pools = createPools();
+      events.forEach((e, i) => spawn(model, pools, e, i));
+      step(model, pools, FRAME, playing());
+      const before = { angle: angle(model), anim: model.animTime };
+      step(model, pools, FRAME, { at: AT, speed: 4, paused: true, live: true });
+      expect(angle(model)).toBe(before.angle);
+      expect(model.animTime).toBe(before.anim);
+    });
   });
 });

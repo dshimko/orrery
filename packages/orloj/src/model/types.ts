@@ -25,6 +25,9 @@ export interface ArcModel {
   isActive: boolean;
   startLabel: string;
   endLabel: string;
+  /** Minutes of the UTC day; the end may pass 1440 for a window that crosses midnight. */
+  startMinute: number;
+  endMinute: number;
 }
 
 export interface TickModel {
@@ -32,6 +35,8 @@ export interface TickModel {
   title: string;
   text: string;
   angle: number;
+  /** Minute of the UTC day at which the transfer starts. */
+  minute: number;
 }
 
 export type NoonKind = 'source' | 'office' | 'studio';

@@ -26,6 +26,11 @@ export interface OrlojOptions {
   faces: readonly OrlojFace[];
   time: () => OrlojTime;
   reducedMotion?: boolean;
+  /**
+   * IANA zone for the local times appended to tooltips (the dial stays UTC). Defaults to the
+   * browser's zone.
+   */
+  timeZone?: string;
 }
 
 /** A tooltip region, in CSS pixels relative to the canvas. */

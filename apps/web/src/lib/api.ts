@@ -85,6 +85,11 @@ async function readData<T>(fetchFn: FetchFn, url: string, signal?: AbortSignal):
   return body.data as T;
 }
 
+/** Live event stream URL (`event: platform` SSE) for an environment, resuming from `since`. */
+export function eventStreamUrl(envId: string, since: Date): string {
+  return `/api/env/${encodeURIComponent(envId)}/stream?since=${encodeURIComponent(since.toISOString())}`;
+}
+
 export function isAbort(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
 }

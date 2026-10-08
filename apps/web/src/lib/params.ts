@@ -21,6 +21,11 @@ export interface DeepLink {
   date: string | null;
   /** Start paused (`paused=1`), e.g. for reproducible screenshots. */
   paused: boolean;
+  /**
+   * `mode=replay` asks for replay even without other time params. Any of `t`, `date`, `speed`,
+   * or `paused` also implies replay; with none of them, pages follow the wall clock (live).
+   */
+  replay: boolean;
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -90,6 +95,7 @@ export function parseDeepLink(query: Query): DeepLink {
     view: CAMERA_VIEW_KEYS.find((candidate) => candidate === query.view) ?? null,
     date: parseDate(query.date) ? (query.date ?? null) : null,
     paused: query.paused === '1',
+    replay: query.mode === 'replay',
   };
 }
 
@@ -111,5 +117,12 @@ export function toQuery(link: Partial<DeepLink>): Query {
   if (link.view) query.view = link.view;
   if (link.date) query.date = link.date;
   if (link.paused) query.paused = '1';
+  // Replay with nothing else pinned still needs a marker, or the link would open live.
+  const pinsTime =
+    link.minuteOfDay != null ||
+    link.date ||
+    link.paused ||
+    (link.speed != null && link.speed !== 1);
+  if (link.replay && !pinsTime) query.mode = 'replay';
   return query;
 }

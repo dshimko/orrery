@@ -6,7 +6,7 @@ test.describe('system view', () => {
   test('renders prod with header, tier badge, alerts, and the data table', async ({ page }) => {
     const errors = await openSystem(page, 'prod');
     await expect(page.getByRole('img', { name: /system view: 7 spokes/i })).toBeVisible();
-    await expect(page.getByText('Tier: PROD')).toBeVisible();
+    await expect(page.getByRole('banner').getByText('Tier: PROD')).toBeVisible();
     await expect(page.getByTestId('alerts')).toContainText('Cross-domain quality alert');
     const table = page.getByTestId('data-table');
     for (const spoke of [
@@ -38,7 +38,7 @@ test.describe('system view', () => {
     const errors = await openSystem(page, 'prod');
     await page.getByTestId('env-switcher').selectOption('dev');
     await expect(page).toHaveURL(/\/env\/dev/);
-    await expect(page.getByText('Tier: DEV')).toBeVisible();
+    await expect(page.getByRole('banner').getByText('Tier: DEV')).toBeVisible();
     await expect(page.getByTestId('data-table')).not.toContainText('Finance');
     expect(errors).toEqual([]);
   });

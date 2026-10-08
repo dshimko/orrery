@@ -80,6 +80,8 @@ export function buildArcs(
         isActive: isWithin(span, minute),
         startLabel,
         endLabel,
+        startMinute: span.startMinute,
+        endMinute: span.startMinute + span.durationMinutes,
       };
     });
 }
@@ -93,6 +95,7 @@ export function buildTicks(spans: readonly WindowSpan[]): TickModel[] {
       title: span.window.title,
       text: `${formatMinute(span.startMinute)} UTC: consolidated silver moves from the ingest spoke to the core.`,
       angle: hourAngle(span.startMinute / MINUTES_PER_HOUR),
+      minute: span.startMinute,
     }));
 }
 

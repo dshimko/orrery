@@ -88,7 +88,7 @@ export function useWallAttention(api: Api, envIds: readonly string[]): (envId: s
     const poll = async (): Promise<void> => {
       const at =
         currentClock()?.state().at ??
-        linkStart({ minuteOfDay: null, date: null, speed: null, paused: false });
+        linkStart({ minuteOfDay: null, date: null, speed: null, paused: false, replay: false });
       const results = await Promise.allSettled(
         envIds.map((id) => api.snapshot(id, at, controller.signal)),
       );

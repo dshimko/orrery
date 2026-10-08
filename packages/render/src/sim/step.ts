@@ -290,9 +290,13 @@ function stepAlerts(model: SceneModel, pools: Pools, dt: number): void {
 export function step(model: SceneModel, pools: Pools, realDt: number, time: TimeState): void {
   const playing = time.paused ? 0 : 1;
   const dt = Math.max(0, realDt) * playing;
-  const dts = dt * Math.sqrt(time.speed);
+  const live = time.live === true;
+  // Live: orbits follow the wall clock and vehicles keep their 1x pace whatever `speed` says.
+  const dts = live ? dt : dt * Math.sqrt(time.speed);
   const simHoursDelta = playing
-    ? (realDt * simMinutesPerSecond(model.visuals.time, time.speed)) / 60
+    ? live
+      ? realDt / 3600
+      : (realDt * simMinutesPerSecond(model.visuals.time, time.speed)) / 60
     : 0;
   model.simHours = time.at.getTime() / 3_600_000;
   model.animTime += dts;

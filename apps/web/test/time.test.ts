@@ -66,3 +66,83 @@ describe('time controller', () => {
     expect(minuteOfDay(START)).toBe(640);
   });
 });
+
+describe('live mode', () => {
+  function liveController() {
+    let nowMs = START.getTime();
+    const controller = createTimeController({
+      start: new Date(0),
+      secondsPerSimDay: 120,
+      mode: 'live',
+      now: () => nowMs,
+    });
+    return { controller, setNow: (ms: number) => (nowMs = ms) };
+  }
+
+  test('follows the wall clock and ignores advance', () => {
+    const { controller, setNow } = liveController();
+    expect(controller.mode()).toBe('live');
+    expect(controller.state()).toEqual({ at: START, speed: 1, paused: false, live: true });
+    setNow(START.getTime() + 5000);
+    controller.advance(1000);
+    expect(controller.state().at.getTime()).toBe(START.getTime() + 5000);
+  });
+
+  test('pausing switches to replay frozen at the current instant', () => {
+    const { controller, setNow } = liveController();
+    setNow(START.getTime() + 7000);
+    controller.setPaused(true);
+    setNow(START.getTime() + 60_000);
+    expect(controller.mode()).toBe('replay');
+    expect(controller.state()).toEqual({
+      at: new Date(START.getTime() + 7000),
+      speed: 1,
+      paused: true,
+      live: false,
+    });
+  });
+
+  test('a speed other than 1 switches to replay and then advances', () => {
+    const { controller, setNow } = liveController();
+    setNow(START.getTime() + 1000);
+    controller.setSpeed(2);
+    expect(controller.mode()).toBe('replay');
+    controller.advance(500);
+    expect(controller.state().at.getTime()).toBe(START.getTime() + 1000 + 60_000 * 12);
+    expect(controller.state().speed).toBe(2);
+  });
+
+  test('speed 1 and un-pausing are no-ops in live mode', () => {
+    const { controller } = liveController();
+    controller.setSpeed(1);
+    controller.setPaused(false);
+    expect(controller.mode()).toBe('live');
+  });
+
+  test('seeking switches to replay at that minute of the current day', () => {
+    const { controller } = liveController();
+    controller.seekMinute(60);
+    expect(controller.mode()).toBe('replay');
+    expect(controller.state().at.toISOString()).toBe('2026-03-04T01:00:00.000Z');
+  });
+
+  test('goLive returns to the wall clock at 1x, unpaused', () => {
+    const { controller, setNow } = liveController();
+    controller.setSpeed(4);
+    controller.setPaused(true);
+    setNow(START.getTime() + 90_000);
+    const state = controller.goLive();
+    expect(controller.mode()).toBe('live');
+    expect(state).toEqual({
+      at: new Date(START.getTime() + 90_000),
+      speed: 1,
+      paused: false,
+      live: true,
+    });
+  });
+
+  test('a replay controller reports live false', () => {
+    const controller = createTimeController({ start: START, secondsPerSimDay: 120 });
+    expect(controller.state().live).toBe(false);
+  });
+});

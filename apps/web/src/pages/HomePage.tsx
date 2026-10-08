@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useMemo, useState } from 'react';
+import { AlertBanner } from '../components/AlertBanner.js';
 import { ErrorState } from '../components/ErrorState.js';
+import { FreshnessIndicator } from '../components/FreshnessIndicator.js';
 import { GlanceTable } from '../components/GlanceTable.js';
 import { HomeAlerts } from '../components/HomeAlerts.js';
 import { HomeAnnouncer } from '../components/HomeAnnouncer.js';
@@ -9,12 +11,17 @@ import { Link } from '../components/Link.js';
 import { OrlojStage } from '../components/OrlojStage.js';
 import { SummaryDialog } from '../components/SummaryDialog.js';
 import { TimeControls } from '../components/TimeControls.js';
+import { UpcomingPanel } from '../components/UpcomingPanel.js';
 import { WallToggle } from '../components/WallToggle.js';
+import { useAlertWatch } from '../hooks/useAlertWatch.js';
+import { useFreshness } from '../hooks/useFreshness.js';
+import { useTabTitle } from '../hooks/useTabTitle.js';
 import { type Bootstrap, useBootstrap } from '../hooks/useBootstrap.js';
 import { useHomeFeeds } from '../hooks/useHomeFeeds.js';
 import { useSimClock } from '../hooks/useSimClock.js';
 import { prefersReducedMotion, useSharedClock } from '../hooks/useSharedClock.js';
 import { logoUrlOf, type Api } from '../lib/api.js';
+import { countAttention } from '../lib/alerts.js';
 import { clockLink, pageUrl } from '../lib/clock-url.js';
 import { compareUrl, defaultComparePair, MIN_COMPARE_ENVS } from '../lib/compare.js';
 import {
@@ -28,6 +35,7 @@ import {
 } from '../lib/home.js';
 import { parseDeepLink } from '../lib/params.js';
 import { isWallQuery, navigate, type Query } from '../lib/router.js';
+import { HOME_UPCOMING_LIMIT, upcomingEvents } from '../lib/upcoming.js';
 
 export interface HomePageProps {
   api: Api;
@@ -64,7 +72,9 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
   const link = useMemo(() => parseDeepLink(query), []);
   const controller = useSharedClock(link, visuals.time);
   const { time, refresh } = useSimClock(controller);
-  const { feeds, jump } = useHomeFeeds(api, environments, controller);
+  const freshness = useFreshness();
+  const { feeds, jump } = useHomeFeeds(api, environments, controller, freshness);
+  const isLive = time.live === true;
   const [reducedMotion] = useState(prefersReducedMotion);
   const [pinned, setPinned] = useState({ minuteOfDay: link.minuteOfDay, date: link.date });
   const [summaryId, setSummaryId] = useState<string | null>(null);
@@ -96,12 +106,33 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
       environments.map((env) => [env.id, withHealth(feeds[env.id], healthErrors[env.id])]),
     ),
   );
+  const loadedEnvIds = useMemo(
+    () => environments.filter((env) => feeds[env.id]?.snapshot).map((env) => env.id),
+    [environments, feeds],
+  );
+  const watch = useAlertWatch(loadedEnvIds, alerts, isLive);
+  useTabTitle(isLive ? countAttention(alerts.map((item) => item.alert)) : 0);
+  const upcoming = useMemo(
+    () =>
+      upcomingEvents(
+        environments.map((env) => ({ env, snapshot: feeds[env.id]?.snapshot })),
+        time.at,
+        { limit: HOME_UPCOMING_LIMIT },
+      ),
+    [environments, feeds, time.at],
+  );
   const summaryRow = rows.find((row) => row.env.id === summaryId) ?? null;
 
   const onScrub = (minute: number): void => {
     controller.seekMinute(minute);
     refresh();
     setPinned((current) => ({ ...current, minuteOfDay: minute }));
+    jump();
+  };
+  const onGoLive = (): void => {
+    controller.goLive();
+    refresh();
+    setPinned({ minuteOfDay: null, date: null });
     jump();
   };
   const onTogglePlay = (): void => {
@@ -135,7 +166,12 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
           onTogglePlay={onTogglePlay}
           onSpeed={onSpeed}
           onScrub={onScrub}
+          onGoLive={onGoLive}
+          status={
+            <FreshnessIndicator isLive={isLive} summary={freshness.summary()} nowMs={Date.now()} />
+          }
         />
+        <AlertBanner items={watch.items} onDismiss={watch.dismiss} />
         <OrlojStage
           faces={faces}
           visuals={visuals}
@@ -153,6 +189,13 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
               onSummary={setSummaryId}
             />
           </section>
+          <UpcomingPanel
+            items={upcoming}
+            now={time.at}
+            tierColors={tierColors}
+            fallbackColor={FALLBACK_TIER_COLOR}
+            showEnv
+          />
           <section className="panel" aria-labelledby="home-alerts-h">
             <h2 id="home-alerts-h">Open alerts ({alerts.length})</h2>
             <HomeAlerts
@@ -174,6 +217,9 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
         />
       )}
       {isLoaded && <HomeAnnouncer alerts={alerts} />}
+      <div className="sr-only" role="status" aria-live="polite">
+        {watch.announcement}
+      </div>
     </div>
   );
 }

@@ -154,7 +154,8 @@ describe('mock settings and lifecycle', () => {
     expect(snapshot.calendar.days).toHaveLength(31);
     expect(snapshot.calendar.days.filter((d) => d.isPast)).toHaveLength(7);
     expect(snapshot.calendar.days.at(-1)?.monthEndClose).toBe(true);
-    expect(snapshot.schedule.filter((w) => w.kind === 'transfer')).toHaveLength(5);
+    // Five transfers a day, plus the one in progress at 03:05 (rolling window, not the UTC day).
+    expect(snapshot.schedule.filter((w) => w.kind === 'transfer')).toHaveLength(6);
     expect(snapshot.previousDayClean).toBe(false);
     const stg = await (await started(demoEnv('stg'))).snapshot(at('00:05'));
     expect(stg.previousDayClean).toBe(true);

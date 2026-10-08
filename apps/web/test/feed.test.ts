@@ -3,7 +3,7 @@ import type { Snapshot, Topology } from '@orrery/core';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Api } from '../src/lib/api.js';
 import { createEnvFeed, TOPOLOGY_RETRY_MS } from '../src/lib/feed.js';
-import { SNAPSHOT_REFRESH_MS } from '../src/lib/scheduler.js';
+import { LIVE_POLL_MS, SNAPSHOT_REFRESH_MS } from '../src/lib/scheduler.js';
 
 const START = new Date('2026-03-04T10:40:00Z');
 const topology = { envId: 'stg' } as unknown as Topology;
@@ -12,6 +12,7 @@ const snapshot = { envId: 'stg' } as unknown as Snapshot;
 function setup(
   topologyResults: (() => Promise<Topology>)[],
   snapshotResult: () => Promise<Snapshot>,
+  isLive?: () => boolean,
 ) {
   let nowMs = START.getTime();
   const topologyCalls = vi.fn();
@@ -34,7 +35,13 @@ function setup(
     },
   } as unknown as Api;
   const sink = { onTopology: vi.fn(), onSnapshot: vi.fn(), onError: vi.fn() };
-  const feed = createEnvFeed({ api, envId: 'stg', now: () => new Date(nowMs), sink });
+  const feed = createEnvFeed({
+    api,
+    envId: 'stg',
+    now: () => new Date(nowMs),
+    sink,
+    ...(isLive ? { isLive } : {}),
+  });
   return {
     feed,
     sink,
@@ -107,5 +114,23 @@ describe('createEnvFeed', () => {
     ctx.feed.stop();
     await vi.advanceTimersByTimeAsync(TOPOLOGY_RETRY_MS * 3);
     expect(ctx.topologyCalls).toHaveBeenCalledTimes(1);
+  });
+
+  test('live feeds poll every 30 s at the clock instant and refresh on demand', async () => {
+    const ctx = setup(
+      [() => Promise.resolve(topology)],
+      () => Promise.resolve(snapshot),
+      () => true,
+    );
+    await flush();
+    expect(ctx.snapshotCalls).toHaveBeenCalledTimes(1);
+    expect(ctx.snapshotCalls.mock.calls[0]?.[1]).toEqual(START);
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS + 250);
+    expect(ctx.snapshotCalls).toHaveBeenCalledTimes(2);
+    ctx.feed.refresh();
+    await flush();
+    expect(ctx.snapshotCalls).toHaveBeenCalledTimes(3);
+    expect(ctx.eventCalls).not.toHaveBeenCalled();
+    ctx.feed.stop();
   });
 });

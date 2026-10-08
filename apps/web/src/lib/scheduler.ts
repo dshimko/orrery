@@ -3,6 +3,8 @@ import type { PlatformEvent, Snapshot } from '@orrery/core';
 import { type Api, isAbort } from './api.js';
 
 export const SNAPSHOT_REFRESH_MS = 5 * 60_000;
+/** Live mode polls the snapshot this often in real time. */
+export const LIVE_POLL_MS = 30_000;
 export const EVENT_WINDOW_MS = 15 * 60_000;
 export const SCHEDULER_TICK_MS = 250;
 /** Pause before retrying a failed event window. */
@@ -26,6 +28,11 @@ export interface SchedulerOptions {
   initialSnapshotAt: Date;
   /** Set to false for views that only draw snapshots (home); default true. */
   fetchEvents?: boolean;
+  /**
+   * True while the clock follows the wall clock. Live mode polls the snapshot every
+   * `LIVE_POLL_MS` of real time and takes events from the live stream, not from windows.
+   */
+  isLive?: () => boolean;
 }
 
 export interface Scheduler {
@@ -33,6 +40,8 @@ export interface Scheduler {
   start(): void;
   /** Runs one check now (also called by the timer). */
   tick(): void;
+  /** Live mode: polls again now (e.g. the tab became visible); a no-op in replay. */
+  refresh(): void;
   /** Sim time jumped: abort in-flight work, clear transient state, refetch. */
   jump(): void;
   /** Aborts everything and stops the timer. */
@@ -40,15 +49,20 @@ export interface Scheduler {
 }
 
 /**
- * Keeps the snapshot fresh (every 5 simulated minutes) and prefetches events in
- * 15-minute windows ahead of simulated time. One request per kind in flight at a time.
+ * Keeps the snapshot fresh and prefetches events. In replay it refreshes every 5 simulated
+ * minutes and prefetches events in 15-minute windows ahead of simulated time. In live mode it
+ * polls every 30 real seconds at the clock's current instant and leaves events to the stream.
+ * One request per kind in flight at a time.
  */
 export function createScheduler(options: SchedulerOptions): Scheduler {
   const { api, envId, sink } = options;
   const shouldFetchEvents = options.fetchEvents !== false;
   let timer: ReturnType<typeof setInterval> | undefined;
   let controller = new AbortController();
+  const isLive = options.isLive ?? (() => false);
   let snapshotAt = options.initialSnapshotAt.getTime();
+  /** Real time of the last live poll attempt. */
+  let livePolledAt = Number.NEGATIVE_INFINITY;
   let eventsUntil = options.initialSnapshotAt.getTime();
   let snapshotBusy = false;
   let eventsBusy = false;
@@ -103,6 +117,13 @@ export function createScheduler(options: SchedulerOptions): Scheduler {
     if (stopped) return;
     const now = options.now();
     const nowMs = now.getTime();
+    if (isLive()) {
+      if (!snapshotBusy && Date.now() - livePolledAt >= LIVE_POLL_MS) {
+        livePolledAt = Date.now();
+        refreshSnapshot(now);
+      }
+      return;
+    }
     if (!snapshotBusy && Math.abs(nowMs - snapshotAt) >= SNAPSHOT_REFRESH_MS) {
       refreshSnapshot(now);
     }
@@ -121,6 +142,11 @@ export function createScheduler(options: SchedulerOptions): Scheduler {
       if (timer === undefined) timer = setInterval(tick, SCHEDULER_TICK_MS);
     },
     tick,
+    refresh() {
+      if (stopped || !isLive()) return;
+      livePolledAt = Number.NEGATIVE_INFINITY;
+      tick();
+    },
     jump() {
       if (stopped) return;
       controller.abort();
@@ -130,6 +156,7 @@ export function createScheduler(options: SchedulerOptions): Scheduler {
       eventsRetryAt = 0;
       const nowMs = options.now().getTime();
       snapshotAt = Number.NEGATIVE_INFINITY;
+      livePolledAt = Number.NEGATIVE_INFINITY;
       eventsUntil = nowMs;
       sink.onClear();
       tick();

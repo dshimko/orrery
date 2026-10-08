@@ -52,24 +52,53 @@ export function alertFor(world: World, entry: ScriptEntry, startedAt: number): A
   };
 }
 
-function schedule(world: World, dayStart: number): ScheduledWindow[] {
-  const scripted = world.script.map((entry) => ({
-    id: entry.id,
-    title: entry.title,
-    kind: entry.kind === 'release' ? ('release' as const) : ('scripted' as const),
-    severity: entry.severity,
-    start: isoAt(dayStart + entry.startMinute),
-    end: isoAt(dayStart + entry.startMinute + entry.durationMinutes),
-  }));
-  const transfers = world.transferMinutes.map((minute) => ({
-    id: `transfer-${minute}`,
-    title: 'Transfer to the core',
-    kind: 'transfer' as const,
-    severity: 'info' as const,
-    start: isoAt(dayStart + minute),
-    end: isoAt(dayStart + minute + TRANSFER_WINDOW_MINUTES),
-  }));
-  return [...scripted, ...transfers].sort((a, b) => a.start.localeCompare(b.start));
+/** The schedule looks this far ahead of `at` (a rolling window, not the UTC day). */
+const SCHEDULE_HORIZON_MINUTES = MINUTES_PER_DAY;
+
+/**
+ * Planned windows starting in `[at, at + 24 h)`, plus any in progress at `at`. The day's script
+ * and transfer times are instantiated on yesterday, today, and tomorrow (UTC); yesterday only
+ * matters for windows that run across midnight. Ids carry the UTC date so they stay unique.
+ */
+function schedule(world: World, abs: number): ScheduledWindow[] {
+  const today = Math.floor(abs / MINUTES_PER_DAY) * MINUTES_PER_DAY;
+  const horizon = abs + SCHEDULE_HORIZON_MINUTES;
+  const windows: ScheduledWindow[] = [];
+  for (const dayStart of [today - MINUTES_PER_DAY, today, today + MINUTES_PER_DAY]) {
+    const date = dayKey(dayStart);
+    const candidates: { window: ScheduledWindow; startMin: number; endMin: number }[] = [
+      ...world.script.map((entry) => ({
+        startMin: dayStart + entry.startMinute,
+        endMin: dayStart + entry.startMinute + entry.durationMinutes,
+        window: {
+          id: `${entry.id}@${date}`,
+          title: entry.title,
+          kind: entry.kind === 'release' ? ('release' as const) : ('scripted' as const),
+          severity: entry.severity,
+          start: isoAt(dayStart + entry.startMinute),
+          end: isoAt(dayStart + entry.startMinute + entry.durationMinutes),
+        },
+      })),
+      ...world.transferMinutes.map((minute) => ({
+        startMin: dayStart + minute,
+        endMin: dayStart + minute + TRANSFER_WINDOW_MINUTES,
+        window: {
+          id: `transfer-${minute}@${date}`,
+          title: 'Transfer to the core',
+          kind: 'transfer' as const,
+          severity: 'info' as const,
+          start: isoAt(dayStart + minute),
+          end: isoAt(dayStart + minute + TRANSFER_WINDOW_MINUTES),
+        },
+      })),
+    ];
+    for (const { window, startMin, endMin } of candidates) {
+      const startsInRange = startMin >= abs && startMin < horizon;
+      const inProgress = startMin < abs && abs < endMin;
+      if (startsInRange || inProgress) windows.push(window);
+    }
+  }
+  return windows.sort((a, b) => a.start.localeCompare(b.start) || a.id.localeCompare(b.id));
 }
 
 /** Releases per day this month, seeded as in the reference so the calendar never reshuffles. */
@@ -151,7 +180,6 @@ function spendPerHour(world: World, abs: number): number {
 /** The full state of one environment at an absolute minute. Pure: same inputs, same output. */
 export function snapshotAt(world: World, at: Date): Snapshot {
   const abs = at.getTime() / MS_PER_MINUTE;
-  const dayStart = Math.floor(abs / MINUTES_PER_DAY) * MINUTES_PER_DAY;
   const alerts = activeAt(world, abs).map((a) => alertFor(world, a.entry, a.startedAt));
   const { topology } = world;
   return {
@@ -177,7 +205,7 @@ export function snapshotAt(world: World, at: Date): Snapshot {
     consumerActivity: consumerActivity(world, abs),
     previousDayClean: !world.script.some((entry) => entry.severity === 'incident'),
     alerts,
-    schedule: schedule(world, dayStart),
+    schedule: schedule(world, abs),
     calendar: calendar(world, at),
   };
 }

@@ -268,3 +268,5 @@ shows the pattern:
 
 Fixtures are sample data with neutral names ("Site 01", "Region A", "Sales"). Never record
 real catalog, workspace, or host names into them.
+
+> `Snapshot.schedule` is a rolling window: the windows that start within the next 24 hours of `at`, plus any in progress at `at`. Window ids must be unique across days (the mock suffixes the UTC date, as in `qalert@2026-10-08`).

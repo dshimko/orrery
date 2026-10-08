@@ -55,3 +55,58 @@ export function announcementFor(incidents: readonly Alert[]): string {
   const more = rest.length > 0 ? ` and ${rest.length} more` : '';
   return `New incident: ${first.title}${more}.`;
 }
+
+/** Warning and incident alerts: the ones that count for the tab title and the live banner. */
+export function isAttentionAlert(alert: Alert): boolean {
+  return alert.severity === 'warning' || alert.severity === 'incident';
+}
+
+export function countAttention(alerts: readonly Alert[]): number {
+  return alerts.filter(isAttentionAlert).length;
+}
+
+/** Alert ids seen so far, per environment. An environment absent from the map is not loaded yet. */
+export type SeenAlerts = ReadonlyMap<string, ReadonlySet<string>>;
+
+export interface OpenAlert {
+  envId: string;
+  alert: Alert;
+}
+
+export interface AlertDiff {
+  seen: SeenAlerts;
+  /** Warning and incident alerts that were not open at the previous snapshot. */
+  fresh: OpenAlert[];
+}
+
+/**
+ * Diffs the open alerts of the loaded environments against what was seen before. An
+ * environment's first appearance only records its alerts, so alerts present at startup are
+ * never reported. Info alerts are recorded but never reported.
+ */
+export function diffAlerts(
+  seen: SeenAlerts,
+  loadedEnvIds: readonly string[],
+  open: readonly OpenAlert[],
+): AlertDiff {
+  const next = new Map<string, ReadonlySet<string>>();
+  const fresh: OpenAlert[] = [];
+  for (const envId of loadedEnvIds) {
+    const own = open.filter((item) => item.envId === envId);
+    const before = seen.get(envId);
+    next.set(envId, new Set(own.map((item) => item.alert.id)));
+    if (!before) continue;
+    for (const item of own) {
+      if (isAttentionAlert(item.alert) && !before.has(item.alert.id)) fresh.push(item);
+    }
+  }
+  return { seen: next, fresh };
+}
+
+/** Screen reader text for newly opened alerts, e.g. `New incident on prod: Late feed.` */
+export function announcementForNew(fresh: readonly { envName: string; alert: Alert }[]): string {
+  const [first, ...rest] = fresh;
+  if (!first) return '';
+  const more = rest.length > 0 ? ` and ${rest.length} more` : '';
+  return `New ${first.alert.severity} on ${first.envName}: ${first.alert.title}${more}.`;
+}

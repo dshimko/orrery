@@ -153,6 +153,8 @@ describe('scripted incidents', () => {
     ]);
     expect(late.previousDayClean).toBe(false);
     expect((await adapter.snapshot(at('05:05'))).alerts).toEqual([]);
-    expect((await adapter.snapshot(at('05:05'))).schedule.map((w) => w.id)).toContain('drill');
+    expect((await adapter.snapshot(at('05:05'))).schedule.map((w) => w.id)).toContain(
+      `drill@${DAY}`,
+    );
   });
 });

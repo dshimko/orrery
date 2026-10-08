@@ -5,6 +5,7 @@ import type { Api } from '../src/lib/api.js';
 import {
   createScheduler,
   EVENT_WINDOW_MS,
+  LIVE_POLL_MS,
   RETRY_DELAY_MS,
   SNAPSHOT_REFRESH_MS,
 } from '../src/lib/scheduler.js';
@@ -28,7 +29,7 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-function setup(extra: { fetchEvents?: boolean } = {}) {
+function setup(extra: { fetchEvents?: boolean; isLive?: () => boolean } = {}) {
   let nowMs = START.getTime();
   const eventCalls: { since: Date; until: Date; signal: AbortSignal | undefined }[] = [];
   const snapshotCalls: { at: Date; signal: AbortSignal | undefined }[] = [];
@@ -193,5 +194,74 @@ describe('scheduler', () => {
     vi.advanceTimersByTime(300);
     expect(ctx.eventCalls).toHaveLength(1);
     ctx.scheduler.stop();
+  });
+
+  describe('live mode', () => {
+    test('polls at the clock instant every 30 real seconds and never fetches event windows', async () => {
+      const ctx = setup({ isLive: () => true });
+      ctx.scheduler.tick();
+      expect(ctx.snapshotCalls).toHaveLength(1);
+      expect(ctx.snapshotCalls[0]?.at).toEqual(START);
+      expect(ctx.eventCalls).toHaveLength(0);
+      ctx.pendingSnapshots[0]?.resolve(snapshot);
+      await flush();
+      await vi.advanceTimersByTimeAsync(LIVE_POLL_MS - 1);
+      ctx.scheduler.tick();
+      expect(ctx.snapshotCalls).toHaveLength(1);
+      ctx.setNow(START.getTime() + LIVE_POLL_MS);
+      await vi.advanceTimersByTimeAsync(1);
+      ctx.scheduler.tick();
+      expect(ctx.snapshotCalls).toHaveLength(2);
+      expect(ctx.snapshotCalls[1]?.at.getTime()).toBe(START.getTime() + LIVE_POLL_MS);
+      expect(ctx.eventCalls).toHaveLength(0);
+    });
+
+    test('keeps one request in flight and retries a failed poll on the 30 s cadence', async () => {
+      const ctx = setup({ isLive: () => true });
+      ctx.scheduler.tick();
+      await vi.advanceTimersByTimeAsync(LIVE_POLL_MS * 2);
+      ctx.scheduler.tick();
+      expect(ctx.snapshotCalls).toHaveLength(1);
+      ctx.pendingSnapshots[0]?.reject(new Error('503'));
+      await flush();
+      expect(ctx.sink.onError).toHaveBeenCalledTimes(1);
+      ctx.scheduler.tick();
+      expect(ctx.snapshotCalls).toHaveLength(2);
+    });
+
+    test('refresh polls immediately; jump refetches immediately', async () => {
+      const ctx = setup({ isLive: () => true });
+      ctx.scheduler.tick();
+      ctx.pendingSnapshots[0]?.resolve(snapshot);
+      await flush();
+      ctx.scheduler.refresh();
+      expect(ctx.snapshotCalls).toHaveLength(2);
+      ctx.pendingSnapshots[1]?.resolve(snapshot);
+      await flush();
+      ctx.scheduler.jump();
+      expect(ctx.snapshotCalls).toHaveLength(3);
+      expect(ctx.sink.onClear).toHaveBeenCalledTimes(1);
+    });
+
+    test('switching to replay resumes window prefetch and 5-minute snapshots', async () => {
+      let live = true;
+      const ctx = setup({ isLive: () => live });
+      ctx.scheduler.tick();
+      ctx.pendingSnapshots[0]?.resolve(snapshot);
+      await flush();
+      live = false;
+      ctx.scheduler.tick();
+      expect(ctx.eventCalls).toHaveLength(1);
+      expect(ctx.snapshotCalls).toHaveLength(1);
+      ctx.setNow(START.getTime() + SNAPSHOT_REFRESH_MS);
+      ctx.scheduler.tick();
+      expect(ctx.snapshotCalls).toHaveLength(2);
+    });
+
+    test('refresh does nothing in replay', () => {
+      const ctx = setup({ isLive: () => false, fetchEvents: false });
+      ctx.scheduler.refresh();
+      expect(ctx.snapshotCalls).toHaveLength(0);
+    });
   });
 });

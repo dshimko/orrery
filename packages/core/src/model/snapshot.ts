@@ -78,7 +78,7 @@ export interface Snapshot {
   /** True when the previous UTC day had no incident-severity alert. */
   previousDayClean: boolean;
   alerts: Alert[];
-  /** Today's (UTC) planned windows: transfers, releases, and scripted events. */
+  /** Planned windows starting within the next 24 hours of `at` (rolling window): transfers, releases, and scripted events. */
   schedule: ScheduledWindow[];
   calendar: { year: number; month: number; days: CalendarDay[] };
 }

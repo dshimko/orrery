@@ -51,13 +51,13 @@ describe('arcs, ticks, and star hand', () => {
     const m = model(prod);
     const nonTransfer = prod.snapshot?.schedule.filter((w) => w.kind !== 'transfer') ?? [];
     expect(m.arcs.map((a) => a.id)).toEqual(nonTransfer.map((w) => w.id));
-    const qalert = m.arcs.find((a) => a.id === 'qalert');
+    const qalert = m.arcs.find((a) => a.id === 'qalert@2026-10-07');
     expect(qalert?.color).toBe(visuals.colors.incident);
     expect(qalert?.isActive).toBe(true);
     expect(qalert?.startAngle).toBeCloseTo(hourAngle(10.5), 10);
-    expect(m.arcs.find((a) => a.id === 'hold')?.color).toBe(visuals.colors.warning);
-    expect(m.arcs.find((a) => a.id === 'batch')?.color).toBe(visuals.colors.info);
-    expect(m.arcs.find((a) => a.id === 'batch')?.isActive).toBe(false);
+    expect(m.arcs.find((a) => a.id === 'hold@2026-10-07')?.color).toBe(visuals.colors.warning);
+    expect(m.arcs.find((a) => a.id === 'batch@2026-10-08')?.color).toBe(visuals.colors.info);
+    expect(m.arcs.find((a) => a.id === 'batch@2026-10-08')?.isActive).toBe(false);
   });
 
   it('draws transfers as silver ticks, not arcs', () => {
@@ -266,7 +266,7 @@ describe('hit regions', () => {
     expect(new Set(parts).size).toBe(parts.length);
     for (const part of [
       'sun-hand',
-      'arc:qalert',
+      'arc:qalert@2026-10-07',
       'moon',
       'star-hand',
       'procession',

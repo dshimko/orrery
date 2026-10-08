@@ -396,3 +396,23 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
 83. **The Databricks job schedule and promotion events are out of scope.** The schedule stays
     empty (no verified job trigger format), and the adapter emits no promotion events. The
     backlog item was dropped by the project owner.
+
+84. **Live mode is the default, and replay is explicit.**
+    - **Clock:** the web clock has a `live` mode that follows the wall clock. Pausing, speed
+      changes, scrubbing, or any time parameter in the URL (`t`, `date`, `paused`, `speed`,
+      `mode=replay`) switch to replay, and "Back to live" returns. Live pages write no clock
+      parameters to the URL.
+    - **Data:** live pages poll snapshots every 30 s of real time, always sending an explicit
+      `at` (so tests can fake the browser clock), and refresh when the tab becomes visible. The
+      system view streams events over SSE, reconnecting with 1–30 s backoff and resuming from
+      the last event.
+    - **Status and alerts:** a freshness indicator turns amber after two failed polls. New
+      warnings and incidents raise an in-app banner, a tab-title count, and a polite screen-reader
+      announcement, with no browser notifications or sound. Replay suppresses the banner.
+    - **Upcoming:** the next 24 hours of `snapshot.schedule` across environments, top 8 on
+      home. The schedule is now a rolling 24-hour window (`docs/adapters.md`).
+    - **Time display:** times show in UTC and in the browser's time zone. The Orloj dial stays
+      UTC, and its tooltips add local time.
+    - **Renderer:** honors `TimeState.live`. Orbits advance at real time, and vehicles move at
+      their 1× pace.
+    - **Orloj captions:** laid out from the niche bottom, so two-line labels stay inside.

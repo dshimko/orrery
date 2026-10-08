@@ -10,11 +10,20 @@ pipelines, data products, freshness, workloads, and consumers, live or in replay
 Orrery is read-only, runs its adapters only on the server, and is configured with one YAML file.
 The default demo uses a deterministic mock adapter, so no credentials are needed.
 
+## Live and replay
+
+Pages are **live** by default. They show the current time in UTC and in your browser's time
+zone, poll each environment every 30 s, and stream vehicles in the system view. A banner and
+the tab title flag new warnings and incidents, and an "Upcoming" panel lists the next 24 hours
+of scheduled windows. Scrubbing, pausing, changing speed, or a deep link with `t`, `date`,
+`paused`, `speed`, or `mode=replay` switches to **replay**, which plays a simulated day; "Back
+to live" returns.
+
 ## Screenshots
 
 The Orloj clock view: one astronomical clock face per environment, with schedules, freshness,
 and incidents across the day. These come from the all-mock demo config
-(`config/examples/demo.yaml`) at 10:45 UTC.
+(`config/examples/demo.yaml`), replayed at 10:45 UTC.
 
 ![Orloj clock view with dev, stg, and prod faces](docs/images/orloj-home.png)
 

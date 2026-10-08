@@ -19,22 +19,27 @@ export interface PinnedClock {
 export function clockLink(
   time: TimeState,
   pinned: PinnedClock,
-): Pick<DeepLink, 'minuteOfDay' | 'date' | 'speed' | 'paused'> {
+): Pick<DeepLink, 'minuteOfDay' | 'date' | 'speed' | 'paused' | 'replay'> {
+  // Live pages write no clock params: the plain URL is the live view.
+  if (time.live) {
+    return { minuteOfDay: null, date: null, speed: null, paused: false, replay: false };
+  }
   if (time.paused) {
     return {
       minuteOfDay: Math.floor(minuteOfDay(time.at)),
       date: formatDate(time.at),
       speed: time.speed,
       paused: true,
+      replay: true,
     };
   }
-  return { ...pinned, speed: time.speed, paused: false };
+  return { ...pinned, speed: time.speed, paused: false, replay: true };
 }
 
 /** The full page URL for a path, a clock, other deep-link fields, and wall mode. */
 export function pageUrl(
   path: string,
-  clock: Pick<DeepLink, 'minuteOfDay' | 'date' | 'speed' | 'paused'>,
+  clock: Pick<DeepLink, 'minuteOfDay' | 'date' | 'speed' | 'paused' | 'replay'>,
   extra: Query,
   wall: boolean,
   rest: Partial<DeepLink> = {},

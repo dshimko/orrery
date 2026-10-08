@@ -21,7 +21,8 @@ import {
   ROOSTER_POS,
   SKELETON_POS,
 } from '../constants.js';
-import { formatAge, formatMinute } from './format.js';
+import { formatAge } from './format.js';
+import { localizeUtcText, utcWithLocal, type LocalTimeContext } from './local-time.js';
 import type { FaceHit, FaceModel, SpokeModel } from './types.js';
 
 const MOON_ORBIT_SHARE = 0.62;
@@ -135,7 +136,12 @@ function calendarHits(model: FaceModel, g: Geometry): FaceHit[] {
   return [...dayHits, summary];
 }
 
-function dialHits(model: FaceModel, g: Geometry, distances: SpokeDistances): FaceHit[] {
+function dialHits(
+  model: FaceModel,
+  g: Geometry,
+  distances: SpokeDistances,
+  local: LocalTimeContext | undefined,
+): FaceHit[] {
   const R = g.radius;
   const skyR = R - SKY_INSET;
   const hits: FaceHit[] = [];
@@ -143,7 +149,7 @@ function dialHits(model: FaceModel, g: Geometry, distances: SpokeDistances): Fac
     hits.push({
       part: `arc:${a.id}`,
       title: a.title,
-      text: a.text,
+      text: `${a.text} ${utcWithLocal(a.startMinute, a.endMinute, local)}.`,
       ...polar(g, a.midAngle, R - ARC_INSET),
       r: HIT_R.arc,
     });
@@ -152,7 +158,7 @@ function dialHits(model: FaceModel, g: Geometry, distances: SpokeDistances): Fac
     hits.push({
       part: `tick:${t.id}`,
       title: t.title,
-      text: t.text,
+      text: localizeUtcText(t.text, t.minute, local),
       ...polar(g, t.angle, R - TICK_INSET),
       r: HIT_R.tick,
     });
@@ -186,7 +192,7 @@ function dialHits(model: FaceModel, g: Geometry, distances: SpokeDistances): Fac
     hits.push({
       part: 'star-hand',
       title: 'Next scheduled',
-      text: `${model.star.label}.`,
+      text: `${localizeUtcText(model.star.label, model.star.minute, local)}.`,
       ...polar(g, model.star.angle, R - STAR_HAND_INSET),
       r: HIT_R.star,
     });
@@ -194,7 +200,7 @@ function dialHits(model: FaceModel, g: Geometry, distances: SpokeDistances): Fac
   hits.push({
     part: 'sun-hand',
     title: 'Sun hand: current UTC time',
-    text: `${formatMinute(model.minuteOfDay)} UTC. Midnight at the bottom, noon at the top.`,
+    text: `${utcWithLocal(model.minuteOfDay, undefined, local)}. Midnight at the bottom, noon at the top.`,
     ...polar(g, model.sunAngle, R - SUN_INSET),
     r: HIT_R.sun,
   });
@@ -203,9 +209,15 @@ function dialHits(model: FaceModel, g: Geometry, distances: SpokeDistances): Fac
 
 /**
  * Hit regions in face units, in registration order (later entries sit on top). Spoke positions
- * follow the smoothed `distances` so tooltips track the medallions the viewer sees.
+ * follow the smoothed `distances` so tooltips track the medallions the viewer sees. With a
+ * `local` context, clock times in tooltip text gain the viewer's local time.
  */
-export function faceHits(model: FaceModel, g: Geometry, distances: SpokeDistances): FaceHit[] {
+export function faceHits(
+  model: FaceModel,
+  g: Geometry,
+  distances: SpokeDistances,
+  local?: LocalTimeContext,
+): FaceHit[] {
   const procession: FaceHit = {
     part: 'procession',
     title: 'Hourly procession',
@@ -237,7 +249,7 @@ export function faceHits(model: FaceModel, g: Geometry, distances: SpokeDistance
     procession,
     rooster,
     plaqueHit(model),
-    ...dialHits(model, g, distances),
+    ...dialHits(model, g, distances, local),
     ...figureHits(model),
     ...calendarHits(model, g),
   ];
