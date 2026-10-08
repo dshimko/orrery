@@ -262,3 +262,32 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
     - **Statements are cancelled on every error path.**
     - **Platform catalogs are never owned** (`system`, `samples`, `hive_metastore`, and
       `__*`).
+
+## Milestone 6: packaging
+
+59. **One artifact for both targets:** `pnpm package` bundles the server with esbuild into
+    `build/app/server/main.mjs`, next to `web/`, `sql/`, `config/`, a dependency-free
+    `package.json`, and `app.yaml`. The package is about 3.5 MB, well inside the Databricks
+    Apps limits of 10 MB per file and 25 MB total, and nothing is installed at deploy time.
+    `scripts/verify-package.mjs` starts it and checks health, a snapshot, and the page with its
+    CSP.
+60. **Fork adapters have to be bundled in.** A bundled server cannot `import()` an npm package
+    that is not in the bundle. A fork adds its adapter to the workspace and the registry, then
+    runs `pnpm package` (`docs/adapters.md`). `ORRERY_PACKAGE_CONFIG` bakes a private config
+    into the package.
+61. **Runtime defaults for hosting:** the port is `PORT`, then `DATABRICKS_APP_PORT`, then 8787.
+    The host is `HOST`, else `0.0.0.0` under Databricks Apps, else `127.0.0.1`. Relative
+    `ORRERY_CONFIG` and `ORRERY_WEB_DIR` paths resolve against the working directory.
+62. **The container is distroless and non-root** (`gcr.io/distroless/nodejs20-debian12:nonroot`).
+    Compose runs it with a read-only root filesystem, all capabilities dropped, and
+    `no-new-privileges`. Health is probed from outside at `/api/health`, because distroless
+    has no shell.
+63. **The Helm chart is a stub:** lint-clean, non-root, with a read-only root filesystem and
+    health probes. An optional inline config is mounted as a ConfigMap.
+64. **The docs site is static HTML** built by `scripts/docs-site.mjs` with `marked`. Raw HTML
+    and unsafe link schemes are escaped, and broken relative links or anchors fail the build.
+    The configuration reference is generated from the JSON Schema, and a test fails if a key
+    has no description or the page is stale.
+65. **Not validated:** the Databricks App bundle and `deploy.sh`, because there is no Databricks
+    CLI or workspace in this environment. The milestone 6 acceptance criterion (deploy to a
+    fresh workspace from the README steps alone) is open in `TODO.md`.

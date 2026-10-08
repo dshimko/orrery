@@ -44,10 +44,32 @@ jobs:
         run: pnpm test:coverage
       - name: Build
         run: pnpm build
+      - name: Docs site and links
+        run: |
+          pnpm docs:build
+          pnpm docs:build --check
       - name: Generated JSON Schema is committed
         run: git diff --exit-code -- packages/core/schema
       - name: Bundle size
         run: pnpm check:size
+
+  package:
+    name: Package, smoke test, container image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Package
+        run: pnpm package
+      - name: Start packaged server and check health, snapshot, and web (CSP)
+        run: node scripts/verify-package.mjs
+      - name: Build container image
+        run: docker build -f deploy/docker/Dockerfile -t orrery:ci .
 
   e2e:
     name: Visual regression and accessibility

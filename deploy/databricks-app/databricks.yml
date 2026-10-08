@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Databricks Asset Bundle that deploys the packaged app (build/app, from `pnpm package`).
+bundle:
+  name: orrery
+
+variables:
+  warehouse_id:
+    description: ID of the SQL warehouse the app may use (Compute > SQL warehouses > Connection details).
+
+resources:
+  apps:
+    orrery:
+      name: orrery
+      description: Lakehouse activity visualizer (Orloj clock view and 3D system view).
+      source_code_path: ../../build/app
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
+      # On-behalf-of-user: uncomment so the app can query with each viewer's own Unity Catalog
+      # permissions (the viewer's token arrives in the x-forwarded-access-token header). Then set
+      # the environment's auth mode to on-behalf-of-user in the Orrery config. Without it the app
+      # uses its own service principal.
+      # user_api_scopes:
+      #   - sql
+
+targets:
+  dev:
+    default: true
+    mode: development

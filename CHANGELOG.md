@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Packaging: `pnpm package` builds one deployable bundle (`build/app`) for the Databricks App
+  (`app.yaml`, `deploy/databricks-app` bundle and deploy script) and a distroless Docker image
+  (`deploy/docker`, `docker-compose.yml`), plus a Helm chart stub (`deploy/helm/orrery`).
+- Docs: a generated configuration reference, plus guides for writing adapters, forking, and
+  prior art, and a static docs site (`pnpm docs:build`) with a link checker.
 - `@orrery/adapter-databricks`: a read-only adapter over the SQL Statement Execution API with
   an allowlist of 18 documented queries (fork-overridable via `options.sqlDir`), catalog
   scoping by prefix, suffix, or tag, the three federation modes, foreign-catalog comets,

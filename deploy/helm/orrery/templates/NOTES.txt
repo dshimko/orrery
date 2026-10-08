@@ -1,0 +1,5 @@
+Orrery is deployed. Reach it with:
+
+  kubectl port-forward svc/{{ include "orrery.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+
+Then open http://localhost:{{ .Values.service.port }}. Health: /api/health.

@@ -28,6 +28,16 @@ Cross-milestone backlog. Each item: where, what, and the fix direction.
 
 ## Product follow-ups
 
+- **Config keys that are validated but not yet applied:** `visuals.theme` (the views are always
+  dark), `product.timezone` (the views use UTC), `visuals.workloads[].source`,
+  `visuals.stability.meanAgeCadenceMinutes` (decision 29), and `promotion.source` /
+  `promotion.tagKey` (decision 53). Also, `federation.foreignCatalogs.show` defaults differ
+  between the mock and Databricks adapters. Either apply them or mark them reserved in the
+  schema.
+- **Theme overrides and logos for forks:** `config/private/theme.yaml` and `public/private/`
+  from the spec's forking section are not implemented (`docs/forking.md`).
+- **Databricks App deploy is unvalidated:** run `deploy/databricks-app/deploy.sh` against a
+  fresh workspace (milestone 6 acceptance) and fix anything the README steps miss.
 - **Databricks gaps (decisions 52 and 53):** `sqlPredicate` matchers (needs a design for safely
   executing config-supplied SQL), `dashboardTag`, the schedule from job triggers, promotion
   events, volume, and passing `promotion.tagKey` to adapters. Run the live smoke test against a

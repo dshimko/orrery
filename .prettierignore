@@ -6,3 +6,5 @@ test-results/
 reference/
 docs/BUILD_PROMPT.md
 packages/core/schema/
+build/
+deploy/helm/*/templates/

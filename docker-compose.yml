@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Standalone run with the mock adapter: docker compose up --build, then open http://localhost:8787.
+# The distroless image has no shell or curl, so there is no in-container healthcheck; probe
+# GET /api/health from outside (for example `curl http://localhost:8787/api/health`).
+services:
+  orrery:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
+    ports:
+      - '8787:8787'
+    environment:
+      ORRERY_CONFIG: config/demo.yaml
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+image:
+  repository: orrery
+  tag: dev
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8787
+
+# Orrery config as inline YAML, mounted at /app/config/orrery.yaml (ORRERY_CONFIG points at it).
+# Leave empty to run the packaged mock-adapter demo (config/demo.yaml). See config/examples/ in
+# the repository for full configs. Reference secrets as ${env:NAME}; never inline them here.
+config: ''
+
+# Names of existing Secrets whose keys become environment variables (credentials for adapters).
+secretEnvFrom: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]

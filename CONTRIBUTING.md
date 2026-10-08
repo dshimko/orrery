@@ -12,6 +12,9 @@ pnpm install         # also installs the pre-commit hook
 pnpm test            # unit tests
 pnpm build           # every package and the web app
 pnpm test:e2e        # Playwright (run `pnpm exec playwright install chromium` once)
+pnpm docs:config     # regenerate the config reference in docs/configuration.md
+pnpm docs:build      # build the docs site into build/docs and check its links
+pnpm package         # build the deployable bundle into build/app
 ```
 
 ## Before you open a pull request

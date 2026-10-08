@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v2
+name: orrery
+description: Lakehouse activity visualizer (stub chart).
+type: application
+version: 0.0.0
+appVersion: '0.0.0'
