@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Build from the repository root: docker build -f deploy/docker/Dockerfile .
-FROM node:20.19-bookworm-slim AS builder
+FROM node:24-bookworm-slim AS builder
 ENV CI=true
 WORKDIR /src
 RUN corepack enable
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm package
 
-FROM gcr.io/distroless/nodejs20-debian12:nonroot
+FROM gcr.io/distroless/nodejs24-debian12:nonroot
 WORKDIR /app
 COPY --from=builder /src/build/app /app
 ENV HOST=0.0.0.0 \

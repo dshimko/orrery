@@ -39,7 +39,7 @@ const APP_PACKAGE = {
   private: true,
   type: 'module',
   scripts: { start: 'node server/main.mjs' },
-  engines: { node: '>=20.19.0' },
+  engines: { node: '>=22.12.0' },
 };
 
 function copy(from, to) {
@@ -53,7 +53,7 @@ async function bundleServer() {
     bundle: true,
     platform: 'node',
     format: 'esm',
-    target: 'node20',
+    target: 'node22',
     conditions: ['source'],
     banner: {
       js: "import { createRequire as __orreryCreateRequire } from 'node:module';\nconst require = __orreryCreateRequire(import.meta.url);",

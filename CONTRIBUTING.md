@@ -4,7 +4,7 @@ Thanks for helping. Orrery is Apache-2.0, and contributions are accepted under t
 
 ## Setup
 
-Requirements: Node 20 LTS (see `.nvmrc`), pnpm 10 (`corepack enable`), and
+Requirements: Node 24 LTS (see `.nvmrc`; Node 22.19+ also works), pnpm 10 (`corepack enable`), and
 [gitleaks](https://github.com/gitleaks/gitleaks#installing) for the pre-commit hook.
 
 ```sh

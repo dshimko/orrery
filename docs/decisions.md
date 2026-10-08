@@ -278,7 +278,7 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
 61. **Runtime defaults for hosting:** the port is `PORT`, then `DATABRICKS_APP_PORT`, then 8787.
     The host is `HOST`, else `0.0.0.0` under Databricks Apps, else `127.0.0.1`. Relative
     `ORRERY_CONFIG` and `ORRERY_WEB_DIR` paths resolve against the working directory.
-62. **The container is distroless and non-root** (`gcr.io/distroless/nodejs20-debian12:nonroot`).
+62. **The container is distroless and non-root** (`gcr.io/distroless/nodejs24-debian12:nonroot`; see decision 74).
     Compose runs it with a read-only root filesystem, all capabilities dropped, and
     `no-new-privileges`. Health is probed from outside at `/api/health`, because distroless
     has no shell.
@@ -332,3 +332,14 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
     milestone 7 acceptance runs in e2e: a third server on `config/examples/openlineage.yaml`
     renders the public Marquez sample on the Orloj home and the system view
     (`e2e/openlineage.spec.ts`).
+
+## Runtime update (after milestone 7)
+
+74. **Node 24 LTS replaces Node 20,** which is end of life and unsupported by Vercel and other
+    hosts. `.nvmrc`, CI, and the Docker builder use 24, and the runtime image is
+    `gcr.io/distroless/nodejs24-debian12:nonroot`. The supported floor is Node 22.19 (root
+    `engines`; size-limit 14 needs at least 22.19). The packaged server targets `node22`
+    (`engines >=22.12`), because the Databricks Apps runtime is reported as Node 22.16
+    (unverified, `docs/databricks-sources.md`). `@types/node` tracks 22, so code stays within
+    the floor. This supersedes the Node 20 reasoning in decision 5. Vite stays on 7.3 for the
+    license reason in decision 6, and Vitest 4.1 still works; moving to Vitest 5 is optional.

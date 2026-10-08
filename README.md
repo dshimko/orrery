@@ -12,7 +12,7 @@ The default demo uses a deterministic mock adapter, so no credentials are needed
 
 ## Quick start
 
-Requirements: Node 20 LTS and pnpm 10 (`corepack enable`).
+Requirements: Node 24 LTS (Node 22.19+ also works) and pnpm 10 (`corepack enable`).
 
 **Development server** (mock data, hot reload for the web app):
 

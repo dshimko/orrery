@@ -14,7 +14,7 @@ before connecting any data. Then you switch it to the Databricks adapter.
   granted `CAN USE` on it through the bundle's `sql-warehouse` resource.
 - The [Databricks CLI](https://docs.databricks.com/aws/en/dev-tools/cli/install) (v0.250 or
   newer, for bundle app support).
-- Node.js 20.19 or newer and pnpm (the repository pins pnpm through `packageManager`).
+- Node.js 24 LTS (22.19 or newer also works) and pnpm (the repository pins pnpm through `packageManager`).
 
 ## Deploy with the mock adapter
 
