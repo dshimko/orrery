@@ -3,7 +3,7 @@ import { FixedClock, collect, createMemoryLogger } from '@orrery/testkit';
 import { describe, expect, it } from 'vitest';
 import { OpenLineageAdapter } from '../src/adapter.js';
 import { LIVE_OVERLAP_MS, LIVE_POLL_MS } from '../src/live.js';
-import { MAX_PAGES_PER_LOAD, PAGE_LIMIT } from '../src/marquez.js';
+import { PAGE_LIMIT } from '../src/marquez.js';
 import type { RunEvent } from '../src/types.js';
 import { MIN, T0, context, dataset, ev, makeEnv, wire } from './helpers.js';
 
@@ -160,7 +160,10 @@ sourceGroups:
   });
 
   it('flags a truncated read in health', async () => {
-    const many: RunEvent[] = Array.from({ length: MAX_PAGES_PER_LOAD * PAGE_LIMIT + 5 }, (_, i) =>
+    // A small page budget keeps this fast; the default (MAX_PAGES_PER_LOAD) is covered by
+    // the source tests.
+    const budget = 3;
+    const many: RunEvent[] = Array.from({ length: budget * PAGE_LIMIT + 5 }, (_, i) =>
       ev({
         type: 'COMPLETE',
         atMin: 1 + (i % 20),
@@ -170,7 +173,12 @@ sourceGroups:
       }),
     );
     const server = marquez(() => many);
-    const adapter = await start(server, clockAt(30));
+    const adapter = new OpenLineageAdapter({ fetch: server.impl, marquezMaxPages: budget });
+    await adapter.init(makeEnv(OPTIONS), {
+      clock: clockAt(30),
+      logger: createMemoryLogger(),
+      env: { MARQUEZ_KEY: KEY },
+    });
     await adapter.topology();
     const health = await adapter.health();
     expect(health.status).toBe('degraded');

@@ -38,6 +38,8 @@ export interface OpenLineageDeps {
   fetch?: typeof fetch;
   /** Base for relative file paths. Defaults to the working directory. */
   cwd?: string;
+  /** Page budget per Marquez load; substituted in tests. */
+  marquezMaxPages?: number;
 }
 
 interface State {
@@ -87,7 +89,11 @@ export class OpenLineageAdapter implements OrreryAdapter {
     }
     const remote = new MarquezSource(
       { url: source.url, namespace: source.namespace, token },
-      { fetch: this.deps.fetch ?? globalThis.fetch, nowMs: () => ctx.clock.now().getTime() },
+      {
+        fetch: this.deps.fetch ?? globalThis.fetch,
+        nowMs: () => ctx.clock.now().getTime(),
+        ...(this.deps.marquezMaxPages === undefined ? {} : { maxPages: this.deps.marquezMaxPages }),
+      },
     );
     this.state = {
       env,
