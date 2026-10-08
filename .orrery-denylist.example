@@ -1,0 +1,3 @@
+# Copy to .orrery-denylist (git-ignored) and list one term per line: organization names,
+# site names, hostnames, workspace ids. `pnpm check:denylist` fails if any appear in the repo.
+Example Corp

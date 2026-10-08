@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# gitleaks configuration: default rules plus an allowlist for the `${env:NAME}` references
+# that config files use instead of secrets.
+title = "orrery"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Environment references are pointers, not secrets"
+regexes = ['''\$\{env:[A-Z_][A-Z0-9_]*\}''']
+paths = ['''pnpm-lock\.yaml''']

@@ -1,0 +1,22 @@
+{
+  "name": "@orrery/render",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Framework-free Three.js system view: scene, six-axis camera, instancing, labels.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "name": "web app (all JS and CSS, gzipped)",
+    "path": ["apps/web/dist/**/*.js", "apps/web/dist/**/*.css"],
+    "limit": "2.5 MB",
+    "gzip": true
+  }
+]

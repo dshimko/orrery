@@ -1,0 +1,13 @@
+Orrery
+Copyright 2026 The Orrery Authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Influences (patterns only, no code copied unless noted; details in docs/prior-art.md):
+  - Netflix Vizceral (Apache-2.0): drill-down from global to regional to service, and
+    animated traffic particles.
+  - OpenLineage and Marquez (Apache-2.0): the run event model.
+  - three.js (MIT): renderer, used as a dependency.
+
+Databricks and Unity Catalog are named only to describe compatibility. This project is
+not affiliated with or endorsed by Databricks, Inc.

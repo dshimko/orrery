@@ -1,0 +1,50 @@
+{
+  "name": "orrery",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Open-source lakehouse activity visualizer: an Orloj clock view and a 3D system view per environment.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "build": "pnpm -r --workspace-concurrency=1 build",
+    "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "check:spdx": "node scripts/check-spdx.mjs",
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "check:denylist": "node scripts/check-denylist.mjs",
+    "check:size": "size-limit",
+    "ci": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm check:spdx && pnpm check:licenses && pnpm check:denylist && pnpm test:coverage && pnpm build && pnpm check:size"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.0",
+    "@size-limit/file": "14.2.0",
+    "@types/node": "20.19.43",
+    "@vitest/coverage-v8": "4.1.11",
+    "eslint": "10.12.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.9",
+    "size-limit": "14.2.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "4.1.11"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "overrides": {
+      "vite": "7.3.7"
+    }
+  }
+}

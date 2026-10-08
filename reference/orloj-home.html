@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reference: orloj clock face for all environments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9EDF3;--panel:#FFFFFF;--ink:#0F1A2B;--muted:#53647C;--line:#CBD5E2;--chip:#EEF2F8;--focus:#1F6FEB;
+  --ok:#1E9E6A;--warn:#C27C00;--alert:#D93036;--s2:#4A7AA3;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#05080F;--panel:#0E1726;--ink:#E7EDF6;--muted:#93A4BB;--line:#24344C;--chip:#14233A;--focus:#6EA8FF;--ok:#4ADBA0;--warn:#FFB020;--alert:#FF5C61;--s2:#5A8DB8}
+}
+:root[data-theme="dark"]{--bg:#05080F;--panel:#0E1726;--ink:#E7EDF6;--muted:#93A4BB;--line:#24344C;--chip:#14233A;--focus:#6EA8FF;--ok:#4ADBA0;--warn:#FFB020;--alert:#FF5C61;--s2:#5A8DB8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 Barlow,"Helvetica Neue",Arial,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:1400px;margin:0 auto;padding:18px 16px 36px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px;margin-bottom:10px}
+h1{font:700 clamp(30px,4vw,46px)/1 Cinzel,"Times New Roman",serif;margin:0;letter-spacing:.5px}
+.sub{margin:6px 0 0;color:var(--muted);max-width:70ch}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.clock{font:700 38px/1 "Barlow Condensed",Barlow,sans-serif;font-variant-numeric:tabular-nums}
+.btn{border:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:3px 11px;min-height:34px;border-radius:3px;font:600 14px Barlow,sans-serif;cursor:pointer}
+.btn.sm{border-color:var(--line);background:var(--chip);font-weight:500}
+.btn[aria-pressed="true"],.btn.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.track{position:relative;height:14px;border-radius:3px;background:var(--s2);margin:6px 0 4px}
+.track input{position:absolute;inset:0;width:100%;height:100%;margin:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.track input::-webkit-slider-runnable-track{background:transparent;height:14px}
+.track input::-moz-range-track{background:transparent;height:14px}
+.track input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:6px;height:14px;background:#fff;border:1.5px solid #0A1220;border-radius:1px}
+.track input::-moz-range-thumb{width:5px;height:12px;background:#fff;border:1.5px solid #0A1220;border-radius:1px}
+.stagewrap{position:relative;background:#04060B;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+#cv{display:block;cursor:pointer;touch-action:manipulation}
+.grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px 14px}
+.panel h2{font:600 20px/1.2 "Barlow Condensed",Barlow,sans-serif;margin:0 0 8px}
+#hal{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+#hal li{display:grid;grid-template-columns:auto 1fr auto;gap:0 10px;align-items:baseline;border-left:4px solid var(--line);padding:2px 0 2px 9px;cursor:pointer}
+#hal li.warn{border-left-color:var(--warn)}#hal li.alert{border-left-color:var(--alert)}#hal li.info{border-left-color:var(--s2)}
+#hal .t{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}#hal b{font-weight:600}#hal .env{font-weight:600;font-size:13px}
+#hal p{grid-column:2 / 4;margin:0;color:var(--muted);font-size:13.5px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:13px}
+td.n{font-variant-numeric:tabular-nums}
+.key{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:14px}
+.key dt{font-weight:600}.key dd{margin:0;color:var(--muted)}
+.tip{position:fixed;z-index:30;max-width:300px;background:#060B16;color:#E7EDF6;border:1px solid #2B4064;border-radius:3px;padding:7px 9px;font-size:13px;line-height:1.35;pointer-events:none}
+.tip b{display:block;font-size:14px;margin-bottom:1px}
+#drill{position:fixed;z-index:40;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);width:min(360px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);border-top:5px solid var(--c);border-radius:4px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#drill h3{margin:0 0 4px;font:700 22px/1.1 Cinzel,serif}
+#drill p{margin:0 0 8px;color:var(--muted);font-size:14px}
+#drill .x{position:absolute;right:8px;top:6px;border:0;background:none;color:var(--muted);font-size:20px;cursor:pointer}
+#drill a.btn{display:inline-flex;align-items:center;text-decoration:none}
+.foot{margin-top:14px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Orloj</h1><p class="sub">An astronomical clock for the data platform. One face per environment: the sun hand is UTC, arcs on the ring are scheduled windows, spokes sit closer to the hub the fresher their data, and the figures ring the bell when something breaks. Click a face to open its system view.</p></div>
+    <div class="ctl">
+      <span class="clock" id="clk">00:00</span><span style="color:var(--muted)">UTC</span>
+      <button class="btn solid" id="play" type="button">Pause</button>
+      <button class="btn sm" type="button" data-speed="1" aria-pressed="true">1x</button>
+      <button class="btn sm" type="button" data-speed="2" aria-pressed="false">2x</button>
+      <button class="btn sm" type="button" data-speed="4" aria-pressed="false">4x</button>
+    </div>
+  </header>
+  <div class="track"><input id="scrub" type="range" min="0" max="1439" step="1" value="0" aria-label="Time of day in UTC"></div>
+  <div class="stagewrap" id="stagewrap"><canvas id="cv" role="img" aria-label="Three astronomical clock faces, one per environment, showing schedules, freshness, and incidents. A text summary follows below."></canvas></div>
+  <div class="grid">
+    <section class="panel" aria-label="Environments at a glance"><h2>Environments at a glance</h2><table><thead><tr><th>Environment</th><th>Incidents</th><th>Past target</th><th>Backlog</th><th>Next on the dial</th></tr></thead><tbody id="tb"></tbody></table>
+      <h2 style="margin-top:16px">Open alerts</h2><ul id="hal"></ul></section>
+    <section class="panel" aria-label="How to read the clock"><h2>How to read the clock</h2>
+      <dl class="key">
+        <dt>Sun hand</dt><dd>Current UTC time on the 24-hour ring. Midnight at the bottom, noon at the top.</dd>
+        <dt>Arcs on the ring</dt><dd>Scheduled windows and incidents: blue planned, amber warning, red incident. Silver ticks are transfers to the core.</dd>
+        <dt>Small suns</dt><dd>Local noon for each source region (letters) and office (O1 to O3, ES for the engineering studio).</dd>
+        <dt>Spokes and medallions</dt><dd>Each domain spoke sits on a ray from the hub. Closer to the hub means fresher data; an amber halo means past its freshness target.</dd>
+        <dt>Moon</dt><dd>Ingest backlog. A full moon means the bronze yard is full.</dd>
+        <dt>Star hand</dt><dd>Points at the next scheduled event.</dd>
+        <dt>Procession</dt><dd>At the top of every hour, the apostle windows parade the runs scheduled for that hour, colored by workload.</dd>
+        <dt>Figures</dt><dd>Miser: spend rate. Mirror: spokes past target. Skeleton: rings the bell on incidents. Lute: consumer activity.</dd>
+        <dt>Calendar dial</dt><dd>Releases per day this month; dots are promotions, the gold mark is month-end close.</dd>
+        <dt>Rooster</dt><dd>Crows just after midnight when the day passed without a red incident.</dd>
+      </dl></section>
+  </div>
+  <p class="foot">Reference mock with synthetic names and data. Same configuration and mock adapter as the system view reference.</p>
+</div>
+<div class="tip" id="tip" hidden></div>
+<div id="drill" hidden></div>
+
+<script>
+(function(){
+'use strict';
+/* ===================== helpers ===================== */
+var TAU=Math.PI*2,rad=function(d){return d*Math.PI/180};
+var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))},lerp=function(a,b,t){return a+(b-a)*t};
+var rnd=function(a){return a[Math.floor(Math.random()*a.length)]};
+var pad2=function(n){return (n<10?'0':'')+n},T=function(h,m){return h*60+(m||0)};
+var prof=function(pts){return function(h){h=((h%24)+24)%24;for(var i=0;i<pts.length-1;i++){var a=pts[i],b=pts[i+1];if(h>=a[0]&&h<=b[0])return lerp(a[1],b[1],b[0]===a[0]?0:(h-a[0])/(b[0]-a[0]))}return pts[pts.length-1][1]}};
+var Q3=function(p0,c,p1,t){var u=1-t;return {x:u*u*p0.x+2*u*t*c.x+t*t*p1.x,y:u*u*p0.y+2*u*t*c.y+t*t*p1.y,z:u*u*p0.z+2*u*t*c.z+t*t*p1.z}};
+var mid=function(a,b,lift){var d=Math.hypot(b.x-a.x,b.z-a.z);return {x:(a.x+b.x)/2,y:(a.y+b.y)/2+(lift==null?.18*d+3:lift),z:(a.z+b.z)/2}};
+var toward=function(from,to,r){var dx=from.x-to.x,dy=from.y-to.y,dz=from.z-to.z,l=Math.hypot(dx,dy,dz)||1;return {x:to.x+dx/l*r,y:to.y+dy/l*r,z:to.z+dz/l*r}};
+var fmtAge=function(a){return a<90?Math.round(a)+' min':(a<1440?(a/60).toFixed(1)+' h':(a/1440).toFixed(1)+' d')};
+var hexCss=function(n){return '#'+('000000'+n.toString(16)).slice(-6)};
+var localH=function(off,m){return (((m/60+off)%24)+24)%24};
+var fmtLocal=function(off,m){var lh=localH(off,m),h=Math.floor(lh);return pad2(h)+':'+pad2(Math.floor((lh-h)*60))};
+var orbitFor=function(age){return clamp(24+22*Math.log10(Math.max(1,age)),24,104)};
+
+/* ===================== configuration (mirrors orrery.config.yaml) ===================== */
+var CONFIG={
+  version:1,
+  product:{title:'Orrery',timezone:'UTC'},
+  topologies:{
+    base:{
+      hub:{id:'core',name:'Core platform'},
+      spokes:[
+        {id:'ingest',name:'Regional ingest',role:'ingest',color:'#9FC4FF',freshness:{cadenceMinutes:15,lagMinutes:3},metrics:{pipelines:64,products:60,complexity:3.6,volumeTB:140},activity:'ingest',match:{tag:{domain:'ingest'}}},
+        {id:'supply',name:'Supply',role:'domain',color:'#5FA8D3',share:true,freshness:{cadenceMinutes:60,lagMinutes:10},metrics:{pipelines:78,products:34,complexity:3.2,volumeTB:760},activity:'supply',match:{schema:'*_supply_*'}},
+        {id:'operations',name:'Operations',role:'domain',color:'#7BC8A4',ring:true,aurora:true,freshness:{cadenceMinutes:5,lagMinutes:2},metrics:{pipelines:150,products:62,complexity:4.5,volumeTB:2200},activity:'operations',match:{tag:{domain:'operations'}}},
+        {id:'quality',name:'Quality',role:'domain',color:'#B79CED',share:true,freshness:{cadenceMinutes:30,lagMinutes:5},metrics:{pipelines:70,products:40,complexity:3.8,volumeTB:480},activity:'quality',match:{tag:{domain:'quality'}}},
+        {id:'customer',name:'Customer',role:'domain',color:'#F28FAD',aurora:true,moons:2,share:true,freshness:{cadenceMinutes:2,lagMinutes:1},metrics:{pipelines:96,products:52,complexity:4.2,volumeTB:3300},activity:'customer',match:{tag:{domain:'customer'}}},
+        {id:'sales',name:'Sales',role:'domain',color:'#E9966B',freshness:{cadenceMinutes:240,lagMinutes:20},metrics:{pipelines:52,products:26,complexity:2.5,volumeTB:350},activity:'sales',match:{schema:'*_sales_*'}},
+        {id:'finance',name:'Finance',role:'domain',color:'#A3B1C6',moons:1,freshness:{cadenceMinutes:1440,lagMinutes:60,offsetMinutes:120},metrics:{pipelines:40,products:22,complexity:3.0,volumeTB:160},activity:'finance',match:{tag:{domain:'finance'}}}
+      ],
+      sourceGroups:[
+        {id:'ra',name:'Region A',utcOffset:-6,sites:1,shifts:'two'},
+        {id:'rb',name:'Region B',utcOffset:-3,sites:2,shifts:'two'},
+        {id:'rc',name:'Region C',utcOffset:2,sites:2,shifts:'two'},
+        {id:'rd',name:'Region D',utcOffset:1,sites:3,shifts:'two'},
+        {id:'re',name:'Region E',utcOffset:8,sites:2,shifts:'three'}
+      ],
+      useCases:[
+        {id:'exec',name:'Executive overview',site:'Office 1',utcOffset:-4,reads:['operations','supply','finance']},
+        {id:'demand',name:'Demand planning',site:'Office 1',utcOffset:-4,reads:['sales']},
+        {id:'risk',name:'Quality risk watch',site:'Office 1',utcOffset:-4,reads:['quality','customer','operations','supply','ingest']},
+        {id:'campaign',name:'Campaign performance',site:'Office 2',utcOffset:-7,reads:['sales','customer']},
+        {id:'inbound',name:'Inbound risk',site:'Office 3',utcOffset:2,reads:['supply','ingest']},
+        {id:'models',name:'Asset health models',site:'Engineering studio',utcOffset:5.5,reads:['operations','customer'],atStudio:true}
+      ],
+      studio:{name:'Engineering studio',utcOffset:5.5}
+    }
+  },
+  environments:[
+    {id:'dev',scope:{catalogs:['dev_*','*_dev'],caseInsensitive:true},name:'Development',tier:'dev',topology:'base',adapter:'mock',
+     federation:{mode:'single-workspace'},
+     override:{dropSpokes:['finance'],sourceGroupLimit:2},
+     mock:{seed:11,scale:.3,failureRate:.12,deploysPerHour:3,agingFactor:5}},
+    {id:'stg',scope:{catalogs:['stg_*','*_stg'],caseInsensitive:true},name:'Staging',tier:'stg',topology:'base',adapter:'mock',
+     federation:{mode:'multi-workspace',workspaces:2},
+     override:{sourceGroupLimit:3},
+     mock:{seed:22,scale:.55,failureRate:.05,deploysPerHour:1.5,agingFactor:2}},
+    {id:'prod',scope:{catalogs:['prod_*','*_prod'],caseInsensitive:true},name:'Production',tier:'prod',topology:'base',adapter:'mock',
+     federation:{mode:'multi-metastore',metastores:[{id:'primary',name:'Primary metastore'},{id:'secondary',name:'Secondary metastore',spokes:['customer','sales']}],foreignCatalogs:[{id:'fc1',name:'Legacy warehouse'},{id:'fc2',name:'Operational database'}]},
+     mock:{seed:33,scale:1,failureRate:.015,deploysPerHour:.6,agingFactor:1}}
+  ],
+  promotion:{order:['dev','stg','prod'],source:'job-tag',tagKey:'release'},
+  visuals:{sizeBy:'pipelines',theme:'dark'}
+};
+var TIERCOL={dev:'#3FC1CF',stg:'#FFB020',prod:'#6EA8FF'};
+var ENVS={};CONFIG.environments.forEach(function(e){ENVS[e.id]=e});
+
+/* ===================== mock adapter ===================== */
+var SHIFT2=prof([[0,.3],[5,.3],[6,.95],[14,.95],[22,.9],[22.5,.3],[24,.3]]),SHIFT3=prof([[0,.7],[6,.9],[22,.9],[24,.7]]);
+var OFFICE=prof([[0,.1],[7,.15],[8,.7],[12,.9],[17,.7],[19,.25],[24,.1]]),STUDIO=prof([[0,.1],[8,.15],[9,.7],[19,.7],[21,.2],[24,.1]]);
+var BATCH=prof([[0,.7],[1,1],[3,.8],[4,.2],[8,.2],[17,.3],[21,.6],[22,1],[24,.7]]);
+var MLP=prof([[0,.9],[5,.9],[8,.4],[18,.4],[20,.8],[24,.9]]);
+var ACT={
+  ingest:prof([[0,.5],[6,.9],[22,.9],[24,.5]]),
+  supply:prof([[0,.2],[2,.5],[3,.9],[5,.9],[6,.5],[13,.5],[14,.8],[16,.5],[24,.2]]),
+  operations:prof([[0,.2],[5,.2],[6,.9],[22,.9],[22.5,.25],[24,.2]]),
+  quality:prof([[0,.1],[6,.1],[7,.8],[22,.8],[22.5,.1],[24,.1]]),
+  customer:prof([[0,.3],[7,.6],[8.5,.8],[11,.4],[17,.5],[18,.9],[20,.6],[24,.3]]),
+  sales:prof([[0,.05],[8,.1],[9,.7],[18,.6],[20,.1],[24,.05]]),
+  finance:prof([[0,.8],[1,.9],[3,.7],[4,.1],[16,.1],[17.5,.8],[19,.6],[20,.1],[24,.8]])
+};
+var SHIPS={dev:[T(9),T(14)],stg:[T(3),T(15)],prod:[T(3),T(11),T(16),T(19,45),T(22,30)]};
+var SCRIPTS={
+  prod:[
+    {id:'batch',t0:T(1),t1:T(3),lvl:'info',focus:['belt','ingest'],anchors:[['d','ingest']],title:'Overnight batch loads',text:'Batch files from every region dock at the ingest spoke, pile up in the bronze ring, then pass the gantry into silver.'},
+    {id:'finclose',t0:T(2),t1:T(2,45),lvl:'info',focus:['planets','earth'],anchors:[['d','finance']],title:'Finance refreshes',text:'Finance has drifted to the outer orbit after a day without a refresh. The nightly close lands and it swings back toward the core.'},
+    {id:'ship1',t0:T(3),t1:T(4),lvl:'info',focus:['ingest','earth'],anchors:[['d','ingest']],title:'Nightly transfer to the core',text:'Consolidated silver flies from the ingest spoke to the core platform, where most data products live.'},
+    {id:'build',t0:T(3,30),t1:T(5),lvl:'info',focus:['yard','ingest','planets'],anchors:[['z','yard']],title:'Release ships',text:'Release drones carry new pipeline versions from the engineering studio to the spokes.'},
+    {id:'maint',t0:T(8,30),t1:T(9,30),lvl:'warn',focus:['belt','planets','stations'],anchors:[['p','rc0'],['t','models'],['d','operations']],title:'Asset health warning',text:'Sensor readings from a Region C site trend out of range. Operations lights up with ML scoring and the asset health models station reads it.'},
+    {id:'qalert',t0:T(10,30),t1:T(12,30),lvl:'alert',focus:null,anchors:[['t','risk'],['p','rd0'],['p','rb0'],['p','re0']],title:'Cross-domain quality alert',text:'A defect pattern traces to sites in three regions. The quality risk station reads Quality, Customer, Operations, Supply, and ingest data.'},
+    {id:'office1',t0:T(12,30),t1:T(15),lvl:'info',focus:['earth','stations','planets'],anchors:[['t','exec'],['t','demand']],title:'Office 1 opens',text:'The executive overview and demand planning stations start reading fresh products.'},
+    {id:'fedq',t0:T(16),t1:T(17,30),lvl:'info',focus:['comets','earth','stations'],anchors:[['f','fc1']],title:'Federated queries',text:'Campaign performance joins a legacy warehouse through a foreign catalog. Data is queried in place and nothing is copied.'},
+    {id:'hold',t0:T(19,30),t1:T(20,30),lvl:'warn',focus:['ingest','earth','planets'],anchors:[['d','ingest'],['d','supply'],['d','operations']],title:'Transfer held at ingest',text:'A policy check flags a batch. The shuttle waits, and Supply, Operations, and Quality drift outward as their source data ages.'}
+  ],
+  stg:[
+    {id:'regress',t0:T(1),t1:T(3),lvl:'info',focus:['belt','ingest','planets'],anchors:[['d','ingest']],title:'Nightly regression run',text:'A sample of production volume replays through every staging pipeline to validate the next release.'},
+    {id:'ship1',t0:T(3),t1:T(4),lvl:'info',focus:['ingest','earth'],anchors:[['d','ingest']],title:'Staging transfer to the core',text:'Regression output moves to the staging core for contract tests.'},
+    {id:'build',t0:T(10),t1:T(11),lvl:'info',focus:['yard','planets'],anchors:[['z','yard']],title:'Release candidate lands',text:'Release r-128 deploys to staging from the engineering studio.'},
+    {id:'contract',t0:T(14),t1:T(15,30),lvl:'warn',focus:['planets','yard','earth'],anchors:[['d','sales'],['z','yard']],title:'Contract test fails, promotion blocked',text:'Release r-128 breaks a data contract on Sales. Promotion to production is blocked until the fix passes.'}
+  ],
+  dev:[
+    {id:'sample',t0:T(0),t1:T(6),lvl:'info',focus:null,anchors:[['d','ingest']],title:'Synthetic sample data',text:'Development runs on synthetic samples refreshed on demand, so planets sit on far orbits.'},
+    {id:'schema',t0:T(10),t1:T(11,30),lvl:'warn',focus:['ingest','planets'],anchors:[['d','operations'],['d','ingest']],title:'Schema change breaks pipelines',text:'A column rename in a shared source breaks three dev pipelines. Rejects spark at the gantry until the fix lands.'},
+    {id:'build',t0:T(15),t1:T(16,30),lvl:'info',focus:['yard','planets'],anchors:[['z','yard']],title:'Build burst',text:'Engineers ship eight builds in ninety minutes. Release drones swarm the planets.'}
+  ]
+};
+
+function seeded(seed){var s=seed>>>0||1;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+var TOPO_CACHE={};
+function resolveTopology(env){
+  if(TOPO_CACHE[env.id])return TOPO_CACHE[env.id];
+  var base=CONFIG.topologies[env.topology],ov=env.override||{},sc=env.mock.scale,fed=env.federation||{};
+  var second=[];(fed.metastores||[]).forEach(function(ms,i){if(i>0)second=second.concat(ms.spokes||[])});
+  var spokes=base.spokes.filter(function(s){return (ov.dropSpokes||[]).indexOf(s.id)<0}).map(function(s){
+    var c={};for(var k in s)c[k]=s[k];
+    c.m={pipelines:Math.max(2,Math.round(s.metrics.pipelines*sc)),products:Math.max(2,Math.round(s.metrics.products*sc)),complexity:s.metrics.complexity,volume:Math.max(5,Math.round(s.metrics.volumeTB*sc))};
+    c.metastore=second.indexOf(s.id)>=0?'secondary':'primary';return c;
+  });
+  var ids=spokes.map(function(s){return s.id});
+  var groups=base.sourceGroups.slice(0,ov.sourceGroupLimit||99);
+  var uc=base.useCases.map(function(u){var c={};for(var k in u)c[k]=u[k];c.reads=u.reads.filter(function(r){return ids.indexOf(r)>=0});return c}).filter(function(u){return u.reads.length});
+  var t={hub:base.hub,spokes:spokes,groups:groups,useCases:uc,studio:base.studio,foreign:fed.foreignCatalogs||[],fed:fed};
+  TOPO_CACHE[env.id]=t;return t;
+}
+function scriptFor(env,topo){
+  var ids={};topo.spokes.forEach(function(s){ids['d:'+s.id]=1});topo.useCases.forEach(function(u){ids['t:'+u.id]=1});topo.groups.forEach(function(g){for(var i=0;i<g.sites;i++)ids['p:'+g.id+i]=1});topo.foreign.forEach(function(f){ids['f:'+f.id]=1});ids['z:yard']=1;
+  return (SCRIPTS[env.tier]||[]).map(function(e){var c={};for(var k in e)c[k]=e[k];c.anchors=e.anchors.filter(function(a){return ids[a[0]+':'+a[1]]});return c}).filter(function(e){return e.anchors.length});
+}
+function ageFor(env,d,m,script){
+  /* Short cadences use the mean age so orbits stay steady; long cadences show the sawtooth drift. */
+  var f=env.mock.agingFactor,base=d.freshness.cadenceMinutes,c=base*f,lag=d.freshness.lagMinutes*f,cyc=base<30?c/2:((((m-(d.freshness.offsetMinutes||0))%c)+c)%c),a=lag+cyc;
+  script.forEach(function(e){if(e.id==='hold'&&m>=e.t0&&m<e.t1&&(d.id==='supply'||d.id==='operations'||d.id==='quality'))a+=m-e.t0});
+  return a;
+}
+var slaFor=function(env,d){var f=env.mock.agingFactor;return (d.freshness.cadenceMinutes+2*d.freshness.lagMinutes)*Math.max(1,f*.6)};
+function activeIn(script,m){return script.filter(function(e){return m>=e.t0&&m<e.t1})}
+
+/* Health for the home page: computed analytically, no scene needed. */
+function envHealth(env,m){
+  var topo=resolveTopology(env),script=scriptFor(env,topo),pr=env.mock,us=-4,run=0,tot=0,prods=0,late=0;
+  topo.spokes.forEach(function(s){var a=ACT[s.activity](localH(us,m));tot+=s.m.pipelines;run+=s.m.pipelines*(.15+.6*a);prods+=s.m.products;if(ageFor(env,s,m,script)>slaFor(env,s))late++});
+  var act=activeIn(script,m),warn=act.filter(function(e){return e.lvl!=='info'}).length;
+  var failed=Math.round(tot*pr.failureRate*(1+m/1440)+(act.some(function(e){return e.id==='schema'})?3:0));
+  var deploys=Math.floor(pr.deploysPerHour*(m/60)*.8);
+  return {running:Math.round(run),failed:failed,late:late,deploys:deploys,products:prods,alerts:warn,active:act,spokes:topo.spokes.length};
+}
+
+
+CONFIG.links={systemView:'system-view.html'};
+
+var $=function(id){return document.getElementById(id)};
+var cv=$('cv'),ctx=cv.getContext('2d'),wrapEl=$('stagewrap'),tipEl=$('tip'),drillEl=$('drill');
+var FACE_W=440,FACE_H=820,GOLD='#D9B65A',GOLD2='#8C7334',INK='#EDE3C8';
+var ORDER=CONFIG.promotion.order.filter(function(id){return ENVS[id]});CONFIG.environments.forEach(function(e){if(ORDER.indexOf(e.id)<0)ORDER.push(e.id)});
+var st={min:T(10,40),day:0,speed:1,playing:true};
+if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)st.playing=false;
+var L={cols:3,s:1,ox:0,dpr:1};
+var MAXP=1;CONFIG.environments.forEach(function(e){resolveTopology(e).spokes.forEach(function(sp){MAXP=Math.max(MAXP,sp.m.pipelines)})});
+var CODES={ingest:'In',supply:'Su',operations:'Op',quality:'Qu',customer:'Cu',sales:'Sa',finance:'Fi'};
+var WCOL={stream:'#37D6E8',batch:'#C0804A',transform:'#7BD88F',ml:'#E070FF',serve:'#F3D36B',build:'#9B8CFF'};
+
+/* per-environment smoothed state */
+var ES={};
+ORDER.forEach(function(id){var env=ENVS[id],topo=resolveTopology(env),script=scriptFor(env,topo);
+  ES[id]={env:env,topo:topo,script:script,sp:topo.spokes.map(function(s){return {s:s,rr:null,late:false}}),bell:0,moon:.5,purse:.5,notes:[],crow:0};
+});
+
+function fit(){
+  var w=wrapEl.clientWidth||1200;L.dpr=Math.min(window.devicePixelRatio||1,2);
+  L.cols=w>=1150?Math.min(3,ORDER.length):(w>=720?Math.min(2,ORDER.length):1);
+  L.s=Math.min(1.25,w/(L.cols*FACE_W));L.ox=(w-L.cols*FACE_W*L.s)/2;
+  var rows=Math.ceil(ORDER.length/L.cols),h=Math.round(rows*FACE_H*L.s);
+  cv.style.width=w+'px';cv.style.height=h+'px';cv.width=Math.round(w*L.dpr);cv.height=Math.round(h*L.dpr);
+}
+window.addEventListener('resize',fit);fit();
+
+/* geometry helpers in face space */
+var cx=220,cy=345,R=140,ccy=650,CR=100;
+var hourAng=function(h){return Math.PI/2+h/24*Math.PI*2};
+var hits=[],faceRect=[];
+function faceOrigin(i){var c=i%L.cols,r=Math.floor(i/L.cols);return {x:L.ox+c*FACE_W*L.s,y:r*FACE_H*L.s}}
+function hit(i,vx,vy,vr,title,text){var o=faceOrigin(i);hits.push({x:o.x+vx*L.s,y:o.y+vy*L.s,r:Math.max(10,vr*L.s),title:title,text:text,face:i})}
+function arcPath(r,a0,a1){ctx.beginPath();ctx.arc(cx,cy,r,a0,a1)}
+function txt(s,x,y,font,col,align){ctx.font=font;ctx.fillStyle=col;ctx.textAlign=align||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y)}
+
+function facade(env){
+  var g=ctx.createLinearGradient(0,0,0,FACE_H);g.addColorStop(0,'#232A3A');g.addColorStop(1,'#12161F');
+  ctx.beginPath();ctx.moveTo(14,FACE_H-8);ctx.lineTo(14,150);ctx.quadraticCurveTo(14,46,220,12);ctx.quadraticCurveTo(426,46,426,150);ctx.lineTo(426,FACE_H-8);ctx.closePath();
+  ctx.fillStyle=g;ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle=GOLD2;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(24,FACE_H-18);ctx.lineTo(24,154);ctx.quadraticCurveTo(24,58,220,24);ctx.quadraticCurveTo(416,58,416,154);ctx.lineTo(416,FACE_H-18);ctx.closePath();
+  ctx.lineWidth=1;ctx.strokeStyle='rgba(217,182,90,.35)';ctx.stroke();
+  /* stone courses */
+  ctx.strokeStyle='rgba(255,255,255,.035)';ctx.lineWidth=1;for(var y=200;y<FACE_H-20;y+=34){ctx.beginPath();ctx.moveTo(26,y);ctx.lineTo(414,y);ctx.stroke()}
+}
+function plaque(env){
+  var x0=110,x1=330,y0=146,y1=178;
+  ctx.fillStyle='#0B0E15';ctx.strokeStyle=GOLD;ctx.lineWidth=1.5;roundRect(x0,y0,x1-x0,y1-y0,4);ctx.fill();ctx.stroke();
+  txt(env.name,214,y0+17,'700 18px Cinzel, serif',INK);
+  var tc=TIERCOL[env.tier];ctx.fillStyle=tc;roundRect(x1-36,y0+8,28,16,3);ctx.fill();txt(env.tier,x1-22,y0+16.5,'600 10.5px Barlow, sans-serif','#06101E');
+}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath()}
+function archPath(x,y,w,h){ctx.beginPath();ctx.moveTo(x,y+h);ctx.lineTo(x,y+w*.45);ctx.quadraticCurveTo(x,y,x+w/2,y-w*.12);ctx.quadraticCurveTo(x+w,y,x+w,y+w*.45);ctx.lineTo(x+w,y+h);ctx.closePath()}
+
+/* procession through the apostle windows */
+function procession(i,E,m,t){
+  var wins=[[128,70,64,58],[248,70,64,58]];
+  wins.forEach(function(w){archPath(w[0],w[1],w[2],w[3]);ctx.fillStyle='#0A1830';ctx.fill();ctx.strokeStyle=GOLD;ctx.lineWidth=1.5;ctx.stroke()});
+  var mm=m%60,dur=30,h=Math.floor(m/60),hv=envHealth(E.env,m),runs=clamp(Math.round(3+hv.running/40),3,12),rnd2=seeded(E.env.mock.seed*100+h+st.day*24);
+  var mix=[['batch',BATCH(h)],['transform',.5],['serve',OFFICE(localH(-4,m))],['stream',.6],['ml',MLP(localH(-4,m))*.6]];var tot=mix.reduce(function(a,b){return a+b[1]},0);
+  var cols=[],counts={};for(var k=0;k<runs;k++){var r=rnd2()*tot,acc=0,c='batch';for(var j=0;j<mix.length;j++){acc+=mix[j][1];if(r<=acc){c=mix[j][0];break}}cols.push(c);counts[c]=(counts[c]||0)+1}
+  var deploy=E.env.mock.deploysPerHour*STUDIO(localH(5.5,m))>.6;if(deploy){cols.push('build');counts.build=(counts.build||0)+1}
+  if(mm<dur){
+    var p=mm/dur;
+    wins.forEach(function(w){ctx.save();archPath(w[0],w[1],w[2],w[3]);ctx.clip();
+      cols.forEach(function(c,k){var x=110+p*(230+cols.length*22)-k*22,y=106;ctx.fillStyle=WCOL[c];ctx.beginPath();ctx.arc(x,y-14,5,0,Math.PI*2);ctx.fill();roundRect(x-6,y-8,12,22,4);ctx.fill()});
+      ctx.restore()});
+  }
+  var desc=Object.keys(counts).map(function(k){return counts[k]+' '+({batch:'batch',transform:'transform',serve:'serving',stream:'streaming',ml:'ML',build:'release'})[k]}).join(', ');
+  hit(i,220,100,60,'Hourly procession',runs+(deploy?1:0)+' scheduled runs this hour: '+desc+'. They parade at the top of each hour.');
+}
+function rooster(i,E,m,t){
+  var x=220,y=40,crow=m<20&&!E.script.some(function(e){return e.lvl==='alert'});
+  var s=crow?1.25+.1*Math.sin(t*14):1;ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle=GOLD;ctx.beginPath();ctx.ellipse(0,4,10,7,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(8,-4,4.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#E0603F';ctx.beginPath();ctx.arc(8,-9,2.4,0,Math.PI*2);ctx.arc(10.5,-8,2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=GOLD;ctx.beginPath();ctx.moveTo(12,-4);ctx.lineTo(16,-3);ctx.lineTo(12,-2);ctx.fill();
+  ctx.beginPath();ctx.moveTo(-9,2);ctx.quadraticCurveTo(-18,-10,-12,-12);ctx.quadraticCurveTo(-10,-4,-6,0);ctx.fill();
+  ctx.restore();
+  if(crow)txt('Day closed clean',x,y+22,'600 11px Barlow, sans-serif','#F3E3B0');
+  hit(i,x,y,16,'Rooster',crow?'Crowing: yesterday passed without a red incident.':'Crows just after midnight when the day passed without a red incident.');
+}
+
+/* astronomical dial */
+function dial(i,E,m,t){
+  var env=E.env,topo=E.topo,script=E.script,h=m/60;
+  /* rim */
+  ctx.beginPath();ctx.arc(cx,cy,R+9,0,Math.PI*2);var rg=ctx.createRadialGradient(cx,cy,R-4,cx,cy,R+9);rg.addColorStop(0,'#5A4A22');rg.addColorStop(.5,GOLD);rg.addColorStop(1,'#5A4A22');ctx.fillStyle=rg;ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fillStyle='#0B0E14';ctx.fill();
+  /* 24 hour numerals */
+  for(var k=0;k<24;k++){var a=hourAng(k),x=cx+Math.cos(a)*(R-11),y=cy+Math.sin(a)*(R-11);txt(String(k===0?24:k),x,y,'600 11px Cinzel, serif',GOLD)}
+  ctx.beginPath();ctx.arc(cx,cy,R-22,0,Math.PI*2);ctx.strokeStyle=GOLD2;ctx.lineWidth=1;ctx.stroke();
+  /* event arcs */
+  var act=activeIn(script,m);
+  script.forEach(function(e){var a0=hourAng(e.t0/60),a1=hourAng(e.t1/60),on=act.indexOf(e)>=0,col=e.lvl==='alert'?'#FF4D4F':(e.lvl==='warn'?'#FFB020':'#6EA8FF');
+    ctx.lineCap='round';arcPath(R-30,a0,a1);ctx.strokeStyle=col;ctx.globalAlpha=on?.75+.25*Math.sin(t*5):.55;ctx.lineWidth=on?9:6;ctx.stroke();ctx.globalAlpha=1;ctx.lineCap='butt';
+    var am=(a0+a1)/2;hit(i,cx+Math.cos(am)*(R-30),cy+Math.sin(am)*(R-30),9,e.title+' '+pad2(Math.floor(e.t0/60))+':'+pad2(e.t0%60)+' to '+pad2(Math.floor(e.t1/60))+':'+pad2(e.t1%60),e.text)});
+  (SHIPS[env.tier]||[]).forEach(function(tm){var a=hourAng(tm/60),x=cx+Math.cos(a)*(R-38),y=cy+Math.sin(a)*(R-38);ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#D5DEEA';ctx.beginPath();ctx.moveTo(4,0);ctx.lineTo(-3,-3.5);ctx.lineTo(-3,3.5);ctx.closePath();ctx.fill();ctx.restore();
+    hit(i,x,y,6,'Transfer to the core',pad2(Math.floor(tm/60))+':'+pad2(tm%60)+' UTC: consolidated silver moves from the ingest spoke to the core.')});
+  /* sky */
+  var SR=R-46;ctx.save();ctx.beginPath();ctx.arc(cx,cy,SR,0,Math.PI*2);ctx.clip();
+  ctx.fillStyle='#05070C';ctx.fillRect(cx-SR,cy-SR,SR*2,SR*2);
+  for(var s=0;s<26;s++){var sx=cx+Math.cos(s*2.39)*SR*(.3+.65*((s*37)%10)/10),sy=cy+SR*.25+Math.abs(Math.sin(s*1.7))*SR*.7;ctx.fillStyle='rgba(220,230,255,'+(.25+.25*Math.sin(t*1.5+s))+')';ctx.fillRect(sx,sy,1.4,1.4)}
+  ctx.beginPath();ctx.arc(cx,cy-SR*.33,SR*1.02,0,Math.PI*2);ctx.fillStyle='#5A3420';ctx.fill();
+  var sky=ctx.createLinearGradient(0,cy-SR,0,cy+SR*.4);sky.addColorStop(0,'#2E66AB');sky.addColorStop(1,'#163866');
+  ctx.beginPath();ctx.arc(cx,cy-SR*.36,SR*.9,0,Math.PI*2);ctx.fillStyle=sky;ctx.fill();
+  ctx.restore();
+  ctx.beginPath();ctx.arc(cx,cy,SR,0,Math.PI*2);ctx.strokeStyle=GOLD;ctx.lineWidth=1.5;ctx.stroke();
+  /* local noon markers */
+  var marks=topo.groups.map(function(g){return {code:g.name.slice(-1),name:g.name,off:g.utcOffset,col:'#E3A06B'}});
+  var seen={};topo.useCases.forEach(function(u){if(seen[u.site])return;seen[u.site]=1;var code=u.atStudio?'ES':'O'+u.site.slice(-1);marks.push({code:code,name:u.site,off:u.utcOffset,col:u.atStudio?'#B7ADFF':'#9FC4FF'})});
+  marks.forEach(function(mk,ix){var nh=((12-mk.off)%24+24)%24,a=hourAng(nh),x=cx+Math.cos(a)*(SR+6),y=cy+Math.sin(a)*(SR+6);ctx.fillStyle=mk.col;ctx.beginPath();ctx.arc(x,y,2.6,0,Math.PI*2);ctx.fill();
+    var lx=cx+Math.cos(a)*(SR-8),ly=cy+Math.sin(a)*(SR-8);txt(mk.code,lx,ly,'600 9px Barlow, sans-serif','#F3E3B0');
+    hit(i,x,y,7,mk.name+' local noon',pad2(Math.floor(nh))+':'+pad2(Math.round((nh%1)*60))+' UTC. Local time now '+fmtLocal(mk.off,m)+'.')});
+  /* zodiac ring and spokes */
+  var rot=((st.day*1440+m)/1440)*Math.PI*2*.25,n=E.sp.length;
+  ctx.beginPath();ctx.arc(cx,cy-6,SR-4,0,Math.PI*2);ctx.strokeStyle='rgba(217,182,90,.55)';ctx.lineWidth=2;ctx.stroke();
+  E.sp.forEach(function(o,k){var a=rot+k*Math.PI*2/n,age=ageFor(env,o.s,m,script),sla=slaFor(env,o.s),tr=18+(orbitFor(age)-24)/80*(SR-30);
+    o.rr=o.rr==null?tr:lerp(o.rr,tr,.04);if(!o.late&&age>sla*1.03)o.late=true;else if(o.late&&age<sla*.97)o.late=false;
+    ctx.strokeStyle='rgba(217,182,90,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*16,cy+Math.sin(a)*16);ctx.lineTo(cx+Math.cos(a)*(SR-6),cy+Math.sin(a)*(SR-6));ctx.stroke();
+    var x=cx+Math.cos(a)*o.rr,y=cy+Math.sin(a)*o.rr,mr=4.5+5*Math.sqrt(o.s.m.pipelines/MAXP);
+    if(o.late){ctx.beginPath();ctx.arc(x,y,mr+4+Math.sin(t*4),0,Math.PI*2);ctx.fillStyle='rgba(255,176,32,.35)';ctx.fill()}
+    var gg=ctx.createRadialGradient(x-mr*.35,y-mr*.35,1,x,y,mr);gg.addColorStop(0,'#FFFFFF');gg.addColorStop(.25,o.s.color);gg.addColorStop(1,shade(o.s.color));
+    ctx.beginPath();ctx.arc(x,y,mr,0,Math.PI*2);ctx.fillStyle=gg;ctx.fill();ctx.strokeStyle=GOLD;ctx.lineWidth=1;ctx.stroke();
+    if(o.s.metastore==='secondary'){ctx.setLineDash([2,2]);ctx.beginPath();ctx.arc(x,y,mr+2.5,0,Math.PI*2);ctx.strokeStyle='#3FC1CF';ctx.stroke();ctx.setLineDash([])}
+    if(mr>=7)txt(CODES[o.s.id]||o.s.name.slice(0,2),x,y+.5,'700 8.5px Barlow, sans-serif','#06101E');
+    hit(i,x,y,mr+3,o.s.name+(o.s.role==='ingest'?' (ingest spoke)':''),'Data age '+fmtAge(age)+' against a '+fmtAge(sla)+' target'+(o.late?', past target':'')+'. '+o.s.m.pipelines+' pipelines, '+o.s.m.products+' products'+(o.s.metastore==='secondary'?'. Secondary metastore.':'.'))});
+  /* moon = ingest backlog */
+  var hv=envHealth(env,m),avg=0;topo.groups.forEach(function(g){avg+=(g.shifts==='three'?SHIFT3:SHIFT2)(localH(g.utcOffset,m))});avg/=Math.max(1,topo.groups.length);
+  var backlog=clamp(BATCH(h)*.65+avg*.35-(m%180)/900,0,1);E.moon=lerp(E.moon,backlog,.05);E.backlog=backlog;
+  var sa=hourAng(h),ma=sa+Math.PI*.62,mx=cx+Math.cos(ma)*(SR*.62),my=cy+Math.sin(ma)*(SR*.62);
+  ctx.beginPath();ctx.arc(mx,my,8,0,Math.PI*2);ctx.fillStyle='#D5DEEA';ctx.fill();
+  ctx.beginPath();ctx.ellipse(mx+(1-E.moon)*8*.5,my,8*(1-E.moon),8,0,0,Math.PI*2);ctx.fillStyle='#11151E';if(E.moon<.98)ctx.fill();
+  ctx.beginPath();ctx.arc(mx,my,8,0,Math.PI*2);ctx.strokeStyle='#8FA3BF';ctx.lineWidth=1;ctx.stroke();
+  hit(i,mx,my,10,'Moon: ingest backlog',Math.round(E.moon*100)+'% of the bronze yard in use.');
+  /* star hand: next event */
+  var nx=nextEvent(E,m),na=hourAng(nx.t/60);ctx.strokeStyle='#C9D3E0';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(na)*(R-26),cy+Math.sin(na)*(R-26));ctx.stroke();
+  star(cx+Math.cos(na)*(R-26),cy+Math.sin(na)*(R-26),5,'#E7EDF6');E.next=nx;
+  hit(i,cx+Math.cos(na)*(R-26),cy+Math.sin(na)*(R-26),8,'Next scheduled',nx.title+' at '+pad2(Math.floor(nx.t/60))+':'+pad2(nx.t%60)+' UTC.');
+  /* sun hand */
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(sa);
+  ctx.strokeStyle=GOLD;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-22,0);ctx.lineTo(R-24,0);ctx.stroke();
+  ctx.fillStyle=GOLD;ctx.beginPath();ctx.moveTo(R-24,-5);ctx.lineTo(R-10,0);ctx.lineTo(R-24,5);ctx.closePath();ctx.fill();
+  var sr=R-34;ctx.beginPath();ctx.arc(sr,0,8.5,0,Math.PI*2);var sg=ctx.createRadialGradient(sr,0,1,sr,0,9);sg.addColorStop(0,'#FFF3C4');sg.addColorStop(1,'#E2A93A');ctx.fillStyle=sg;ctx.fill();
+  for(var q=0;q<12;q++){var qa=q*Math.PI/6+t*.4;ctx.beginPath();ctx.moveTo(sr+Math.cos(qa)*10,Math.sin(qa)*10);ctx.lineTo(sr+Math.cos(qa)*14,Math.sin(qa)*14);ctx.strokeStyle='#F3D36B';ctx.lineWidth=1.4;ctx.stroke()}
+  ctx.restore();
+  /* hub */
+  var hg=ctx.createRadialGradient(cx-5,cy-5,2,cx,cy,15);hg.addColorStop(0,'#FFF3C4');hg.addColorStop(1,'#9C7A2A');ctx.beginPath();ctx.arc(cx,cy,15,0,Math.PI*2);ctx.fillStyle=hg;ctx.fill();
+  txt(String(hv.products),cx,cy+.5,'700 9.5px Barlow, sans-serif','#2A1E06');
+  hit(i,cx,cy,15,topo.hub.name,'Hub of the '+env.name.toLowerCase()+' system with '+hv.products+' data products.');
+}
+function shade(hex){var n=parseInt(hex.slice(1),16),r=(n>>16)*.45,g=((n>>8)&255)*.45,b=(n&255)*.45;return 'rgb('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+')'}
+function star(x,y,r,col){ctx.beginPath();for(var k=0;k<12;k++){var a=k*Math.PI/6,rr=k%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}ctx.closePath();ctx.fillStyle=col;ctx.fill()}
+function nextEvent(E,m){var list=[];E.script.forEach(function(e){list.push({t:e.t0,title:e.title})});(SHIPS[E.env.tier]||[]).forEach(function(tm){list.push({t:tm,title:'Transfer to the core'})});
+  list.sort(function(a,b){return a.t-b.t});for(var k=0;k<list.length;k++)if(list[k].t>m)return list[k];return list[0]||{t:0,title:'Day start'}}
+
+/* niches with figures */
+function niche(x,y){archPath(x-27,y-58,54,116);ctx.fillStyle='#0D1119';ctx.fill();ctx.strokeStyle=GOLD2;ctx.lineWidth=1.5;ctx.stroke()}
+function figures(i,E,m,t){
+  var env=E.env,hv=envHealth(env,m),act=activeIn(E.script,m),bad=act.filter(function(e){return e.lvl!=='info'}),alert=bad.some(function(e){return e.lvl==='alert'});
+  var spend=0;E.topo.spokes.forEach(function(s){spend+=s.m.pipelines*(.2+.8*ACT[s.activity](localH(-4,m)))});spend=Math.round(spend*.9);
+  var serve=0;E.topo.useCases.forEach(function(u){serve+=OFFICE(localH(u.utcOffset,m))});serve/=Math.max(1,E.topo.useCases.length);
+  /* miser */
+  var x=44,y=275;niche(x,y);E.purse=lerp(E.purse,clamp(spend/520,.25,1),.05);var pr=7+9*E.purse;
+  ctx.fillStyle=GOLD;ctx.beginPath();ctx.ellipse(x,y-8,pr*.85,pr,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#5A4A22';ctx.fillRect(x-pr*.5,y-8-pr-2,pr,4);
+  txt(String(spend),x,y+30,'700 15px Cinzel, serif',INK);txt('spend per hour',x,y+46,'500 10px Barlow, sans-serif','#A6B8D2');
+  hit(i,x,y,30,'Miser: spend rate',spend+' compute units per hour at current activity.');
+  /* mirror */
+  x=44;y=420;niche(x,y);
+  ctx.strokeStyle=GOLD;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y-12,11,15,0,0,Math.PI*2);ctx.fillStyle=hv.late?'rgba(255,176,32,'+(.55+.25*Math.sin(t*3))+')':'#B9C7DA';ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x,y+3);ctx.lineTo(x,y+14);ctx.stroke();
+  txt(String(hv.late),x,y+30,'700 15px Cinzel, serif',hv.late?'#FFC766':INK);txt('past target',x,y+46,'500 10px Barlow, sans-serif','#A6B8D2');
+  hit(i,x,y,30,'Mirror: freshness',hv.late+' of '+hv.spokes+' spokes past their freshness target.');
+  /* skeleton with bell */
+  x=396;y=275;niche(x,y);E.bell=lerp(E.bell,bad.length?1:0,.08);var sw=E.bell*Math.sin(t*9)*.5;
+  ctx.fillStyle='#E7E1D0';ctx.beginPath();ctx.arc(x-6,y-30,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0D1119';ctx.fillRect(x-9,y-31,2,2);ctx.fillRect(x-5,y-31,2,2);
+  ctx.strokeStyle='#E7E1D0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-6,y-24);ctx.lineTo(x-6,y-4);ctx.moveTo(x-6,y-18);ctx.lineTo(x+4,y-22);ctx.stroke();
+  ctx.save();ctx.translate(x+6,y-24);ctx.rotate(sw);var bc=bad.length?(alert?'#FF4D4F':'#FFB020'):GOLD;ctx.fillStyle=bc;ctx.beginPath();ctx.moveTo(-5,0);ctx.lineTo(5,0);ctx.lineTo(8,12);ctx.lineTo(-8,12);ctx.closePath();ctx.fill();ctx.beginPath();ctx.arc(0,13,2,0,Math.PI*2);ctx.fill();ctx.restore();
+  if(bad.length){ctx.strokeStyle=bc;ctx.globalAlpha=.5*E.bell;ctx.lineWidth=1.2;for(var w2=0;w2<2;w2++){ctx.beginPath();ctx.arc(x+6,y-18,14+w2*6+((t*20)%6),-.8,.8);ctx.stroke()}ctx.globalAlpha=1}
+  txt(String(bad.length),x,y+30,'700 15px Cinzel, serif',bad.length?(alert?'#FF8A8C':'#FFC766'):INK);txt('incidents',x,y+46,'500 10px Barlow, sans-serif','#A6B8D2');
+  hit(i,x,y,30,'Skeleton: incidents',bad.length?bad.map(function(e){return e.title}).join('; ')+'.':'No open incidents. The bell rings when one opens.');
+  /* lute */
+  x=396;y=420;niche(x,y);
+  ctx.fillStyle='#B07A3E';ctx.beginPath();ctx.ellipse(x-2,y-6,9,12,-.5,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#B07A3E';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+4,y-14);ctx.lineTo(x+13,y-30);ctx.stroke();ctx.fillStyle='#2A1E06';ctx.beginPath();ctx.arc(x-2,y-6,2.5,0,Math.PI*2);ctx.fill();
+  if(serve>.45){for(var nn=0;nn<3;nn++){var ph=((t*.6+nn/3)%1),ny=y-20-ph*28,nx2=x+10+Math.sin(ph*6+nn)*5;ctx.globalAlpha=1-ph;ctx.fillStyle='#F3D36B';ctx.beginPath();ctx.ellipse(nx2,ny,2.6,2,-.4,0,Math.PI*2);ctx.fill();ctx.fillRect(nx2+1.8,ny-9,1.2,9);ctx.globalAlpha=1}}
+  txt(Math.round(serve*100)+'%',x,y+30,'700 15px Cinzel, serif',INK);txt('consumer activity',x,y+46,'500 10px Barlow, sans-serif','#A6B8D2');
+  hit(i,x,y,30,'Lute: consumers',Math.round(serve*100)+'% of peak use-case activity across offices.');
+}
+
+/* calendar dial: releases this month */
+var NOW=new Date();
+function calendar(i,E,m,t){
+  var env=E.env,days=new Date(NOW.getUTCFullYear(),NOW.getUTCMonth()+1,0).getDate(),today=Math.min(days,NOW.getUTCDate()+st.day),rnd3=seeded(env.mock.seed*7+NOW.getUTCMonth());
+  ctx.beginPath();ctx.arc(cx,ccy,CR+8,0,Math.PI*2);var rg=ctx.createRadialGradient(cx,ccy,CR-4,cx,ccy,CR+8);rg.addColorStop(0,'#5A4A22');rg.addColorStop(.5,GOLD);rg.addColorStop(1,'#5A4A22');ctx.fillStyle=rg;ctx.fill();
+  ctx.beginPath();ctx.arc(cx,ccy,CR,0,Math.PI*2);ctx.fillStyle='#0B0E14';ctx.fill();
+  var total=0,proms=0;
+  for(var d=1;d<=days;d++){var a0=-Math.PI/2+(d-1)/days*Math.PI*2,a1=-Math.PI/2+d/days*Math.PI*2,am=(a0+a1)/2,cnt=Math.round(rnd3()*env.mock.deploysPerHour*6),prom=rnd3()<(env.tier==='dev'?.5:.3);
+    var past=d<=today;if(past){total+=cnt;if(prom)proms++}
+    ctx.beginPath();ctx.arc(cx,ccy,CR-6,a0+.01,a1-.01);ctx.strokeStyle=d===today?GOLD:(past?'rgba(217,182,90,.45)':'rgba(217,182,90,.15)');ctx.lineWidth=8;ctx.stroke();
+    var len=Math.min(36,cnt*3);if(cnt){ctx.beginPath();ctx.moveTo(cx+Math.cos(am)*(CR-12),ccy+Math.sin(am)*(CR-12));ctx.lineTo(cx+Math.cos(am)*(CR-12-len),ccy+Math.sin(am)*(CR-12-len));ctx.strokeStyle=past?'#9B8CFF':'rgba(155,140,255,.25)';ctx.lineWidth=3;ctx.stroke()}
+    if(prom){ctx.fillStyle=past?'#E7EDF6':'rgba(231,237,246,.25)';ctx.beginPath();ctx.arc(cx+Math.cos(am)*(CR+0),ccy+Math.sin(am)*(CR+0),1.8,0,Math.PI*2);ctx.fill()}
+    if(d===days){ctx.fillStyle='#F3D36B';star(cx+Math.cos(am)*(CR-22),ccy+Math.sin(am)*(CR-22),5,'#F3D36B')}
+    if(d===1||d%5===0)txt(String(d),cx+Math.cos(am)*(CR-56),ccy+Math.sin(am)*(CR-56),'600 8.5px Barlow, sans-serif','#A6B8D2');
+    hit(i,cx+Math.cos(am)*(CR-6),ccy+Math.sin(am)*(CR-6),5,'Day '+d+(d===today?' (today)':''),(past?cnt+' releases':'Planned')+(prom?', promotion':'')+(d===days?'. Month-end close.':'.'));
+  }
+  var ta=-Math.PI/2+(today-.5)/days*Math.PI*2;ctx.strokeStyle=GOLD;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,ccy);ctx.lineTo(cx+Math.cos(ta)*(CR-16),ccy+Math.sin(ta)*(CR-16));ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,ccy,40,0,Math.PI*2);ctx.fillStyle='#10141D';ctx.fill();ctx.strokeStyle=TIERCOL[env.tier];ctx.lineWidth=2;ctx.stroke();
+  txt(String(total),cx,ccy-4,'700 20px Cinzel, serif',INK);txt('releases this month',cx,ccy+15,'500 9.5px Barlow, sans-serif','#A6B8D2');
+  txt('Release calendar',cx,ccy+CR+26,'600 13px Cinzel, serif',GOLD);
+  var nx=E.next||{t:0,title:''};txt('Next: '+nx.title+', '+pad2(Math.floor(nx.t/60))+':'+pad2(nx.t%60)+' UTC',cx,ccy+CR+50,'500 12.5px Barlow, sans-serif','#C8D4E6');
+  hit(i,cx,ccy,40,'Release calendar',total+' releases and '+proms+' promotions so far this month.');
+}
+
+/* frame */
+var t0=performance.now(),last=t0,uiAcc=0;
+function draw(){
+  var t=(performance.now()-t0)/1000;hits=[];
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
+  ORDER.forEach(function(id,i){var E=ES[id],o=faceOrigin(i);
+    ctx.setTransform(L.dpr*L.s,0,0,L.dpr*L.s,L.dpr*o.x,L.dpr*o.y);
+    facade(E.env);procession(i,E,st.min,t);rooster(i,E,st.min,t);plaque(E.env);dial(i,E,st.min,t);figures(i,E,st.min,t);calendar(i,E,st.min,t);
+  });
+}
+function frame(ts){
+  var dt=Math.min(.05,(ts-last)/1000);last=ts;
+  if(st.playing){st.min+=dt*12*st.speed;if(st.min>=1440){st.min-=1440;st.day++}}
+  draw();uiAcc+=dt;if(uiAcc>.4){uiAcc=0;updateUI()}
+  requestAnimationFrame(frame);
+}
+
+/* UI */
+function setPlaying(v){st.playing=v;$('play').textContent=v?'Pause':'Play'}
+$('play').addEventListener('click',function(){setPlaying(!st.playing)});
+document.querySelectorAll('[data-speed]').forEach(function(b){b.addEventListener('click',function(){st.speed=+b.getAttribute('data-speed');document.querySelectorAll('[data-speed]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')})})});
+var scrub=$('scrub'),scrubbing=false;scrub.addEventListener('pointerdown',function(){scrubbing=true});window.addEventListener('pointerup',function(){scrubbing=false});
+scrub.addEventListener('input',function(){st.min=+scrub.value});
+window.addEventListener('keydown',function(e){if(e.code==='Space'&&!(e.target&&e.target.tagName==='INPUT')){e.preventDefault();setPlaying(!st.playing)}if(e.key==='Escape')drillEl.hidden=true});
+var halKey='';
+function updateUI(){
+  var m=st.min,mi=Math.floor(m);$('clk').textContent=pad2(Math.floor(mi/60))+':'+pad2(mi%60);if(!scrubbing)scrub.value=mi;
+  var tb=$('tb'),rows='';var all=[];
+  ORDER.forEach(function(id){var E=ES[id],hv=envHealth(E.env,m),nx=nextEvent(E,m),bad=hv.active.filter(function(e){return e.lvl!=='info'}).length;
+    rows+='<tr><td><b style="color:'+TIERCOL[E.env.tier]+'">'+E.env.name+'</b></td><td class="n">'+bad+'</td><td class="n">'+hv.late+' of '+hv.spokes+'</td><td class="n">'+Math.round((E.moon||0)*100)+'%</td><td>'+nx.title+', '+pad2(Math.floor(nx.t/60))+':'+pad2(nx.t%60)+'</td></tr>';
+    hv.active.forEach(function(ev){all.push({env:E.env,ev:ev})})});
+  tb.innerHTML=rows;
+  var key=all.map(function(a){return a.env.id+a.ev.id}).join('|');
+  if(key!==halKey){halKey=key;var ul=$('hal');ul.innerHTML='';
+    if(!all.length){var li=document.createElement('li');li.className='info';li.innerHTML='<span class="t">now</span><b>No open incidents</b><span></span><p>All environments are on schedule.</p>';ul.appendChild(li)}
+    all.sort(function(a,b){var o={alert:0,warn:1,info:2};return o[a.ev.lvl]-o[b.ev.lvl]||b.ev.t0-a.ev.t0}).forEach(function(a){var li=document.createElement('li');li.className=a.ev.lvl;
+      var tt=document.createElement('span');tt.className='t';tt.textContent=pad2(Math.floor(a.ev.t0/60))+':'+pad2(a.ev.t0%60);var b=document.createElement('b');b.textContent=a.ev.title;var en=document.createElement('span');en.className='env';en.style.color=TIERCOL[a.env.tier];en.textContent=a.env.name;var p=document.createElement('p');p.textContent=a.ev.text;
+      li.appendChild(tt);li.appendChild(b);li.appendChild(en);li.appendChild(p);li.addEventListener('click',function(){openDrill(a.env.id)});ul.appendChild(li)})}
+}
+function pointer(e){var r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function findHit(p){var best=null,bd=1e9;hits.forEach(function(h){var d=Math.hypot(h.x-p.x,h.y-p.y);if(d<=h.r&&d<bd){bd=d;best=h}});return best}
+function faceAt(p){for(var i=0;i<ORDER.length;i++){var o=faceOrigin(i);if(p.x>=o.x&&p.x<=o.x+FACE_W*L.s&&p.y>=o.y&&p.y<=o.y+FACE_H*L.s)return i}return -1}
+cv.addEventListener('pointermove',function(e){var p=pointer(e),h=findHit(p);if(!h){tipEl.hidden=true;return}tipEl.hidden=false;tipEl.innerHTML='';var b=document.createElement('b');b.textContent=h.title;tipEl.appendChild(b);tipEl.appendChild(document.createTextNode(h.text));
+  var tx=e.clientX+14,ty=e.clientY+14,tw=tipEl.offsetWidth,th=tipEl.offsetHeight;if(tx+tw>window.innerWidth-8)tx=e.clientX-tw-14;if(ty+th>window.innerHeight-8)ty=e.clientY-th-14;tipEl.style.left=Math.max(8,tx)+'px';tipEl.style.top=Math.max(8,ty)+'px'});
+cv.addEventListener('pointerleave',function(){tipEl.hidden=true});
+cv.addEventListener('click',function(e){var i=faceAt(pointer(e));if(i>=0)openDrill(ORDER[i])});
+function openDrill(id){
+  var E=ES[id],env=E.env,hv=envHealth(env,st.min),f=env.federation,fm=f.mode==='multi-metastore'?(f.metastores||[]).length+' metastores':(f.mode==='multi-workspace'?(f.workspaces||2)+' workspaces':'single workspace');
+  drillEl.style.setProperty('--c',TIERCOL[env.tier]);drillEl.innerHTML='<button class="x" type="button" aria-label="Close">&times;</button><h3></h3><p></p><p></p>';
+  drillEl.querySelector('h3').textContent=env.name;var ps=drillEl.querySelectorAll('p');ps[0].textContent='Adapter: '+env.adapter+'. '+fm+'. '+hv.spokes+' spokes, '+hv.products+' data products.';
+  ps[1].textContent=hv.running+' pipelines running, '+hv.failed+' failed in 24 h, '+hv.late+' spokes past target, '+hv.alerts+' open alerts.';
+  var a=document.createElement('a');a.className='btn solid';a.textContent='Open system view';a.href=CONFIG.links.systemView+'#/env/'+id;a.target='_blank';a.rel='noopener';drillEl.appendChild(a);
+  drillEl.querySelector('.x').addEventListener('click',function(){drillEl.hidden=true});drillEl.hidden=false;
+}
+setPlaying(st.playing);updateUI();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

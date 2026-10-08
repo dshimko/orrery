@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=../../packages/core/schema/orrery.config.schema.json
+# Three environments on one shared base topology: a mock dev, and Databricks stg and prod.
+version: 1
+product:
+  title: Orrery
+  timezone: UTC
+
+topologies:
+  base:
+    hub:
+      id: core
+      name: Core platform
+    spokes:
+      - id: ingest
+        name: Regional ingest
+        role: ingest
+        match: { tag: { domain: ingest } }
+        freshness: { cadenceMinutes: 15, targetMinutes: 21 }
+      - id: sales
+        name: Sales
+        role: domain
+        match: { schema: '*_sales_*' }
+        freshness: { cadenceMinutes: 240, targetMinutes: 280 }
+      - id: finance
+        name: Finance
+        role: domain
+        match: { tag: { domain: finance } }
+        freshness: { cadenceMinutes: 1440, targetMinutes: 1560, offsetMinutes: 120 }
+    sourceGroups:
+      - {
+          id: region-a,
+          name: Region A,
+          utcOffset: -6,
+          match: { pipelineTag: { source_region: a } },
+        }
+      - { id: region-b, name: Region B, utcOffset: 2, match: { pipelineTag: { source_region: b } } }
+    useCases:
+      - { id: exec, name: Executive overview, match: { dashboardTag: { use_case: exec } } }
+    medallion:
+      strategy: schema-suffix # schema-suffix | catalog-prefix | tag
+      bronze: ['*_bronze', '*_raw']
+      silver: ['*_silver']
+      gold: ['*_gold']
+
+environments:
+  - id: dev
+    name: Development
+    tier: dev
+    topology: base
+    adapter: mock
+    mock: { scale: 0.25, failureRate: 0.12, deploysPerHour: 3, agingFactor: 6 }
+  - id: stg
+    name: Staging
+    tier: stg
+    topology: base
+    adapter: databricks
+    federation: { mode: multi-workspace }
+    connection:
+      host: ${env:ORRERY_STG_HOST}
+      warehouseId: ${env:ORRERY_STG_WAREHOUSE}
+      auth: app-service-principal
+    scope: { catalogs: ['stg_*', '*_stg'] }
+  - id: prod
+    name: Production
+    tier: prod
+    topology: base
+    adapter: databricks
+    federation:
+      mode: multi-metastore # single-workspace | multi-workspace | multi-metastore
+      metastores:
+        - {
+            id: primary,
+            host: '${env:ORRERY_PROD_HOST}',
+            warehouseId: '${env:ORRERY_PROD_WAREHOUSE}',
+          }
+        - {
+            id: secondary,
+            host: '${env:ORRERY_PROD2_HOST}',
+            warehouseId: '${env:ORRERY_PROD2_WAREHOUSE}',
+          }
+      foreignCatalogs: { show: true }
+    connection: { auth: app-service-principal }
+    scope: { catalogs: ['prod_*', '*_prod'] }
+
+promotion:
+  order: [dev, stg, prod]
+  source: job-tag # job-tag | git-tag | none
+  tagKey: release
+
+visuals:
+  sizeBy: pipelines
+  workloads: default
+  theme: dark

@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=../../packages/core/schema/orrery.config.schema.json
+# Production spread over two metastores, with dev inheriting prod's topology minus one spoke.
+version: 1
+
+topologies:
+  prod:
+    hub:
+      id: core
+      name: Core platform
+    spokes:
+      - id: ingest
+        name: Regional ingest
+        role: ingest
+        match: { tag: { domain: ingest } }
+        freshness: { cadenceMinutes: 15, targetMinutes: 21 }
+      - id: finance
+        name: Finance
+        role: domain
+        metastore: secondary
+        match: { tag: { domain: finance } }
+        freshness: { cadenceMinutes: 1440, targetMinutes: 1560, offsetMinutes: 120 }
+      - id: operations
+        name: Operations
+        role: domain
+        match: { catalog: 'ops' }
+        freshness: { cadenceMinutes: 60, targetMinutes: 75 }
+  lean:
+    extends: prod
+    exclude: [operations]
+
+environments:
+  - id: dev
+    name: Development
+    tier: dev
+    topology: lean
+    adapter: mock
+    mock: { scale: 0.25 }
+  - id: prod
+    name: Production
+    tier: prod
+    topology: prod
+    adapter: databricks
+    federation:
+      mode: multi-metastore
+      metastores:
+        - {
+            id: primary,
+            host: '${env:ORRERY_PROD_HOST}',
+            warehouseId: '${env:ORRERY_PROD_WAREHOUSE}',
+          }
+        - {
+            id: secondary,
+            host: '${env:ORRERY_PROD2_HOST}',
+            warehouseId: '${env:ORRERY_PROD2_WAREHOUSE}',
+          }
+      foreignCatalogs: { show: true }
+    connection: { auth: app-service-principal }
+    scope: { catalogs: ['prod_*', '*_prod'] }
+
+promotion:
+  order: [dev, prod]
+  source: none

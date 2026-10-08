@@ -1,0 +1,10 @@
+{
+  "$comment": "Dev-only packages outside the allowlist, each reviewed. check-licenses fails if any of these reaches the production dependency tree. See docs/decisions.md.",
+  "exceptions": [
+    {
+      "package": "minimatch",
+      "license": "BlueOak-1.0.0",
+      "reason": "Permissive license. Required by ESLint and typescript-eslint (lint tooling only); never bundled or shipped."
+    }
+  ]
+}

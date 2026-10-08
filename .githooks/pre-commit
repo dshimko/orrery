@@ -1,0 +1,21 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Blocks commits that contain secrets or denylisted names. Installed by `pnpm install`
+# (the `prepare` script points core.hooksPath here). Uses a local gitleaks binary, or the
+# pinned gitleaks container image when Docker is available.
+set -e
+
+GITLEAKS_IMAGE="ghcr.io/gitleaks/gitleaks:v8.30.1"
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --no-banner --config .gitleaks.toml
+elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  docker run --rm -v "$(pwd):/repo" -w /repo "$GITLEAKS_IMAGE" \
+    git --staged --redact --no-banner --config /repo/.gitleaks.toml /repo
+else
+  echo "pre-commit: neither gitleaks nor Docker is available, so staged changes cannot be" >&2
+  echo "scanned for secrets. Install gitleaks (https://github.com/gitleaks/gitleaks#installing)." >&2
+  exit 1
+fi
+
+node scripts/check-denylist.mjs

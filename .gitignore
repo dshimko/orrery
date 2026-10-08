@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Fork-private material (see docs/forking.md). Never commit these upstream.
+config/private/*
+!config/private/README.md
+.orrery-denylist
+adapters-private/
+public/private/

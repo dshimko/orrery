@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=../../packages/core/schema/orrery.config.schema.json
+# One environment backed by a single Databricks workspace.
+version: 1
+product:
+  title: Orrery
+  timezone: UTC
+
+topologies:
+  main:
+    hub:
+      id: core
+      name: Core platform
+    spokes:
+      - id: ingest
+        name: Regional ingest
+        role: ingest
+        match: { tag: { domain: ingest } }
+        freshness: { cadenceMinutes: 15, targetMinutes: 21 }
+      - id: sales
+        name: Sales
+        role: domain
+        match: { schema: '*_sales_*' }
+        freshness: { cadenceMinutes: 240, targetMinutes: 280 }
+    sourceGroups:
+      - { id: region-a, name: Region A, utcOffset: 0, match: { pipelineTag: { source_region: a } } }
+
+environments:
+  - id: prod
+    name: Production
+    tier: prod
+    topology: main
+    adapter: databricks
+    federation: { mode: single-workspace }
+    connection:
+      host: ${env:ORRERY_HOST}
+      warehouseId: ${env:ORRERY_WAREHOUSE}
+      auth: app-service-principal

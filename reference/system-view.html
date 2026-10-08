@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reference: system view (one environment as a solar system)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --glass:rgba(247,249,252,.93);--ink:#0F1A2B;--muted:#53647C;--line:#CBD5E2;--chip:#EEF2F8;--page:#EEF2F7;
+  --focus:#1F6FEB;--ok:#1E9E6A;--warn:#D98A00;--alert:#D93036;--s2:#4A7AA3;--s3:#9FB1C8;--bgpage:#03060D;
+  --dev:#1FA6B4;--stg:#C98500;--prod:#3D7DDB;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --glass:rgba(9,15,28,.88);--ink:#E7EDF6;--muted:#93A4BB;--line:#26374F;--chip:#14233A;--page:#060B16;
+    --focus:#6EA8FF;--ok:#4ADBA0;--warn:#FFB020;--alert:#FF5C61;--s2:#5A8DB8;--s3:#3A506C;
+    --dev:#3FC1CF;--stg:#FFB020;--prod:#6EA8FF;
+  }
+}
+:root[data-theme="dark"]{
+  --glass:rgba(9,15,28,.88);--ink:#E7EDF6;--muted:#93A4BB;--line:#26374F;--chip:#14233A;--page:#060B16;
+  --focus:#6EA8FF;--ok:#4ADBA0;--warn:#FFB020;--alert:#FF5C61;--s2:#5A8DB8;--s3:#3A506C;
+  --dev:#3FC1CF;--stg:#FFB020;--prod:#6EA8FF;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;height:100%;background:var(--bgpage);color:var(--ink);font:400 14px/1.45 Barlow,"Helvetica Neue",Arial,sans-serif;overflow:hidden;-webkit-text-size-adjust:100%}
+#app{position:fixed;inset:0;--ls:1;--tier:var(--prod)}
+#app.wall{--ls:1.35}
+#stage{position:absolute;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tierband{position:absolute;left:0;right:0;top:0;height:4px;background:var(--tier);pointer-events:none}
+.lab{position:absolute;left:0;top:0;white-space:nowrap;color:#E1ECFA;font-size:calc(13px*var(--ls));text-shadow:0 0 3px #02040A,0 0 3px #02040A,0 0 7px #02040A;will-change:transform;transform:translate(-9999px,-9999px)}
+.lab.zone{font:600 calc(21px*var(--ls)) "Barlow Condensed",Barlow,sans-serif;letter-spacing:.3px}
+.lab.pad{font-weight:600;font-size:calc(14px*var(--ls));color:#F2D9C2}
+.lab.planet{font-weight:600;font-size:calc(14px*var(--ls))}
+.lab.tower{font-weight:600;font-size:calc(13px*var(--ls));color:#EAF2FF}
+.lab small{display:block;font-weight:400;font-size:.86em;color:#A6B8D2}
+.lab small.late{color:#FFC766}
+.lab.flag{background:rgba(5,9,18,.92);border:1.5px solid var(--alert);border-radius:3px;padding:3px 8px;font-weight:600;font-size:calc(13px*var(--ls));color:#FFE3E3}
+.lab.flag.warn{border-color:#FFB020;color:#FFF0CF}
+.lab.flag.info{border-color:#6EA8FF;color:#DCE9FF}
+.hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;color:#EAF2FF;text-shadow:0 0 6px #02040A}
+.hud .tt{display:flex;align-items:baseline;gap:10px}
+.hud .t{font:700 calc(46px*var(--ls))/1 "Barlow Condensed",Barlow,sans-serif;font-variant-numeric:tabular-nums}
+.hud .u{font-size:calc(15px*var(--ls));color:#A8BAD4}
+.envbadge{display:inline-flex;align-items:center;gap:6px;font:600 calc(15px*var(--ls)) Barlow,sans-serif;padding:2px 10px;border-radius:3px;border:1.5px solid var(--tier);color:#EAF2FF;background:rgba(5,9,18,.6);text-shadow:none}
+.envbadge i{width:9px;height:9px;border-radius:50%;background:var(--tier)}
+#gizmo{width:84px;height:84px}
+.panel{position:absolute;background:var(--glass);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:12px 14px;overflow:auto;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.panel.left{left:10px;top:calc(env(safe-area-inset-top,0px) + 12px);width:300px;max-height:calc(100% - 22px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+.panel.right{right:10px;top:calc(env(safe-area-inset-top,0px) + 12px);width:340px;max-height:calc(100% - 22px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+.panel h2{font:600 18px/1.2 "Barlow Condensed",Barlow,sans-serif;margin:14px 0 6px;letter-spacing:.2px}
+.panel h2:first-child{margin-top:0}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+.lbl{color:var(--muted);font-size:13px}
+.help{margin:6px 0 0;padding-left:16px;color:var(--muted);font-size:12.5px}
+.help li{margin:1px 0}
+button{font:inherit;color:inherit}
+.btn{border:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:3px 11px;min-height:32px;border-radius:3px;font-weight:600;cursor:pointer}
+.btn.sm{border-color:var(--line);background:var(--chip);font-weight:500;padding:2px 9px;min-height:30px;font-size:13px}
+.btn[aria-pressed="true"],.btn.solid{background:var(--ink);color:var(--glass);border-color:var(--ink)}
+.btn.env{display:inline-flex;align-items:center;gap:6px}
+.btn.env i{width:9px;height:9px;border-radius:50%}
+.btn:focus-visible,input:focus-visible,.wl:focus-visible,.card:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.track{position:relative;height:16px;border-radius:3px;overflow:hidden;background:var(--s2)}
+.track input{position:absolute;inset:0;width:100%;height:100%;margin:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.track input::-webkit-slider-runnable-track{background:transparent;height:16px}
+.track input::-moz-range-track{background:transparent;height:16px}
+.track input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:6px;height:16px;background:#fff;border:1.5px solid #0A1220;border-radius:1px}
+.track input::-moz-range-thumb{width:5px;height:14px;background:#fff;border:1.5px solid #0A1220;border-radius:1px}
+.marks{position:relative;height:7px;margin-top:3px}
+.marks span{position:absolute;top:0;height:7px;border-radius:2px}
+.hours{position:relative;height:16px;color:var(--muted);font-size:12px}
+.hours span{position:absolute;top:0;transform:translateX(-50%)}
+.hours span:first-child{transform:none}.hours span:last-child{transform:translateX(-100%)}
+#now{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+#now li{border-left:4px solid var(--line);padding:1px 0 1px 9px;cursor:pointer}
+#now li.warn{border-color:var(--warn)}#now li.alert{border-color:var(--alert)}#now li.info{border-color:var(--s2)}
+#now h3{margin:0 0 1px;font-size:14px;font-weight:600}
+#now p{margin:0;color:var(--muted);font-size:13px}
+.wls{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.wl{display:grid;grid-template-columns:12px 1fr auto;gap:0 8px;align-items:center;cursor:pointer;border:1.5px solid transparent;border-radius:3px;padding:3px 5px;background:none;text-align:left;width:100%}
+.wl[aria-pressed="true"]{border-color:var(--ink);background:var(--chip)}
+.wl i{width:12px;height:12px;border-radius:3px;display:block}
+.wl b{font-weight:600;font-size:13.5px}
+.wl .pc{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}
+.wl .bar{grid-column:2 / 4;height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
+.wl .bar u{display:block;height:100%;width:0;transition:width .25s linear;text-decoration:none}
+.split{display:flex;height:16px;border-radius:3px;overflow:hidden;margin:4px 0 4px}
+.split i{display:block;height:100%}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+.metrics div{background:var(--chip);border:1px solid var(--line);border-radius:3px;padding:6px 8px}
+.metrics dt{color:var(--muted);font-size:12px;line-height:1.2}
+.metrics dd{margin:1px 0 0;font:600 22px/1.1 "Barlow Condensed",Barlow,sans-serif;font-variant-numeric:tabular-nums}
+.rows{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.rows li{display:grid;grid-template-columns:14px 1fr auto;gap:1px 9px;align-items:center;cursor:pointer}
+.rows .lamp{width:11px;height:11px;border-radius:50%;background:var(--ok)}
+.rows li.warn .lamp{background:var(--warn)}.rows li.alert .lamp{background:var(--alert)}.rows li.night .lamp{background:var(--s3)}
+.rows .nm{font-weight:600;font-size:13.5px}.rows .tm{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.rows .bar{grid-column:2 / 4;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.rows .bar i{display:block;height:100%;background:var(--s2);width:0;transition:width .25s linear}
+.rows li.warn .bar i{background:var(--warn)}
+.rows .st{grid-column:2 / 4;color:var(--muted);font-size:12.5px;min-height:16px}
+#card{position:absolute;left:330px;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);width:300px;background:var(--glass);border:1px solid var(--line);border-radius:4px;padding:10px 12px;font-size:13.5px}
+#card h3{margin:0 0 4px;font:600 19px/1.2 "Barlow Condensed",Barlow,sans-serif}
+#card p{margin:0 0 4px}
+#card .x{position:absolute;right:6px;top:4px;border:0;background:none;font-size:18px;cursor:pointer;color:var(--muted)}
+.tip{position:fixed;z-index:30;max-width:300px;background:#060B16;color:#E7EDF6;border:1px solid #2B4064;border-radius:3px;padding:7px 9px;font-size:13px;line-height:1.35;pointer-events:none}
+.tip b{display:block;font-size:14px;margin-bottom:1px}
+.tog{display:none;position:absolute;z-index:5;top:calc(env(safe-area-inset-top,0px) + 12px)}
+#tl{left:10px}#tr{right:10px}
+#fail{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;color:#DCE6F5}
+
+/* home: a galaxy of environment systems */
+#home{position:absolute;inset:0;z-index:20;pointer-events:none;color:#E7EDF6}
+#home[hidden]{display:none}
+#app.homeview .panel,#app.homeview .hud,#app.homeview #card,#app.homeview .tog,#app.homeview .tierband{display:none!important}
+.hh{position:absolute;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 14px);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;pointer-events:none}
+.hh h1{font:700 clamp(30px,4vw,48px)/1 "Barlow Condensed",Barlow,sans-serif;margin:0;letter-spacing:.4px;text-shadow:0 0 8px #02040A}
+.hh p{margin:6px 0 0;color:#A8BAD4;max-width:58ch;font-size:15px;text-shadow:0 0 6px #02040A}
+.hclock{display:flex;align-items:center;gap:8px;pointer-events:auto;background:rgba(9,15,28,.72);border:1px solid #26374F;border-radius:4px;padding:6px 10px}
+.hclock .t{font:700 34px/1 "Barlow Condensed",Barlow,sans-serif;font-variant-numeric:tabular-nums}
+.hclock .u{color:#A8BAD4;font-size:13px}
+.hbtn{border:1.5px solid #E7EDF6;background:transparent;color:#E7EDF6;padding:3px 11px;min-height:32px;border-radius:3px;font-weight:600;cursor:pointer}
+.hbtn.solid{background:#E7EDF6;color:#0A1220}
+.hbtn.sm{border-color:#33476A;background:#14233A;font-weight:500}
+.hbtn:focus-visible,.sysl:focus-visible{outline:3px solid #6EA8FF;outline-offset:2px}
+#hlabels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.sysl{position:absolute;left:0;top:0;width:236px;transform:translate(-9999px,-9999px);pointer-events:auto;cursor:pointer;background:rgba(9,15,28,.78);border:1px solid #26374F;border-top:4px solid var(--c);border-radius:4px;padding:8px 10px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.sysl:hover{border-color:var(--c)}
+.sysl .nm{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.sysl .nm b{font:600 22px/1.05 "Barlow Condensed",Barlow,sans-serif}
+.sysl .nm span{font-size:12px;font-weight:600;color:var(--c);border:1.5px solid var(--c);border-radius:3px;padding:0 6px}
+.sysl .fm{font-size:12px;color:#93A4BB;margin:2px 0 6px}
+.sysl dl{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0}
+.sysl dl div{background:rgba(20,35,58,.8);border-radius:3px;padding:3px 6px}
+.sysl dt{font-size:10.5px;color:#93A4BB;line-height:1.15}
+.sysl dd{margin:0;font:600 18px/1.1 "Barlow Condensed",Barlow,sans-serif;font-variant-numeric:tabular-nums}
+.sysl dd.bad{color:#FF5C61}.sysl dd.warn{color:#FFB020}
+.brl{position:absolute;left:0;top:0;transform:translate(-9999px,-9999px);font-size:12.5px;color:#C9BDFF;text-align:center;text-shadow:0 0 4px #02040A,0 0 6px #02040A;white-space:nowrap}
+.brl b{color:#E7EDF6;font-variant-numeric:tabular-nums}.brl .blk{color:#FF8A8C;font-weight:600}
+.hal{position:absolute;left:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:min(520px,calc(100% - 32px));max-height:30%;overflow:auto;pointer-events:auto;background:rgba(9,15,28,.78);border:1px solid #26374F;border-radius:4px;padding:8px 10px}
+.hal h3{margin:0 0 6px;font:600 17px/1.2 "Barlow Condensed",Barlow,sans-serif}
+#hal{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#hal li{display:grid;grid-template-columns:auto 1fr auto;gap:0 10px;align-items:baseline;border-left:4px solid #33476A;padding:2px 0 2px 8px;cursor:pointer}
+#hal li.warn{border-left-color:#FFB020}#hal li.alert{border-left-color:#FF5C61}#hal li.info{border-left-color:#5A8DB8}
+#hal .env{font-weight:600;color:var(--c);font-size:13px}#hal b{font-weight:600;font-size:14px}#hal span.t{color:#93A4BB;font-size:12.5px;font-variant-numeric:tabular-nums}
+#hal p{grid-column:2 / 4;margin:0;color:#A8BAD4;font-size:12.5px}
+.hhelp{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);color:#93A4BB;font-size:12.5px;text-shadow:0 0 6px #02040A;text-align:right}
+.cfgdrawer{position:absolute;right:16px;top:calc(env(safe-area-inset-top,0px) + 84px);width:min(460px,calc(100% - 32px));max-height:68%;overflow:auto;pointer-events:auto;background:rgba(9,15,28,.94);border:1px solid #26374F;border-radius:4px;padding:10px 12px}
+.cfgdrawer[hidden]{display:none}
+.cfghead{display:flex;justify-content:space-between;align-items:center}
+.cfghead .x{border:0;background:none;color:#93A4BB;font-size:20px;cursor:pointer}
+.cfgdrawer pre{font-size:12px;margin:8px 0 0;white-space:pre;color:#C8D4E6}
+@media (max-width:760px){.sysl{width:150px}.sysl dl,.sysl .fm{display:none}.hhelp{display:none}.hal{max-height:26%}}
+
+#app.wall .panel.left,#app.wall #card,#app.wall .tog{display:none!important}
+#app.wall .panel.right{width:min(440px,38vw);font-size:calc(14px*1.2)}
+#app.wall.idle{cursor:none}
+@media (max-width:900px){
+  .tog{display:block}
+  .panel.left,.panel.right{left:8px;right:8px;width:auto;top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 50px);max-height:52%;display:none}
+  .panel.open{display:block}
+  #card{left:8px;right:8px;width:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 52px)}
+  .hud{top:calc(env(safe-area-inset-top,0px) + 8px)}
+  .hud .t{font-size:34px}
+  #gizmo{width:64px;height:64px}
+}
+@media (prefers-reduced-motion: reduce){.rows .bar i,.wl .bar u{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage"></div>
+  <div id="labels"></div>
+  <div class="tierband"></div>
+  <div class="hud"><span class="envbadge" id="envbadge"><i></i><span id="envname">Production</span></span><div class="tt"><span class="t" id="clk">00:00</span><span class="u">UTC</span></div><canvas id="gizmo" width="168" height="168" aria-hidden="true"></canvas></div>
+  <button class="btn sm tog" id="tl" type="button">Controls</button>
+  <button class="btn sm tog" id="tr" type="button">Status</button>
+
+  <aside class="panel left" id="pl" aria-label="Controls">
+    <div class="row"><button class="btn" id="homeBtn" type="button">Clock face</button></div>
+    <div class="row" id="envsw" role="group" aria-label="Environment"></div>
+    <h2>Time</h2>
+    <div class="row">
+      <button class="btn solid" id="play" type="button">Pause</button>
+      <button class="btn sm" type="button" data-speed="1" aria-pressed="true">1x</button>
+      <button class="btn sm" type="button" data-speed="2" aria-pressed="false">2x</button>
+      <button class="btn sm" type="button" data-speed="4" aria-pressed="false">4x</button>
+    </div>
+    <div class="track"><input id="scrub" type="range" min="0" max="1439" step="1" value="0" aria-label="Time of day in UTC"></div>
+    <div class="marks" id="marks" aria-hidden="true"></div>
+    <div class="hours" aria-hidden="true"><span style="left:0">00</span><span style="left:25%">06</span><span style="left:50%">12</span><span style="left:75%">18</span><span style="left:100%">24</span></div>
+    <div class="row" id="jumps"></div>
+    <h2>Camera</h2>
+    <div class="row">
+      <button class="btn sm" id="spin" type="button" aria-pressed="false">Auto spin</button>
+      <button class="btn sm" id="level" type="button">Level horizon</button>
+      <button class="btn sm" id="reset" type="button">Reset</button>
+    </div>
+    <ul class="help">
+      <li>Drag: yaw and pitch</li>
+      <li>Ctrl or Alt drag, Q and E, two-finger twist: roll</li>
+      <li>Right or Shift drag, two-finger move: pan</li>
+      <li>Scroll, pinch, + and -: fly in and out</li>
+    </ul>
+    <h2>Fly to</h2>
+    <div class="row" id="views"></div>
+    <h2>Size planets by</h2>
+    <div class="row" id="sizeby"></div>
+    <h2>Tier focus</h2>
+    <div class="row" id="tierf"></div>
+    <div class="row" style="margin-top:12px"><label class="lbl"><input type="checkbox" id="dim" checked> Dim unrelated areas during alerts</label></div>
+    <div class="row"><button class="btn" id="wallBtn" type="button">Wall display</button></div>
+    <p class="lbl">Adapter: mock. Space pauses, 1 to 7 fly to a stop, S spin, H level, 0 reset, W wall display.</p>
+  </aside>
+
+  <aside class="panel right" id="pr" aria-label="Status">
+    <h2>Happening now</h2>
+    <ul id="now"></ul>
+    <h2>Freshness</h2>
+    <p class="lbl" style="margin:0 0 6px">Orbit distance is data age. Planets drift out as data ages and swing in on refresh.</p>
+    <ul class="rows" id="fresh"></ul>
+    <h2>Workloads</h2>
+    <ul class="wls" id="wls"></ul>
+    <h2>Where the data products live</h2>
+    <div class="split" id="split" aria-hidden="true"></div>
+    <p class="lbl" id="splitTxt" style="margin:0"></p>
+    <h2>Federation</h2>
+    <p class="lbl" id="fedTxt" style="margin:0"></p>
+    <h2>Follow the sun</h2>
+    <ul class="rows" id="regions"></ul>
+    <h2>Platform</h2>
+    <dl class="metrics">
+      <div><dt>Source records per minute</dt><dd id="m-rec">0</dd></div>
+      <div><dt>Cargo waiting at ingest</dt><dd id="m-yard">0</dd></div>
+      <div><dt>Shuttles to core</dt><dd id="m-ship">0</dd></div>
+      <div><dt>Products published today</dt><dd id="m-pub">0</dd></div>
+      <div><dt>Gate rejects today</dt><dd id="m-rej">0</dd></div>
+      <div><dt>Spokes past freshness target</dt><dd id="m-late">0</dd></div>
+    </dl>
+    <h2>Use cases</h2>
+    <ul class="rows" id="board"></ul>
+  </aside>
+  <div id="card" hidden></div>
+
+  <section id="home" aria-label="Environments" hidden>
+    <div class="hh">
+      <div><h1>Orrery</h1><p>Each environment is its own solar system: the core at the center, spokes on orbits set by data age. Releases fly along the bridges from dev to prod. Drag to look around, click a system to fly in.</p></div>
+      <div class="hclock"><span class="t" id="hclk">00:00</span><span class="u">UTC</span><button class="hbtn solid" id="hplay" type="button">Pause</button><button class="hbtn sm" id="cfgBtn" type="button">Configuration</button></div>
+    </div>
+    <div id="hlabels"></div>
+    <div class="hal"><h3>Open alerts across environments</h3><ul id="hal"></ul></div>
+    <div class="hhelp">Mock adapter. Synthetic names and data.<br>Drag rotates, scroll zooms, 0 resets.</div>
+    <div class="cfgdrawer" id="cfgd" hidden><div class="cfghead"><b>Configuration in use (sample, read-only)</b><button class="x" id="cfgx" type="button" aria-label="Close">&times;</button></div><pre id="cfgpre"></pre></div>
+  </section>
+  <div id="fail"><p>The 3D library did not load. Check that cdnjs.cloudflare.com is reachable and reload.</p></div>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+var THREE=window.THREE;
+if(!THREE){document.getElementById('fail').style.display='flex';return}
+
+/* ===================== helpers ===================== */
+var TAU=Math.PI*2,rad=function(d){return d*Math.PI/180};
+var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))},lerp=function(a,b,t){return a+(b-a)*t};
+var rnd=function(a){return a[Math.floor(Math.random()*a.length)]};
+var pad2=function(n){return (n<10?'0':'')+n},T=function(h,m){return h*60+(m||0)};
+var prof=function(pts){return function(h){h=((h%24)+24)%24;for(var i=0;i<pts.length-1;i++){var a=pts[i],b=pts[i+1];if(h>=a[0]&&h<=b[0])return lerp(a[1],b[1],b[0]===a[0]?0:(h-a[0])/(b[0]-a[0]))}return pts[pts.length-1][1]}};
+var Q3=function(p0,c,p1,t){var u=1-t;return {x:u*u*p0.x+2*u*t*c.x+t*t*p1.x,y:u*u*p0.y+2*u*t*c.y+t*t*p1.y,z:u*u*p0.z+2*u*t*c.z+t*t*p1.z}};
+var mid=function(a,b,lift){var d=Math.hypot(b.x-a.x,b.z-a.z);return {x:(a.x+b.x)/2,y:(a.y+b.y)/2+(lift==null?.18*d+3:lift),z:(a.z+b.z)/2}};
+var toward=function(from,to,r){var dx=from.x-to.x,dy=from.y-to.y,dz=from.z-to.z,l=Math.hypot(dx,dy,dz)||1;return {x:to.x+dx/l*r,y:to.y+dy/l*r,z:to.z+dz/l*r}};
+var fmtAge=function(a){return a<90?Math.round(a)+' min':(a<1440?(a/60).toFixed(1)+' h':(a/1440).toFixed(1)+' d')};
+var hexCss=function(n){return '#'+('000000'+n.toString(16)).slice(-6)};
+var localH=function(off,m){return (((m/60+off)%24)+24)%24};
+var fmtLocal=function(off,m){var lh=localH(off,m),h=Math.floor(lh);return pad2(h)+':'+pad2(Math.floor((lh-h)*60))};
+var orbitFor=function(age){return clamp(24+22*Math.log10(Math.max(1,age)),24,104)};
+
+/* ===================== configuration (mirrors orrery.config.yaml) ===================== */
+var CONFIG={
+  version:1,
+  product:{title:'Orrery',timezone:'UTC'},
+  links:{clockFace:'orloj-home.html'},
+  topologies:{
+    base:{
+      hub:{id:'core',name:'Core platform'},
+      spokes:[
+        {id:'ingest',name:'Regional ingest',role:'ingest',color:'#9FC4FF',freshness:{cadenceMinutes:15,lagMinutes:3},metrics:{pipelines:64,products:60,complexity:3.6,volumeTB:140},activity:'ingest',match:{tag:{domain:'ingest'}}},
+        {id:'supply',name:'Supply',role:'domain',color:'#5FA8D3',share:true,freshness:{cadenceMinutes:60,lagMinutes:10},metrics:{pipelines:78,products:34,complexity:3.2,volumeTB:760},activity:'supply',match:{schema:'*_supply_*'}},
+        {id:'operations',name:'Operations',role:'domain',color:'#7BC8A4',ring:true,aurora:true,freshness:{cadenceMinutes:5,lagMinutes:2},metrics:{pipelines:150,products:62,complexity:4.5,volumeTB:2200},activity:'operations',match:{tag:{domain:'operations'}}},
+        {id:'quality',name:'Quality',role:'domain',color:'#B79CED',share:true,freshness:{cadenceMinutes:30,lagMinutes:5},metrics:{pipelines:70,products:40,complexity:3.8,volumeTB:480},activity:'quality',match:{tag:{domain:'quality'}}},
+        {id:'customer',name:'Customer',role:'domain',color:'#F28FAD',aurora:true,moons:2,share:true,freshness:{cadenceMinutes:2,lagMinutes:1},metrics:{pipelines:96,products:52,complexity:4.2,volumeTB:3300},activity:'customer',match:{tag:{domain:'customer'}}},
+        {id:'sales',name:'Sales',role:'domain',color:'#E9966B',freshness:{cadenceMinutes:240,lagMinutes:20},metrics:{pipelines:52,products:26,complexity:2.5,volumeTB:350},activity:'sales',match:{schema:'*_sales_*'}},
+        {id:'finance',name:'Finance',role:'domain',color:'#A3B1C6',moons:1,freshness:{cadenceMinutes:1440,lagMinutes:60,offsetMinutes:120},metrics:{pipelines:40,products:22,complexity:3.0,volumeTB:160},activity:'finance',match:{tag:{domain:'finance'}}}
+      ],
+      sourceGroups:[
+        {id:'ra',name:'Region A',utcOffset:-6,sites:1,shifts:'two'},
+        {id:'rb',name:'Region B',utcOffset:-3,sites:2,shifts:'two'},
+        {id:'rc',name:'Region C',utcOffset:2,sites:2,shifts:'two'},
+        {id:'rd',name:'Region D',utcOffset:1,sites:3,shifts:'two'},
+        {id:'re',name:'Region E',utcOffset:8,sites:2,shifts:'three'}
+      ],
+      useCases:[
+        {id:'exec',name:'Executive overview',site:'Office 1',utcOffset:-4,reads:['operations','supply','finance']},
+        {id:'demand',name:'Demand planning',site:'Office 1',utcOffset:-4,reads:['sales']},
+        {id:'risk',name:'Quality risk watch',site:'Office 1',utcOffset:-4,reads:['quality','customer','operations','supply','ingest']},
+        {id:'campaign',name:'Campaign performance',site:'Office 2',utcOffset:-7,reads:['sales','customer']},
+        {id:'inbound',name:'Inbound risk',site:'Office 3',utcOffset:2,reads:['supply','ingest']},
+        {id:'models',name:'Asset health models',site:'Engineering studio',utcOffset:5.5,reads:['operations','customer'],atStudio:true}
+      ],
+      studio:{name:'Engineering studio',utcOffset:5.5}
+    }
+  },
+  environments:[
+    {id:'dev',scope:{catalogs:['dev_*','*_dev'],caseInsensitive:true},name:'Development',tier:'dev',topology:'base',adapter:'mock',
+     federation:{mode:'single-workspace'},
+     override:{dropSpokes:['finance'],sourceGroupLimit:2},
+     mock:{seed:11,scale:.3,failureRate:.12,deploysPerHour:3,agingFactor:5}},
+    {id:'stg',scope:{catalogs:['stg_*','*_stg'],caseInsensitive:true},name:'Staging',tier:'stg',topology:'base',adapter:'mock',
+     federation:{mode:'multi-workspace',workspaces:2},
+     override:{sourceGroupLimit:3},
+     mock:{seed:22,scale:.55,failureRate:.05,deploysPerHour:1.5,agingFactor:2}},
+    {id:'prod',scope:{catalogs:['prod_*','*_prod'],caseInsensitive:true},name:'Production',tier:'prod',topology:'base',adapter:'mock',
+     federation:{mode:'multi-metastore',metastores:[{id:'primary',name:'Primary metastore'},{id:'secondary',name:'Secondary metastore',spokes:['customer','sales']}],foreignCatalogs:[{id:'fc1',name:'Legacy warehouse'},{id:'fc2',name:'Operational database'}]},
+     mock:{seed:33,scale:1,failureRate:.015,deploysPerHour:.6,agingFactor:1}}
+  ],
+  promotion:{order:['dev','stg','prod'],source:'job-tag',tagKey:'release'},
+  visuals:{sizeBy:'pipelines',theme:'dark'}
+};
+var TIERCOL={dev:'#3FC1CF',stg:'#FFB020',prod:'#6EA8FF'};
+var ENVS={};CONFIG.environments.forEach(function(e){ENVS[e.id]=e});
+
+/* ===================== mock adapter ===================== */
+var SHIFT2=prof([[0,.3],[5,.3],[6,.95],[14,.95],[22,.9],[22.5,.3],[24,.3]]),SHIFT3=prof([[0,.7],[6,.9],[22,.9],[24,.7]]);
+var OFFICE=prof([[0,.1],[7,.15],[8,.7],[12,.9],[17,.7],[19,.25],[24,.1]]),STUDIO=prof([[0,.1],[8,.15],[9,.7],[19,.7],[21,.2],[24,.1]]);
+var BATCH=prof([[0,.7],[1,1],[3,.8],[4,.2],[8,.2],[17,.3],[21,.6],[22,1],[24,.7]]);
+var MLP=prof([[0,.9],[5,.9],[8,.4],[18,.4],[20,.8],[24,.9]]);
+var ACT={
+  ingest:prof([[0,.5],[6,.9],[22,.9],[24,.5]]),
+  supply:prof([[0,.2],[2,.5],[3,.9],[5,.9],[6,.5],[13,.5],[14,.8],[16,.5],[24,.2]]),
+  operations:prof([[0,.2],[5,.2],[6,.9],[22,.9],[22.5,.25],[24,.2]]),
+  quality:prof([[0,.1],[6,.1],[7,.8],[22,.8],[22.5,.1],[24,.1]]),
+  customer:prof([[0,.3],[7,.6],[8.5,.8],[11,.4],[17,.5],[18,.9],[20,.6],[24,.3]]),
+  sales:prof([[0,.05],[8,.1],[9,.7],[18,.6],[20,.1],[24,.05]]),
+  finance:prof([[0,.8],[1,.9],[3,.7],[4,.1],[16,.1],[17.5,.8],[19,.6],[20,.1],[24,.8]])
+};
+var SHIPS={dev:[T(9),T(14)],stg:[T(3),T(15)],prod:[T(3),T(11),T(16),T(19,45),T(22,30)]};
+var SCRIPTS={
+  prod:[
+    {id:'batch',t0:T(1),t1:T(3),lvl:'info',focus:['belt','ingest'],anchors:[['d','ingest']],title:'Overnight batch loads',text:'Batch files from every region dock at the ingest spoke, pile up in the bronze ring, then pass the gantry into silver.'},
+    {id:'finclose',t0:T(2),t1:T(2,45),lvl:'info',focus:['planets','earth'],anchors:[['d','finance']],title:'Finance refreshes',text:'Finance has drifted to the outer orbit after a day without a refresh. The nightly close lands and it swings back toward the core.'},
+    {id:'ship1',t0:T(3),t1:T(4),lvl:'info',focus:['ingest','earth'],anchors:[['d','ingest']],title:'Nightly transfer to the core',text:'Consolidated silver flies from the ingest spoke to the core platform, where most data products live.'},
+    {id:'build',t0:T(3,30),t1:T(5),lvl:'info',focus:['yard','ingest','planets'],anchors:[['z','yard']],title:'Release ships',text:'Release drones carry new pipeline versions from the engineering studio to the spokes.'},
+    {id:'maint',t0:T(8,30),t1:T(9,30),lvl:'warn',focus:['belt','planets','stations'],anchors:[['p','rc0'],['t','models'],['d','operations']],title:'Asset health warning',text:'Sensor readings from a Region C site trend out of range. Operations lights up with ML scoring and the asset health models station reads it.'},
+    {id:'qalert',t0:T(10,30),t1:T(12,30),lvl:'alert',focus:null,anchors:[['t','risk'],['p','rd0'],['p','rb0'],['p','re0']],title:'Cross-domain quality alert',text:'A defect pattern traces to sites in three regions. The quality risk station reads Quality, Customer, Operations, Supply, and ingest data.'},
+    {id:'office1',t0:T(12,30),t1:T(15),lvl:'info',focus:['earth','stations','planets'],anchors:[['t','exec'],['t','demand']],title:'Office 1 opens',text:'The executive overview and demand planning stations start reading fresh products.'},
+    {id:'fedq',t0:T(16),t1:T(17,30),lvl:'info',focus:['comets','earth','stations'],anchors:[['f','fc1']],title:'Federated queries',text:'Campaign performance joins a legacy warehouse through a foreign catalog. Data is queried in place and nothing is copied.'},
+    {id:'hold',t0:T(19,30),t1:T(20,30),lvl:'warn',focus:['ingest','earth','planets'],anchors:[['d','ingest'],['d','supply'],['d','operations']],title:'Transfer held at ingest',text:'A policy check flags a batch. The shuttle waits, and Supply, Operations, and Quality drift outward as their source data ages.'}
+  ],
+  stg:[
+    {id:'regress',t0:T(1),t1:T(3),lvl:'info',focus:['belt','ingest','planets'],anchors:[['d','ingest']],title:'Nightly regression run',text:'A sample of production volume replays through every staging pipeline to validate the next release.'},
+    {id:'ship1',t0:T(3),t1:T(4),lvl:'info',focus:['ingest','earth'],anchors:[['d','ingest']],title:'Staging transfer to the core',text:'Regression output moves to the staging core for contract tests.'},
+    {id:'build',t0:T(10),t1:T(11),lvl:'info',focus:['yard','planets'],anchors:[['z','yard']],title:'Release candidate lands',text:'Release r-128 deploys to staging from the engineering studio.'},
+    {id:'contract',t0:T(14),t1:T(15,30),lvl:'warn',focus:['planets','yard','earth'],anchors:[['d','sales'],['z','yard']],title:'Contract test fails, promotion blocked',text:'Release r-128 breaks a data contract on Sales. Promotion to production is blocked until the fix passes.'}
+  ],
+  dev:[
+    {id:'sample',t0:T(0),t1:T(6),lvl:'info',focus:null,anchors:[['d','ingest']],title:'Synthetic sample data',text:'Development runs on synthetic samples refreshed on demand, so planets sit on far orbits.'},
+    {id:'schema',t0:T(10),t1:T(11,30),lvl:'warn',focus:['ingest','planets'],anchors:[['d','operations'],['d','ingest']],title:'Schema change breaks pipelines',text:'A column rename in a shared source breaks three dev pipelines. Rejects spark at the gantry until the fix lands.'},
+    {id:'build',t0:T(15),t1:T(16,30),lvl:'info',focus:['yard','planets'],anchors:[['z','yard']],title:'Build burst',text:'Engineers ship eight builds in ninety minutes. Release drones swarm the planets.'}
+  ]
+};
+
+function seeded(seed){var s=seed>>>0||1;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+var TOPO_CACHE={};
+function resolveTopology(env){
+  if(TOPO_CACHE[env.id])return TOPO_CACHE[env.id];
+  var base=CONFIG.topologies[env.topology],ov=env.override||{},sc=env.mock.scale,fed=env.federation||{};
+  var second=[];(fed.metastores||[]).forEach(function(ms,i){if(i>0)second=second.concat(ms.spokes||[])});
+  var spokes=base.spokes.filter(function(s){return (ov.dropSpokes||[]).indexOf(s.id)<0}).map(function(s){
+    var c={};for(var k in s)c[k]=s[k];
+    c.m={pipelines:Math.max(2,Math.round(s.metrics.pipelines*sc)),products:Math.max(2,Math.round(s.metrics.products*sc)),complexity:s.metrics.complexity,volume:Math.max(5,Math.round(s.metrics.volumeTB*sc))};
+    c.metastore=second.indexOf(s.id)>=0?'secondary':'primary';return c;
+  });
+  var ids=spokes.map(function(s){return s.id});
+  var groups=base.sourceGroups.slice(0,ov.sourceGroupLimit||99);
+  var uc=base.useCases.map(function(u){var c={};for(var k in u)c[k]=u[k];c.reads=u.reads.filter(function(r){return ids.indexOf(r)>=0});return c}).filter(function(u){return u.reads.length});
+  var t={hub:base.hub,spokes:spokes,groups:groups,useCases:uc,studio:base.studio,foreign:fed.foreignCatalogs||[],fed:fed};
+  TOPO_CACHE[env.id]=t;return t;
+}
+function scriptFor(env,topo){
+  var ids={};topo.spokes.forEach(function(s){ids['d:'+s.id]=1});topo.useCases.forEach(function(u){ids['t:'+u.id]=1});topo.groups.forEach(function(g){for(var i=0;i<g.sites;i++)ids['p:'+g.id+i]=1});topo.foreign.forEach(function(f){ids['f:'+f.id]=1});ids['z:yard']=1;
+  return (SCRIPTS[env.tier]||[]).map(function(e){var c={};for(var k in e)c[k]=e[k];c.anchors=e.anchors.filter(function(a){return ids[a[0]+':'+a[1]]});return c}).filter(function(e){return e.anchors.length});
+}
+function ageFor(env,d,m,script){
+  /* Short cadences use the mean age so orbits stay steady; long cadences show the sawtooth drift. */
+  var f=env.mock.agingFactor,base=d.freshness.cadenceMinutes,c=base*f,lag=d.freshness.lagMinutes*f,cyc=base<30?c/2:((((m-(d.freshness.offsetMinutes||0))%c)+c)%c),a=lag+cyc;
+  script.forEach(function(e){if(e.id==='hold'&&m>=e.t0&&m<e.t1&&(d.id==='supply'||d.id==='operations'||d.id==='quality'))a+=m-e.t0});
+  return a;
+}
+var slaFor=function(env,d){var f=env.mock.agingFactor;return (d.freshness.cadenceMinutes+2*d.freshness.lagMinutes)*Math.max(1,f*.6)};
+function activeIn(script,m){return script.filter(function(e){return m>=e.t0&&m<e.t1})}
+
+/* Health for the home page: computed analytically, no scene needed. */
+function envHealth(env,m){
+  var topo=resolveTopology(env),script=scriptFor(env,topo),pr=env.mock,us=-4,run=0,tot=0,prods=0,late=0;
+  topo.spokes.forEach(function(s){var a=ACT[s.activity](localH(us,m));tot+=s.m.pipelines;run+=s.m.pipelines*(.15+.6*a);prods+=s.m.products;if(ageFor(env,s,m,script)>slaFor(env,s))late++});
+  var act=activeIn(script,m),warn=act.filter(function(e){return e.lvl!=='info'}).length;
+  var failed=Math.round(tot*pr.failureRate*(1+m/1440)+(act.some(function(e){return e.id==='schema'})?3:0));
+  var deploys=Math.floor(pr.deploysPerHour*(m/60)*.8);
+  return {running:Math.round(run),failed:failed,late:late,deploys:deploys,products:prods,alerts:warn,active:act,spokes:topo.spokes.length};
+}
+
+function MockAdapter(env,topo){
+  var H={},acc={},pr=env.mock,script=scriptFor(env,topo),rand=seeded(pr.seed),ST={hubAct:0,ml:0,build:0,rej:0};
+  function on(t,f){(H[t]=H[t]||[]).push(f)}
+  function emit(t,p){var a=H[t];if(a)for(var i=0;i<a.length;i++)a[i](p)}
+  function inEv(id,m){for(var i=0;i<script.length;i++)if(script[i].id===id)return m>=script[i].t0&&m<script[i].t1;return false}
+  function tick(dt,speed,m,prev,wrapped){
+    var h=m/60,ds=dt*speed;
+    PLANTS.forEach(function(p){
+      p.act=p.p(localH(p.tz,m));
+      acc['s'+p.id]=(acc['s'+p.id]||0)+p.act*.9*ds;while(acc['s'+p.id]>=1){acc['s'+p.id]-=1;emit('stream',{plant:p})}
+      acc['b'+p.id]=(acc['b'+p.id]||0)+p.act*.1*(.4+1.6*BATCH(h))*ds;while(acc['b'+p.id]>=1){acc['b'+p.id]-=1;emit('batch',{plant:p})}
+    });
+    GROUPS.forEach(function(g){var s=0;g.plants.forEach(function(p){s+=p.act});g.act=g.plants.length?s/g.plants.length:0});
+    var a=0;PLANTS.forEach(function(p){a+=p.act});ST.hubAct=(PLANTS.length?a/PLANTS.length:0)*.6+BATCH(h)*.4;
+    var rej=pr.failureRate*1.5+(inEv('schema',m)?.45:0);
+    acc.cr=(acc.cr||0)+ST.hubAct*1.4*ds;while(acc.cr>=1){acc.cr-=1;emit('crate',{reject:rand()<rej})}
+    if(!wrapped&&prev!=null)(SHIPS[env.tier]||[]).forEach(function(t){if(prev<t&&m>=t)emit('ship',{})});
+    SPK.forEach(function(d){d.age=ageFor(env,d,m,script);d.sla=slaFor(env,d)});
+    if(INGEST)INGEST.act=ST.hubAct;
+    DOMS.forEach(function(d){d.act=ACT[d.activity](localH(-4,m))*.8+.2*ST.hubAct;
+      var k='cp'+d.id;acc[k]=(acc[k]||0)+d.act*.35*ds;while(acc[k]>=1){acc[k]-=1;emit('copy',{d:d})}
+      var g='gd'+d.id;acc[g]=(acc[g]||0)+d.act*.25*ds;while(acc[g]>=1){acc[g]-=1;emit('product',{d:d})}
+    });
+    ST.ml=MLP(localH(-4,m))*(inEv('maint',m)?1:.7)*(pr.scale<.5?.6:1);
+    var mlT=DOMS.filter(function(d){return d.aurora});
+    if(mlT.length){acc.ml=(acc.ml||0)+ST.ml*.5*ds;while(acc.ml>=1){acc.ml-=1;emit('ml',{d:rnd(mlT)})}}
+    TW.forEach(function(t){
+      var s=towerStatus(t,m);t.act=s.act;t.lvl=s.lvl;t.note=s.note;
+      t.reads.forEach(function(r,ix){var k='sv'+t.id+ix;acc[k]=(acc[k]||0)+t.act*.5*ds;while(acc[k]>=1){acc[k]-=1;emit('serve',{t:t,r:r})}});
+    });
+    COMETS.forEach(function(c){var k='fq'+c.id;acc[k]=(acc[k]||0)+(inEv('fedq',m)?1.2:.12)*ds;while(acc[k]>=1){acc[k]-=1;emit('query',{c:c})}});
+    ST.build=STUDIO(localH(topo.studio.utcOffset,m));
+    acc.bd=(acc.bd||0)+(pr.deploysPerHour*.12*ST.build+(inEv('build',m)?.6:0))*ds;while(acc.bd>=1){acc.bd-=1;emit('build',{})}
+  }
+  function towerStatus(t,m){
+    var act=OFFICE(localH(t.utcOffset,m))*.8,lvl='ok',note='';
+    if(t.atStudio)act=.25+STUDIO(localH(t.utcOffset,m))*.5;
+    switch(t.id){
+      case 'risk':act=.14+act*.15;if(inEv('qalert',m)){lvl='alert';act=1;note='Defect pattern traced across three regions'}else note='Watching quality and field signals';break;
+      case 'models':if(inEv('maint',m)){lvl='warn';act=1;note='Region C sensors out of range'}else note=act>.5?'Scoring asset health':'Training overnight';break;
+      case 'inbound':note=act>.6?'Recalculating inbound risk':'Monitoring inbound';break;
+      case 'exec':if(inEv('office1',m))act=Math.max(act,.95);note=act>.7?'Rebalancing the plan':'Tracking plan against actual';break;
+      case 'demand':if(inEv('office1',m))act=Math.max(act,.9);if(inEv('contract',m)){lvl='warn';note='Waiting on blocked release'}else note=act>.7?'Forecasting next quarter':'Watching demand signals';break;
+      case 'campaign':if(inEv('fedq',m))act=Math.max(act,.9);note=act>.6?'Refreshing campaign performance':'Waiting for the day';break;
+      default:note=act>.6?'Busy':'Quiet';
+    }
+    if(pr.scale<.5)act*=.6;
+    return {act:act,lvl:lvl,note:note};
+  }
+  return {on:on,tick:tick,active:function(m){return activeIn(script,m)},inEv:inEv,st:ST,script:script};
+}
+
+/* ===================== scene (static) ===================== */
+var stage=document.getElementById('stage'),labelsEl=document.getElementById('labels'),appEl=document.getElementById('app');
+var renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.setClearColor(0x03060D,1);
+stage.appendChild(renderer.domElement);
+var scene=new THREE.Scene();
+var FOV=38,camera=new THREE.PerspectiveCamera(FOV,1,.5,4000);
+scene.add(new THREE.AmbientLight(0x8EA2C6,.42));
+var SUNP={x:-460,y:90,z:-320};
+var sunL=new THREE.DirectionalLight(0xFFF1D6,1.15);sunL.position.set(SUNP.x,SUNP.y,SUNP.z);scene.add(sunL);
+function glowMat(color,op,side){return new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false,side:side||THREE.FrontSide})}
+(function(){var n=2200,arr=new Float32Array(n*3);for(var i=0;i<n;i++){var u=Math.random()*2-1,a=Math.random()*TAU,r=1200+Math.random()*700,s=Math.sqrt(1-u*u);arr[i*3]=r*s*Math.cos(a);arr[i*3+1]=r*u;arr[i*3+2]=r*s*Math.sin(a)}var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(arr,3));scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xBFD0F0,size:1.6,sizeAttenuation:false})))})();
+var sunM=new THREE.Mesh(new THREE.SphereGeometry(34,24,16),new THREE.MeshBasicMaterial({color:0xFFD98A}));sunM.position.set(SUNP.x,SUNP.y,SUNP.z);scene.add(sunM);
+var sunG=new THREE.Mesh(new THREE.SphereGeometry(62,24,16),glowMat(0xFFB54A,.18));sunG.position.copy(sunM.position);scene.add(sunG);
+var COL={bronze:0xC0804A,silver:0xD5DEEA,gold:0xF3D36B,red:0xFF4D4F,amber:0xFFB020,ok:0x5BD6A0,info:0x6EA8FF,stream:0x37D6E8,ml:0xE070FF,rel:0x9B8CFF,share:0x3FC1CF,query:0xB9F3FF};
+var WL=[
+ {k:'stream',n:'Streaming',c:'#37D6E8'},{k:'batch',n:'Batch loads',c:'#C0804A'},{k:'transfer',n:'Transfer and copy',c:'#D5DEEA'},
+ {k:'transform',n:'Transform and quality',c:'#7BD88F'},{k:'ml',n:'ML training and scoring',c:'#E070FF'},{k:'serve',n:'Serving and BI',c:'#F3D36B'},
+ {k:'federated',n:'Federated queries',c:'#B9F3FF'},{k:'build',n:'Build and deploy',c:'#9B8CFF'}
+];
+
+/* ===================== world state (rebuilt per environment) ===================== */
+var world=null,ENV=null,TOPO=null,Feed=null;
+var SPK=[],SB={},INGEST=null,DOMS=[],PLANTS=[],PB={},GROUPS=[],TW=[],TB={},COMETS=[],EV=[];
+var fadables=[],pickables=[],labels=[],flags={};
+var IM={},RP=[],beacons=[],shuttles=[],ringPts=[],sats,satMat,earthG,cloud,byard,bym,gant,gtm,debris,gsats,gsatMat,yring,ym;
+var pods=[],lasers=[],crates=[],copies=[],golds=[],orbs=[],serves=[],drones=[],sparks=[],queries=[],stats={pub:0,rej:0},acc2={},GPILE={v:.5};
+var EARTH={x:0,y:0,z:0},YARD={pos:{x:-26,y:4,z:17}};
+var BELT_R=128;
+
+function mat(color,em,emI,op){return new THREE.MeshStandardMaterial({color:color,emissive:em||0,emissiveIntensity:emI||0,metalness:.1,roughness:.75,transparent:true,opacity:op==null?1:op})}
+function reg(mats,tier,zone){var f={mats:mats,base:mats.map(function(m){return m.opacity}),tier:tier,zone:zone,k:1};fadables.push(f);return f}
+function addLabel(cls,html,getPos,o){o=o||{};var el=document.createElement('div');el.className='lab '+cls;el.innerHTML=html;labelsEl.appendChild(el);var L={el:el,get:getPos,cls:cls,maxCam:o.maxCam||1e9};labels.push(L);return L}
+function box(w,h,d,m,x,y,z,par){var o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);(par||world).add(o);return o}
+function sph(r,m,par,seg){var o=new THREE.Mesh(new THREE.SphereGeometry(r,seg||24,Math.round((seg||24)*.7)),m);(par||world).add(o);return o}
+function unitCircle(color,op,tier,zone,dashed){var pts=[];for(var i=0;i<=128;i++){var a=i/128*TAU;pts.push(new THREE.Vector3(Math.cos(a),0,Math.sin(a)))}var m=dashed?new THREE.LineDashedMaterial({color:color,transparent:true,opacity:op,dashSize:.03,gapSize:.03}):new THREE.LineBasicMaterial({color:color,transparent:true,opacity:op});var l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),m);if(dashed)l.computeLineDistances();world.add(l);reg([m],tier,zone);return l}
+function dynLine(color,op,n,tier,zone){var pts=[];for(var i=0;i<=n;i++)pts.push(new THREE.Vector3());var l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:color,transparent:true,opacity:op}));l.frustumCulled=false;world.add(l);var f=reg([],tier,zone);return {line:l,mat:l.material,n:n,f:f}}
+function setCurve(L,a,c,b){var pos=L.line.geometry.attributes.position;for(var j=0;j<=L.n;j++){var p=Q3(a,c,b,j/L.n);pos.setXYZ(j,p.x,p.y,p.z)}pos.needsUpdate=true}
+function inst(geo,color,max,em){var m=new THREE.MeshStandardMaterial({color:color,emissive:em||0,emissiveIntensity:em?1:0,roughness:.5});var im=new THREE.InstancedMesh(geo,m,max);im.count=0;im.frustumCulled=false;world.add(im);return im}
+function glow(color,op,side){return glowMat(color,op,side)}
+
+function disposeWorld(){
+  if(!world)return;
+  world.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.dispose()})}});
+  scene.remove(world);world=null;labelsEl.innerHTML='';labels=[];flags={};fadables=[];pickables=[];
+}
+
+var sizeBy=CONFIG.visuals.sizeBy,METRICS={};
+function buildMetrics(){METRICS={pipelines:{label:'Pipelines',max:0},products:{label:'Products',max:0},complexity:{label:'Complexity',max:5},volume:{label:'Data volume',max:0}};SPK.forEach(function(d){['pipelines','products','volume'].forEach(function(k){METRICS[k].max=Math.max(METRICS[k].max,d.m[k])})})}
+var planetR=function(d){return 1.8+3.4*Math.sqrt(clamp(d.m[sizeBy]/METRICS[sizeBy].max,0,1))};
+
+function buildWorld(envId){
+  disposeWorld();
+  ENV=ENVS[envId];TOPO=resolveTopology(ENV);
+  world=new THREE.Group();scene.add(world);
+  pods=[];lasers=[];crates=[];copies=[];golds=[];orbs=[];serves=[];drones=[];sparks=[];queries=[];stats={pub:0,rej:0};acc2={};GPILE.v=.5;
+
+  /* data */
+  SPK=TOPO.spokes.map(function(s,i){var d={};for(var k in s)d[k]=s[k];d.color=parseInt(s.color.slice(1),16);d.act=0;d.glow=0;d.r=3;d.ang=.3+i*1.3;d.ph=d.ang;d.orb=50;d.age=10;d.sla=30;d.pos={x:50,y:0,z:0};d.ingest=s.role==='ingest';d.zone=d.ingest?'ingest':'planets';return d});
+  SB={};SPK.forEach(function(d){SB[d.id]=d});
+  INGEST=SPK.filter(function(d){return d.ingest})[0]||null;DOMS=SPK.filter(function(d){return !d.ingest});
+  buildMetrics();
+  PLANTS=[];PB={};var n=0;
+  GROUPS=TOPO.groups.map(function(g,gi){var o={id:g.id,name:g.name,tz:g.utcOffset,plants:[],act:0};var ang=150+gi*17;o.pos={x:(BELT_R+14)*Math.cos(rad(ang)),y:0,z:(BELT_R+14)*Math.sin(rad(ang))};
+    for(var i=0;i<g.sites;i++){n++;var a=rad(ang+(i-(g.sites-1)/2)*4),r=BELT_R+(i%2?4:-3);var p={id:g.id+i,name:'Site '+pad2(n),group:o,tz:g.utcOffset,p:g.shifts==='three'?SHIFT3:SHIFT2,act:0,pile:0,pos:{x:r*Math.cos(a),y:(i%2?2:-1.5),z:r*Math.sin(a)}};o.plants.push(p);PLANTS.push(p);PB[p.id]=p}
+    return o});
+  TW=TOPO.useCases.map(function(u,i){var t={};for(var k in u)t[k]=u[k];t.ph=i;t.act=0;t.lvl='ok';t.note='';t.flash=0;t.pos={x:0,y:0,z:0};if(u.atStudio)t.fixed={x:YARD.pos.x+5,y:YARD.pos.y,z:YARD.pos.z};return t});
+  TB={};TW.forEach(function(t){TB[t.id]=t});
+  COMETS=TOPO.foreign.map(function(f,i){return {id:f.id,name:f.name,ph:i*2.6+.7,pos:{x:0,y:0,z:0}}});
+
+  /* belt and plants */
+  (function(){var cnt=2800,arr=new Float32Array(cnt*3);for(var i=0;i<cnt;i++){var a=Math.random()*TAU,r=BELT_R-12+Math.random()*24;arr[i*3]=r*Math.cos(a);arr[i*3+1]=(Math.random()-.5)*5;arr[i*3+2]=r*Math.sin(a)}var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(arr,3));var m=new THREE.PointsMaterial({color:0x6E7A90,size:1.4,sizeAttenuation:false,transparent:true,opacity:.6});world.add(new THREE.Points(g,m));reg([m],'bronze','belt')})();
+  var rockGeo=new THREE.IcosahedronGeometry(2.6,0);
+  PLANTS.forEach(function(p,i){
+    var g=new THREE.Group();g.position.set(p.pos.x,p.pos.y,p.pos.z);world.add(g);
+    var rm=mat(0x6A5644,0,0,1),rock=new THREE.Mesh(rockGeo,rm);rock.scale.set(1+(i%3)*.15,.8,1.1);rock.rotation.set(i,i*.7,i*.3);g.add(rock);
+    var rig=mat(0x2A3B58,0,0,1);box(1.4,1.2,1.4,rig,0,2.4,0,g);box(.15,2.2,.15,rig,.5,3.6,0,g);
+    var lm=mat(0x2B3A52,COL.ok,0,1),lamp=sph(.35,lm,g,10);lamp.position.set(.5,4.8,0);
+    var cm=mat(COL.bronze,COL.bronze,.4,1),crate=box(1,1,1,cm,-1.3,2.3,.6,g);
+    p.lm=lm;p.cm=cm;p.crate=crate;p.rock=rock;rock.userData.pick={kind:'plant',id:p.id};pickables.push(rock);
+    reg([rm,rig,lm,cm],'bronze','belt');
+    if(INGEST)p.laser=dynLine(COL.stream,.2,1,'bronze','belt');
+  });
+  GROUPS.forEach(function(g){g.lab=addLabel('pad',g.name,function(){return g.pos})});
+  addLabel('zone','<span style="color:#D7B08C">Asteroid belt</span><small>'+PLANTS.length+' source sites</small>',function(){return {x:-BELT_R-28,y:12,z:0}});
+
+  /* hub */
+  earthG=new THREE.Group();world.add(earthG);
+  var em=mat(0x2A6FBF,0x0D3466,.45,1),earth=sph(5,em,earthG,36),landM=mat(0x3E8D5A,0x123A22,.3,1),lr2=seeded(ENV.mock.seed);
+  for(var li=0;li<9;li++){var lr=1.4+lr2()*.9,lp=sph(lr,landM,earthG,12),ld=5-lr*.8,la=lr2()*TAU,lb=(lr2()-.5)*2.2;lp.position.set(ld*Math.cos(la)*Math.cos(lb),ld*Math.sin(lb),ld*Math.sin(la)*Math.cos(lb))}
+  cloud=sph(5.25,new THREE.MeshStandardMaterial({color:0xFFFFFF,transparent:true,opacity:.14,roughness:1}),earthG,36);
+  sph(6.2,glow(0x4FA3FF,.12,THREE.BackSide),earthG,36);
+  earth.userData.pick={kind:'earth'};pickables.push(earth);reg([em,landM],'none','earth');
+  ringPts=[];DOMS.forEach(function(d){for(var i=0;i<d.m.products;i++)ringPts.push({d:d,pop:1,a:0})});
+  var rr=seeded(ENV.mock.seed+7);ringPts.sort(function(){return rr()-.5});ringPts.forEach(function(p,i){p.a=i/Math.max(1,ringPts.length)*TAU});
+  satMat=new THREE.MeshStandardMaterial({color:0xFFFFFF,emissive:COL.gold,emissiveIntensity:.5,transparent:true,opacity:1});
+  sats=new THREE.InstancedMesh(new THREE.OctahedronGeometry(.26,0),satMat,Math.max(1,ringPts.length));sats.frustumCulled=false;world.add(sats);reg([satMat],'gold','earth');
+  (function(){var c=new THREE.Color(),g=new THREE.Color(COL.gold);ringPts.forEach(function(p,i){c.setHex(p.d.color);c.lerp(g,.55);sats.setColorAt(i,c)});if(sats.instanceColor)sats.instanceColor.needsUpdate=true})();
+  var so=unitCircle(0x5BD6A0,.18,'use','stations');so.scale.set(11,1,11);
+  var fed=TOPO.fed,fedTxt=fed.mode==='multi-metastore'?(fed.metastores||[]).length+' metastores':(fed.mode==='multi-workspace'?(fed.workspaces||2)+' workspaces, 1 metastore':'1 workspace');
+  addLabel('zone','<span style="color:#7FB8FF">'+TOPO.hub.name+'</span><small>'+ringPts.length+' products in orbit. '+fedTxt+'</small>',function(){return {x:0,y:9,z:0}});
+
+  /* spokes */
+  SPK.forEach(function(d){
+    var g=new THREE.Group();world.add(g);d.g=g;
+    var pm=mat(d.color,d.color,.18,1),pl=sph(1,pm,g,28);d.pm=pm;d.mesh=pl;
+    d.at=sph(1.18,glow(d.color,.14,THREE.BackSide),g,24);
+    pl.userData.pick={kind:'planet',id:d.id};pickables.push(pl);
+    var mats=[pm];
+    if(d.ring){var rgm=new THREE.MeshStandardMaterial({color:0xD8C690,emissive:0x6B5A2A,emissiveIntensity:.3,transparent:true,opacity:.6,side:THREE.DoubleSide}),rg=new THREE.Mesh(new THREE.RingGeometry(1.5,2.3,48),rgm);rg.rotation.x=-Math.PI/2+.35;g.add(rg);d.rg=rg;mats.push(rgm)}
+    if(d.aurora){d.aum=glow(COL.ml,0);d.au=new THREE.Mesh(new THREE.TorusGeometry(1.25,.12,8,40),d.aum);d.au.rotation.x=Math.PI/2;g.add(d.au)}
+    d.moonsArr=[];for(var k=0;k<(d.moons||0);k++){var mo=sph(.35,mat(0x9AA6B8,0,0,1),g,12);d.moonsArr.push({m:mo,ph:k*2.4,r:1.9+k*.6})}
+    reg(mats,d.ingest?'silver':'gold',d.zone);
+    d.orbitLine=unitCircle(d.color,.2,d.ingest?'silver':'gold',d.zone,d.metastore==='secondary');
+    d.lab=addLabel('planet','<span style="color:'+hexCss(d.color)+'">'+d.name+'</span><small></small>',function(){return {x:d.pos.x,y:d.pos.y+d.r+2.4,z:d.pos.z}});
+    d.labSmall=d.lab.el.querySelector('small');
+    if(d.share||d.metastore==='secondary')d.tether=dynLine(COL.share,.35,16,'silver','planets');
+  });
+  if(INGEST){
+    bym=new THREE.MeshStandardMaterial({color:COL.bronze,emissive:COL.bronze,emissiveIntensity:.3,transparent:true,opacity:.75,side:THREE.DoubleSide});
+    byard=new THREE.Mesh(new THREE.RingGeometry(1,1.3,48),bym);byard.rotation.x=-Math.PI/2;INGEST.g.add(byard);
+    gtm=glow(0x7BD88F,.55);gant=new THREE.Mesh(new THREE.TorusGeometry(1,.035,8,48),gtm);INGEST.g.add(gant);
+    debris=new THREE.InstancedMesh(new THREE.BoxGeometry(.45,.45,.45),mat(COL.bronze,COL.bronze,.35,1),40);debris.frustumCulled=false;world.add(debris);
+    gsatMat=new THREE.MeshStandardMaterial({color:COL.silver,emissive:COL.silver,emissiveIntensity:.35,transparent:true,opacity:1});
+    gsats=new THREE.InstancedMesh(new THREE.OctahedronGeometry(.2,0),gsatMat,INGEST.m.products);gsats.frustumCulled=false;world.add(gsats);
+    reg([bym,debris.material,gsatMat],'silver','ingest');reg([gtm],'silver','ingest');
+  }
+  /* comets = foreign catalogs */
+  COMETS.forEach(function(c){
+    var g=new THREE.Group();world.add(g);c.g=g;var cm=mat(0xCFEFFF,0x7FD6FF,.6,1),head=sph(1.4,cm,g,16);
+    var tail=new THREE.Mesh(new THREE.ConeGeometry(1.1,9,12,1,true),glow(0x9FE6FF,.25));tail.rotation.z=Math.PI/2;tail.position.x=5;g.add(tail);c.tail=tail;
+    head.userData.pick={kind:'comet',id:c.id};pickables.push(head);reg([cm],'none','comets');
+    c.beam=dynLine(COL.query,.0,20,'use','comets');
+    c.lab=addLabel('planet','<span style="color:#B9F3FF">'+c.name+'</span><small>Foreign catalog, read-only</small>',function(){return {x:c.pos.x,y:c.pos.y+4,z:c.pos.z}});
+  });
+  /* stations */
+  TW.forEach(function(t){
+    var g=new THREE.Group();world.add(g);t.g=g;
+    var cm=mat(0x1E2E4A,COL.ok,.4,1),core=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,1.6,12),cm);core.rotation.z=Math.PI/2;g.add(core);
+    var pnm=mat(0x23477E,0x3A7BD5,.35,1);box(.9,.05,2.4,pnm,-.6,0,0,g);box(.9,.05,2.4,pnm,.6,0,0,g);
+    var dm=mat(0xD5DEEA,COL.ok,.6,1),dish=new THREE.Mesh(new THREE.ConeGeometry(.4,.4,12,1,true),dm);dish.position.set(0,.45,0);dish.rotation.x=Math.PI;g.add(dish);
+    var lm=new THREE.MeshBasicMaterial({color:COL.ok}),lt=sph(.18,lm,g,8);lt.position.set(0,.8,0);
+    t.cm=cm;t.dm=dm;t.lm=lm;core.userData.pick={kind:'tw',id:t.id};pickables.push(core);
+    reg([cm,pnm,dm],'use','stations');
+    t.lab=addLabel('tower',t.name+'<small></small>',function(){return {x:t.pos.x,y:t.pos.y+2,z:t.pos.z}},{maxCam:95});t._n=null;
+  });
+  /* shipyard */
+  var yardG=new THREE.Group();yardG.position.set(YARD.pos.x,YARD.pos.y,YARD.pos.z);world.add(yardG);
+  ym=mat(0x2E2458,COL.rel,.35,1);yring=new THREE.Mesh(new THREE.TorusGeometry(1.8,.25,10,32),ym);yardG.add(yring);box(.8,.8,3.6,ym,0,0,0,yardG);box(3.6,.8,.8,ym,0,0,0,yardG);
+  yring.userData.pick={kind:'yard'};pickables.push(yring);reg([ym],'bronze','yard');
+  addLabel('zone','<span style="color:#B7ADFF">Shipyard</span><small>'+TOPO.studio.name+'</small>',function(){return {x:YARD.pos.x,y:YARD.pos.y+4,z:YARD.pos.z}},{maxCam:260});
+  /* shuttles */
+  shuttles=[0,1,2].map(function(){var g=new THREE.Group(),m1=mat(0xE8EDF5,0x8FA6C8,.3,1);box(1.8,.5,.7,m1,0,0,0,g);box(.6,.1,1.8,m1,-.3,0,0,g);var ex=sph(.25,glow(0x9FD2FF,.9),g,8);ex.position.set(-1.05,0,0);var bl=new THREE.MeshBasicMaterial({color:COL.red,transparent:true,opacity:0}),b=sph(.35,bl,g,8);b.position.set(0,.6,0);g.visible=false;world.add(g);return {g:g,beacon:bl,state:'idle',t:0,wait:0}});
+  /* particles */
+  IM={
+   pod:inst(new THREE.BoxGeometry(1.1,.55,.6),COL.bronze,400,0x3A2410),
+   laser:inst(new THREE.SphereGeometry(.3,8,6),COL.stream,400,0x1A90A8),
+   crb:inst(new THREE.BoxGeometry(.4,.4,.4),COL.bronze,200,0x3A2410),
+   crs:inst(new THREE.BoxGeometry(.4,.4,.4),COL.silver,200,0x5C6B80),
+   copy:inst(new THREE.BoxGeometry(.7,.35,.35),COL.silver,240,0x5C6B80),
+   gold:inst(new THREE.SphereGeometry(.32,10,8),COL.gold,240,0x8A7420),
+   orb:inst(new THREE.SphereGeometry(.3,8,6),COL.ml,200,0x7A2C8A),
+   serve:inst(new THREE.SphereGeometry(.18,8,6),COL.gold,400,0x8A7420),
+   query:inst(new THREE.SphereGeometry(.24,8,6),COL.query,200,0x3A8AA8),
+   drone:inst(new THREE.BoxGeometry(.6,.2,.6),COL.rel,120,0x3B2F88),
+   spk:inst(new THREE.BoxGeometry(.22,.22,.22),COL.red,150,0x8A1F20)
+  };
+  RP=[];for(var rj=0;rj<44;rj++){var rm3=new THREE.MeshBasicMaterial({color:0xFFFFFF,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}),rmesh=new THREE.Mesh(new THREE.RingGeometry(.92,1,40),rm3);rmesh.rotation.x=-Math.PI/2;rmesh.visible=false;world.add(rmesh);RP.push({m:rmesh,mat:rm3,life:0,r:1,max:5,speed:8})}
+  beacons=[];for(var bj=0;bj<8;bj++){var bm3=glow(COL.red,0),bc=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,40,10,1,true),bm3);bc.visible=false;world.add(bc);beacons.push({m:bc,mat:bm3,used:false})}
+
+  /* adapter */
+  Feed=MockAdapter(ENV,TOPO);EV=Feed.script;
+  Feed.on('stream',function(e){if(INGEST)lasers.push({p:e.plant,t:0,v:1.0+Math.random()*.4})});
+  Feed.on('batch',function(e){if(INGEST)pods.push({p:e.plant,t:0,v:.2+Math.random()*.05,cars:2+Math.round(e.plant.act*2)})});
+  Feed.on('crate',function(e){if(INGEST)crates.push({a:Math.random()*TAU,t:0,v:.45,reject:e.reject,crossed:false})});
+  Feed.on('ship',spawnShuttle);
+  Feed.on('copy',function(e){copies.push({d:e.d,t:0,v:.32+Math.random()*.06})});
+  Feed.on('product',function(e){golds.push({d:e.d,t:0,v:.3+Math.random()*.06})});
+  Feed.on('ml',function(e){if(TB.models)orbs.push({d:e.d,t:0})});
+  Feed.on('serve',function(e){serves.push({t:e.t,r:e.r,tt:0})});
+  Feed.on('query',function(e){queries.push({c:e.c,t:0})});
+  Feed.on('build',function(){var tgt=rnd(SPK).id;drones.push({tgt:tgt,t:0,v:.22})});
+
+  Feed.tick(0,1,st.min,null,false);SPK.forEach(function(d){d.orb=orbitFor(d.age);d.r=planetR(d)});positions();
+  PLANTS.forEach(function(p){p.pile=p.p(localH(p.tz,st.min))*.5});
+  buildEnvUI();
+}
+function spawnShuttle(){if(!INGEST)return;for(var i=0;i<shuttles.length;i++)if(shuttles[i].state==='idle'){var s=shuttles[i];s.state='dock';s.t=0;s.wait=2.2;s.g.visible=true;return}}
+function addRing(p,color,max,speed){for(var i=0;i<RP.length;i++){var r=RP[i];if(r.life<=0){r.life=1;r.r=.8;r.max=max||6;r.speed=speed||8;r.m.position.set(p.x,p.y,p.z);r.mat.color.setHex(color);r.m.visible=true;return}}}
+function burst(p,n){for(var i=0;i<n;i++){var a=Math.random()*TAU;sparks.push({x:p.x,y:p.y,z:p.z,vx:Math.cos(a)*(2+Math.random()*4),vy:(Math.random()-.3)*4,vz:Math.sin(a)*(2+Math.random()*4),life:1})}}
+var gerSlot=function(ang,rr){return {x:INGEST.pos.x+rr*Math.cos(ang),y:INGEST.pos.y,z:INGEST.pos.z+rr*Math.sin(ang)}};
+function readPos(r){return SB[r]?SB[r].pos:EARTH}
+
+/* ===================== camera (six axes) ===================== */
+var vX=new THREE.Vector3(1,0,0),vY=new THREE.Vector3(0,1,0),vZ=new THREE.Vector3(0,0,1),qTmp=new THREE.Quaternion();
+function qPreset(pitchDeg,yawDeg){return new THREE.Quaternion().setFromEuler(new THREE.Euler(-rad(pitchDeg),rad(yawDeg||0),0,'YXZ'))}
+var cam={T:new THREE.Vector3(-14,0,0),D:380,Q:qPreset(50,0)},camT={T:cam.T.clone(),D:cam.D,Q:cam.Q.clone()};
+var follow=null,spin=false,wv={x:0,y:0},dragging3d=false,userMoved=false,curView='over',camSaved={};
+function rotLocal(axis,ang){qTmp.setFromAxisAngle(axis,ang);cam.Q.multiply(qTmp).normalize();camT.Q.copy(cam.Q)}
+function rotWorldY(ang){qTmp.setFromAxisAngle(vY,ang);cam.Q.premultiply(qTmp).normalize();camT.Q.copy(cam.Q)}
+function perPx(){return 2*cam.D*Math.tan(rad(FOV/2))/Math.max(1,stage.clientHeight)}
+function panBy(dx,dy){var k=perPx(),r=vX.clone().applyQuaternion(cam.Q),u=vY.clone().applyQuaternion(cam.Q);cam.T.addScaledVector(r,-dx*k).addScaledVector(u,dy*k);camT.T.copy(cam.T);follow=null;userMoved=true}
+function zoomBy(f){cam.D=clamp(cam.D*f,6,1100);camT.D=cam.D;userMoved=true}
+function levelHorizon(){var fwd=new THREE.Vector3(0,0,-1).applyQuaternion(cam.Q),eye=cam.T.clone().addScaledVector(fwd,-cam.D),up=Math.abs(fwd.y)>.98?new THREE.Vector3(0,0,-1):vY;camT.Q.setFromRotationMatrix(new THREE.Matrix4().lookAt(eye,cam.T,up))}
+function fitD(){var a=stage.clientWidth/Math.max(1,stage.clientHeight);return clamp(380*Math.max(1,1.78/a),200,900)}
+var VIEWS=[
+ {k:'over',n:'Overview',get:function(){return {T:{x:-14,y:0,z:0},D:fitD(),Q:qPreset(50,0)}}},
+ {k:'belt',n:'Sources',get:function(){return {T:{x:-118,y:0,z:-2},D:110,Q:qPreset(42,-20)}}},
+ {k:'ingest',n:'Ingest spoke',follow:function(){return INGEST?INGEST.pos:EARTH},get:function(){return {T:INGEST?INGEST.pos:EARTH,D:44,Q:qPreset(35,0)}}},
+ {k:'earth',n:'Core',get:function(){return {T:{x:0,y:0,z:0},D:48,Q:qPreset(28,0)}}},
+ {k:'planets',n:'Planets',get:function(){return {T:{x:0,y:0,z:0},D:250,Q:qPreset(62,0)}}},
+ {k:'stations',n:'Stations',get:function(){return {T:{x:0,y:0,z:0},D:34,Q:qPreset(22,30)}}},
+ {k:'yard',n:'Shipyard',get:function(){return {T:YARD.pos,D:34,Q:qPreset(30,-30)}}}
+];
+function goView(k){for(var i=0;i<VIEWS.length;i++)if(VIEWS[i].k===k){var v=VIEWS[i],g=v.get();camT.T.set(g.T.x,g.T.y,g.T.z);camT.D=g.D;camT.Q.copy(g.Q);follow=v.follow?{get:v.follow}:null;curView=k;wv.x=wv.y=0;return}}
+function goFollow(getter,d){follow={get:getter};camT.D=d;wv.x=wv.y=0}
+function applyCam(){var off=vZ.clone().multiplyScalar(cam.D).applyQuaternion(cam.Q);camera.position.copy(cam.T).add(off);camera.quaternion.copy(cam.Q)}
+function resize(){var w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix()}
+window.addEventListener('resize',function(){resize();if(!userMoved){if(st.home)goHome();else goView(curView)}});resize();
+
+var cvs=renderer.domElement,ptrs={},mode='rot',moved=0,two=null,raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2(),idleT=0,lastMove=0;
+function wakeUp(){idleT=0;appEl.classList.remove('idle')}
+cvs.addEventListener('contextmenu',function(e){e.preventDefault()});
+cvs.addEventListener('pointerdown',function(e){cvs.setPointerCapture(e.pointerId);ptrs[e.pointerId]={x:e.clientX,y:e.clientY};moved=0;two=null;wakeUp();dragging3d=true;wv.x=wv.y=0;mode=(e.button===2||e.button===1||e.shiftKey)?'pan':((e.ctrlKey||e.altKey||e.metaKey)?'roll':'rot')});
+function twoState(){var ids=Object.keys(ptrs);if(ids.length<2)return null;var a=ptrs[ids[0]],b=ptrs[ids[1]];return {cx:(a.x+b.x)/2,cy:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x)}}
+cvs.addEventListener('pointermove',function(e){
+  wakeUp();var p=ptrs[e.pointerId];if(!p){hover(e);return}
+  var dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(Object.keys(ptrs).length>=2){var s=twoState();if(two){var da=s.ang-two.ang;if(da>Math.PI)da-=TAU;if(da<-Math.PI)da+=TAU;rotLocal(vZ,-da);if(s.d>0)zoomBy(two.d/s.d);panBy(s.cx-two.cx,s.cy-two.cy)}two=s;moved=99;return}
+  moved+=Math.abs(dx)+Math.abs(dy);if(moved<=5)return;
+  tipEl.hidden=true;userMoved=true;
+  if(mode==='rot'){var yy=-dx*.005,xx=-dy*.005;rotLocal(vY,yy);rotLocal(vX,xx);var now=performance.now(),dtm=Math.max(8,now-lastMove)/1000;lastMove=now;wv.y=yy/dtm;wv.x=xx/dtm}
+  else if(mode==='pan')panBy(dx,dy);else rotLocal(vZ,dx*.006);
+});
+cvs.addEventListener('pointerup',function(e){var had=ptrs[e.pointerId];delete ptrs[e.pointerId];two=null;if(Object.keys(ptrs).length===0){dragging3d=false;if(performance.now()-lastMove>90){wv.x=wv.y=0}if(had&&moved<=5)pick(e)}});
+cvs.addEventListener('pointercancel',function(e){delete ptrs[e.pointerId];two=null;dragging3d=false});
+cvs.addEventListener('wheel',function(e){e.preventDefault();zoomBy(Math.exp(e.deltaY*.0012));wakeUp()},{passive:false});
+function isShown(o){var p=o;while(p){if(!p.visible)return false;p=p.parent}return true}
+function rayAt(e){var r=cvs.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);var hits=raycaster.intersectObjects(st.home?HPICK:pickables,false);for(var i=0;i<hits.length;i++){if(isShown(hits[i].object))return hits[i].object.userData.pick}return null}
+var keys={};window.addEventListener('keyup',function(e){keys[e.key]=false});
+var gz=document.getElementById('gizmo'),gctx=gz.getContext('2d');
+function drawGizmo(){
+  var w=gz.width,c=w/2,R=w*.36,qi=cam.Q.clone().invert(),ax=[[vX,'#FF6B6B','X'],[vY,'#5BD6A0','Y'],[vZ,'#6EA8FF','Z']];
+  gctx.clearRect(0,0,w,w);gctx.fillStyle='rgba(5,9,18,.55)';gctx.beginPath();gctx.arc(c,c,w*.47,0,TAU);gctx.fill();
+  ax.map(function(a){return {v:a[0].clone().applyQuaternion(qi),col:a[1],n:a[2]}}).sort(function(a,b){return a.v.z-b.v.z}).forEach(function(o){var x=c+o.v.x*R,y=c-o.v.y*R;gctx.strokeStyle=o.col;gctx.globalAlpha=o.v.z<-.2?.45:1;gctx.lineWidth=w*.03;gctx.beginPath();gctx.moveTo(c,c);gctx.lineTo(x,y);gctx.stroke();gctx.fillStyle=o.col;gctx.beginPath();gctx.arc(x,y,w*.07,0,TAU);gctx.fill();gctx.fillStyle='#06101E';gctx.font='700 '+Math.round(w*.09)+'px Barlow,Arial,sans-serif';gctx.textAlign='center';gctx.textBaseline='middle';gctx.fillText(o.n,x,y+1);gctx.globalAlpha=1});
+}
+
+/* ===================== UI state ===================== */
+var st={min:T(10,40),day:0,speed:1,playing:true,simT:0,tier:'all',dim:true,wall:false,wl:'all',pin:null,home:true};
+var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(reduce)st.playing=false;
+var tipEl=document.getElementById('tip'),cardEl=document.getElementById('card'),$=function(id){return document.getElementById(id)};
+function btn(txt,cls,fn,pressed){var b=document.createElement('button');b.type='button';b.className='btn '+(cls||'sm');b.textContent=txt;if(pressed!=null)b.setAttribute('aria-pressed',pressed?'true':'false');b.addEventListener('click',fn);return b}
+function setBtns(set,key){Object.keys(set).forEach(function(k){set[k].setAttribute('aria-pressed',k===key?'true':'false')})}
+var viewBtns={},sizeBtns={},tierBtns={},envBtns={};
+VIEWS.forEach(function(v){var b=btn(v.n,'sm',function(){userMoved=false;goView(v.k);setBtns(viewBtns,v.k);st.pin=null},v.k==='over');viewBtns[v.k]=b;$('views').appendChild(b)});
+['pipelines','products','complexity','volume'].forEach(function(k){var lab={pipelines:'Pipelines',products:'Products',complexity:'Complexity',volume:'Data volume'}[k];var b=btn(lab,'sm',function(){sizeBy=k;setBtns(sizeBtns,k);SPK.forEach(function(d){d._v=null})},k===sizeBy);sizeBtns[k]=b;$('sizeby').appendChild(b)});
+[['all','All'],['bronze','Bronze'],['silver','Silver'],['gold','Gold'],['use','Use case']].forEach(function(t){var b=btn(t[1],'sm',function(){st.tier=t[0];setBtns(tierBtns,t[0])},t[0]==='all');tierBtns[t[0]]=b;$('tierf').appendChild(b)});
+CONFIG.environments.forEach(function(e){var b=document.createElement('button');b.type='button';b.className='btn sm env';b.innerHTML='<i style="background:'+TIERCOL[e.tier]+'"></i>'+e.name;b.setAttribute('aria-pressed','false');b.addEventListener('click',function(){enterEnv(e.id)});envBtns[e.id]=b;$('envsw').appendChild(b)});
+$('dim').addEventListener('change',function(){st.dim=$('dim').checked});
+function setSpin(v){spin=v;$('spin').setAttribute('aria-pressed',v?'true':'false')}
+$('spin').addEventListener('click',function(){setSpin(!spin)});$('level').addEventListener('click',levelHorizon);
+$('reset').addEventListener('click',function(){userMoved=false;goView('over');setBtns(viewBtns,'over')});
+function setPlaying(v){st.playing=v;$('play').textContent=v?'Pause':'Play';$('hplay').textContent=v?'Pause':'Play'}
+$('play').addEventListener('click',function(){setPlaying(!st.playing)});$('hplay').addEventListener('click',function(){setPlaying(!st.playing)});
+document.querySelectorAll('[data-speed]').forEach(function(b){b.addEventListener('click',function(){st.speed=+b.getAttribute('data-speed');document.querySelectorAll('[data-speed]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')})})});
+var scrub=$('scrub'),scrubbing=false;
+scrub.addEventListener('pointerdown',function(){scrubbing=true});window.addEventListener('pointerup',function(){scrubbing=false});
+scrub.addEventListener('input',function(){jumpTo(+scrub.value)});
+$('tl').addEventListener('click',function(){$('pl').classList.toggle('open');$('pr').classList.remove('open')});
+$('tr').addEventListener('click',function(){$('pr').classList.toggle('open');$('pl').classList.remove('open')});
+$('homeBtn').addEventListener('click',function(){if(CONFIG.links&&CONFIG.links.clockFace)window.open(CONFIG.links.clockFace,'_top')});
+function jumpTo(min){st.min=clamp(min,0,1439);if(!world)return;pods=[];lasers=[];crates=[];copies=[];golds=[];orbs=[];serves=[];drones=[];sparks=[];queries=[];shuttles.forEach(function(s){s.state='idle';s.g.visible=false});stats.pub=0;stats.rej=0;acc2={};if(Feed.inEv('hold',st.min)||Feed.inEv('ship1',st.min))spawnShuttle();PLANTS.forEach(function(p){p.pile=p.p(localH(p.tz,st.min))*.5});GPILE.v=.5;Feed.tick(0,1,st.min,null,false);SPK.forEach(function(d){d.orb=orbitFor(d.age)});positions()}
+
+var wlEls={};
+WL.forEach(function(w){
+  var li=document.createElement('li'),b=document.createElement('button');b.type='button';b.className='wl';b.setAttribute('aria-pressed','false');
+  b.innerHTML='<i style="background:'+w.c+'"></i><b>'+w.n+'</b><span class="pc">0%</span><div class="bar"><u style="background:'+w.c+'"></u></div>';
+  b.addEventListener('click',function(){st.wl=(st.wl===w.k)?'all':w.k;Object.keys(wlEls).forEach(function(k){wlEls[k].b.setAttribute('aria-pressed',k===st.wl?'true':'false')})});
+  li.appendChild(b);$('wls').appendChild(li);wlEls[w.k]={b:b,pc:b.querySelector('.pc'),bar:b.querySelector('.bar u'),li:li};
+});
+var wlOn=function(k){return st.wl==='all'||st.wl===k};
+function mkRow(name){var li=document.createElement('li');li.className='ok';li.innerHTML='<span class="lamp"></span><span class="nm"></span><span class="tm"></span><div class="bar"><i></i></div><div class="st"></div>';li.querySelector('.nm').textContent=name;return li}
+var freshRows={},boardRows={},regRows={},officeRows=[];
+function buildEnvUI(){
+  var col=TIERCOL[ENV.tier];appEl.style.setProperty('--tier',col);$('envname').textContent=ENV.name;
+  Object.keys(envBtns).forEach(function(k){envBtns[k].setAttribute('aria-pressed',k===ENV.id?'true':'false')});
+  ['fresh','board','regions','marks','jumps'].forEach(function(id){$(id).innerHTML=''});
+  freshRows={};SPK.forEach(function(d){var li=mkRow(d.name);$('fresh').appendChild(li);freshRows[d.id]=li;li.addEventListener('click',function(){goFollow(function(){return d.pos},30)})});
+  boardRows={};TW.forEach(function(t){var li=mkRow(t.name);$('board').appendChild(li);boardRows[t.id]=li;li.addEventListener('click',function(){goFollow(function(){return t.pos},26)})});
+  regRows={};GROUPS.forEach(function(g){var li=mkRow(g.name);$('regions').appendChild(li);regRows[g.id]=li;li.addEventListener('click',function(){follow=null;camT.T.set(g.pos.x,0,g.pos.z);camT.D=60})});
+  officeRows=[];var seen={};TW.forEach(function(t){if(seen[t.site])return;seen[t.site]=1;var li=mkRow(t.site);$('regions').appendChild(li);officeRows.push({li:li,off:t.utcOffset,studio:!!t.atStudio})});
+  EV.forEach(function(e){var sp=document.createElement('span');sp.style.left=(e.t0/1440*100)+'%';sp.style.width=((e.t1-e.t0)/1440*100)+'%';sp.style.background=e.lvl==='alert'?'var(--alert)':(e.lvl==='warn'?'var(--warn)':'var(--s3)');sp.title=e.title;$('marks').appendChild(sp)});
+  EV.forEach(function(e){$('jumps').appendChild(btn(pad2(Math.floor((e.t0+15)/60))+':'+pad2((e.t0+15)%60)+' '+e.title,'sm',function(){jumpTo(e.t0+15);setPlaying(true)}))});
+  var core=US(),ing=INGEST?INGEST.m.products:0,tot=core+ing||1,pc=core/tot*100;
+  $('split').innerHTML='<i style="width:'+pc+'%;background:#F3D36B"></i><i style="width:'+(100-pc)+'%;background:#9FC4FF"></i>';
+  $('splitTxt').textContent=TOPO.hub.name+': '+core+' products ('+Math.round(pc)+'%). '+(INGEST?INGEST.name+': '+ing+' products.':'');
+  var f=TOPO.fed,ft='Single workspace and metastore.';
+  if(f.mode==='multi-workspace')ft=(f.workspaces||2)+' workspaces sharing one metastore. System tables read once; workspace becomes a label.';
+  if(f.mode==='multi-metastore')ft=(f.metastores||[]).length+' metastores. Spokes on dashed orbits live in the secondary metastore and reach the core through teal sharing tethers. '+TOPO.foreign.length+' foreign catalogs fly as comets and are queried in place.';
+  $('fedTxt').textContent=ft;
+  wlEls.federated.li.style.display=COMETS.length?'':'none';
+  lastNow='';
+}
+function US(){return DOMS.reduce(function(a,d){return a+d.m.products},0)}
+
+var lastHover=0;
+function describe(p){
+  var m=st.min;
+  if(p.kind==='plant'){var pl=PB[p.id];return {title:pl.name,text:pl.group.name+'. A mining asteroid that streams and ships batch cargo to the ingest spoke. Local time '+fmtLocal(pl.tz,m)+'.'}}
+  if(p.kind==='earth')return {title:TOPO.hub.name,text:'Hub of the '+ENV.name.toLowerCase()+' system. '+US()+' data products orbit here. Silver goes out to the planets and finished products come back.'};
+  if(p.kind==='planet'){var d=SB[p.id];return {title:d.name+(d.ingest?' spoke':' planet'),text:(d.ingest?'Receives all source data: bronze ring, quality gantry, silver, then shuttles to the core. ':'Domain spoke'+(d.metastore==='secondary'?' in the secondary metastore. ':'. '))+d.m.pipelines+' pipelines, '+d.m.products+' products, complexity '+d.m.complexity.toFixed(1)+', '+d.m.volume+' TB. Data age '+fmtAge(d.age)+' against a '+fmtAge(d.sla)+' target.'}}
+  if(p.kind==='comet'){var c=COMETS.filter(function(x){return x.id===p.id})[0];return {title:c.name,text:'Foreign catalog through query federation. Read-only; queries run in place and nothing is copied.'}}
+  if(p.kind==='yard')return {title:'Shipyard',text:TOPO.studio.name+'. Builds and releases pipelines; release drones fly to the spokes.'};
+  if(p.kind==='tw'){var t=TB[p.id];return {title:t.name,text:t.site+' station. '+t.note+'.'}}
+  if(p.kind==='sys'){var S=HS.filter(function(x){return x.id===p.id})[0],hv=envHealth(S.env,st.min);return {title:S.env.name,text:hv.spokes+' spokes, '+hv.products+' data products, '+hv.late+' past freshness target, '+hv.alerts+' open alerts. Click to fly in.'}}
+  return {title:'',text:''};
+}
+function hover(e){
+  var now=performance.now();if(now-lastHover<60)return;lastHover=now;
+  var p=rayAt(e);if(!p){tipEl.hidden=true;cvs.style.cursor='grab';return}
+  var t=describe(p);cvs.style.cursor='pointer';tipEl.hidden=false;tipEl.innerHTML='';var b=document.createElement('b');b.textContent=t.title;tipEl.appendChild(b);tipEl.appendChild(document.createTextNode(t.text));
+  var tx=e.clientX+14,ty=e.clientY+14,tw=tipEl.offsetWidth,th=tipEl.offsetHeight;if(tx+tw>window.innerWidth-8)tx=e.clientX-tw-14;if(ty+th>window.innerHeight-8)ty=e.clientY-th-14;
+  tipEl.style.left=Math.max(8,tx)+'px';tipEl.style.top=Math.max(8,ty)+'px';
+}
+function pick(e){
+  if(st.home){var hp=rayAt(e);if(hp&&hp.kind==='sys')flyIn(hp.id);return}
+  var p=rayAt(e);if(!p){cardEl.hidden=true;st.pin=null;return}
+  var t=describe(p);cardEl.innerHTML='<button class="x" aria-label="Close">&times;</button><h3></h3><p></p>';cardEl.querySelector('h3').textContent=t.title;cardEl.querySelector('p').textContent=t.text;cardEl.hidden=false;
+  cardEl.querySelector('.x').addEventListener('click',function(){cardEl.hidden=true;st.pin=null});
+  if(p.kind==='plant'){var pl=PB[p.id];follow=null;camT.T.set(pl.pos.x,pl.pos.y,pl.pos.z);camT.D=40;st.pin='belt'}
+  else if(p.kind==='earth'){follow=null;camT.T.set(0,0,0);camT.D=40;st.pin='earth'}
+  else if(p.kind==='planet'){var d=SB[p.id];goFollow(function(){return d.pos},d.ingest?40:30);st.pin=d.zone}
+  else if(p.kind==='comet'){var c=COMETS.filter(function(x){return x.id===p.id})[0];goFollow(function(){return c.pos},40);st.pin='comets'}
+  else if(p.kind==='yard'){follow=null;camT.T.set(YARD.pos.x,YARD.pos.y,YARD.pos.z);camT.D=30;st.pin='yard'}
+  else if(p.kind==='tw'){var tw=TB[p.id];goFollow(function(){return tw.pos},26);st.pin='stations'}
+}
+
+/* wall display */
+var tourT=0,tourI=0,TOUR=['over','belt','ingest','earth','planets','stations','yard'];
+function setWall(v){
+  st.wall=v;appEl.classList.toggle('wall',v);resize();
+  if(v){if(st.home)enterEnv(ENV?ENV.id:'prod');$('pl').classList.remove('open');$('pr').classList.remove('open');cardEl.hidden=true;setSpin(true);if(appEl.requestFullscreen&&!document.fullscreenElement){try{appEl.requestFullscreen()}catch(e){}}}
+  else{setSpin(false);if(document.fullscreenElement&&document.exitFullscreen){try{document.exitFullscreen()}catch(e){}}}
+  tourT=0;tourI=0;
+}
+$('wallBtn').addEventListener('click',function(){setWall(!st.wall)});
+document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement&&st.wall)setWall(false);resize()});
+window.addEventListener('keydown',function(e){
+  var tg=e.target&&e.target.tagName;if(tg==='SELECT'||(tg==='INPUT'&&e.target.type!=='checkbox'))return;
+  if(e.code==='Space'){e.preventDefault();setPlaying(!st.playing);return}
+  keys[e.key]=true;
+  if(st.home){if(e.key==='0'){userMoved=false;goHome()}return}
+  if(e.key==='w'||e.key==='W')setWall(!st.wall);
+  else if(e.key==='s'||e.key==='S')setSpin(!spin);
+  else if(e.key==='h'||e.key==='H')levelHorizon();
+  else if(e.key==='0'){userMoved=false;goView('over');setBtns(viewBtns,'over')}
+  else if(e.key==='Escape'){if(st.wall)setWall(false)}
+  else if(e.key>='1'&&e.key<='7'){var v=VIEWS[+e.key-1];if(v){userMoved=false;goView(v.k);setBtns(viewBtns,v.k)}}
+  if(e.key.indexOf('Arrow')===0)e.preventDefault();
+});
+function keyCam(dt){
+  var r=1.4*dt,p=420*dt;
+  if(keys.ArrowLeft){if(keys.Shift)panBy(p,0);else rotLocal(vY,r)}
+  if(keys.ArrowRight){if(keys.Shift)panBy(-p,0);else rotLocal(vY,-r)}
+  if(keys.ArrowUp){if(keys.Shift)panBy(0,p);else rotLocal(vX,r)}
+  if(keys.ArrowDown){if(keys.Shift)panBy(0,-p);else rotLocal(vX,-r)}
+  if(keys.q||keys.Q)rotLocal(vZ,r);if(keys.e||keys.E)rotLocal(vZ,-r);
+  if(keys['+']||keys['='])zoomBy(Math.exp(-dt*1.5));if(keys['-']||keys._)zoomBy(Math.exp(dt*1.5));
+}
+function anchorPos(a){if(a[0]==='p')return PB[a[1]].pos;if(a[0]==='t')return TB[a[1]].pos;if(a[0]==='d')return SB[a[1]].pos;if(a[0]==='f'){var c=COMETS.filter(function(x){return x.id===a[1]})[0];return c?c.pos:EARTH}if(a[1]==='yard')return YARD.pos;return EARTH}
+function anchorGetter(a){return function(){return anchorPos(a)}}
+function tour(dt){
+  tourT+=dt;var act=Feed.active(st.min),top=act.filter(function(e){return e.lvl!=='info'})[0]||act[0];
+  if(top&&tourT>8){var a=top.anchors[Math.floor(tourI)%top.anchors.length];goFollow(anchorGetter(a),top.lvl==='info'?70:50);tourI++;tourT=0}
+  else if(!top&&tourT>12){tourI++;goView(TOUR[Math.floor(tourI)%TOUR.length]);tourT=0}
+}
+
+/* alerts and focus */
+var focusSet=null;
+function updateAlerts(m,dt){
+  var act=Feed.active(m);
+  EV.forEach(function(e){
+    var on=act.indexOf(e)>=0;
+    if(on&&!flags[e.id]){var a=e.anchors[0];flags[e.id]=addLabel('flag '+(e.lvl==='alert'?'':e.lvl),'',function(){var p=anchorPos(a);return {x:p.x,y:p.y+(e.lvl==='info'?8:13),z:p.z}});flags[e.id].el.textContent=e.title}
+    if(!on&&flags[e.id]){labelsEl.removeChild(flags[e.id].el);labels.splice(labels.indexOf(flags[e.id]),1);delete flags[e.id]}
+  });
+  beacons.forEach(function(b){b.used=false});var bi=0;
+  act.forEach(function(e){
+    if(e.lvl!=='info'){e.anchors.forEach(function(a){if(bi>=beacons.length)return;var p=anchorPos(a),b=beacons[bi++];b.used=true;b.m.visible=true;b.m.position.set(p.x,p.y+20,p.z);b.mat.color.setHex(e.lvl==='alert'?COL.red:COL.amber);b.mat.opacity=.2+.14*Math.sin(st.simT*5)})}
+    acc2['ar'+e.id]=(acc2['ar'+e.id]||0)+dt*st.speed;
+    if(acc2['ar'+e.id]>=(e.lvl==='info'?2:1.2)){acc2['ar'+e.id]=0;e.anchors.forEach(function(a){addRing(anchorPos(a),e.lvl==='alert'?COL.red:(e.lvl==='warn'?COL.amber:COL.info),e.lvl==='info'?7:10,6)})}
+  });
+  beacons.forEach(function(b){if(!b.used)b.m.visible=false});
+  var f=null;
+  if(st.dim){var top=act.filter(function(e){return e.focus}).sort(function(a,b){return (b.lvl==='alert')-(a.lvl==='alert')})[0];if(top)f=top.focus}
+  if(st.pin)f=[st.pin];
+  focusSet=f;
+}
+var zoneOn=function(z){return !focusSet||focusSet.indexOf(z)>=0};
+var tierOn=function(t){return st.tier==='all'||st.tier===t};
+
+function positions(){
+  SPK.forEach(function(d){var b=d.ang;d.pos={x:d.orb*Math.cos(b),y:d.orb*.05*Math.sin(b*2+d.ph),z:d.orb*Math.sin(b)}});
+  var h=st.day*24+st.min/60;
+  TW.forEach(function(t){if(t.fixed){t.pos=t.fixed;return}var b=t.ph*TAU/5+h*TAU/12;t.pos={x:11*Math.cos(b),y:1.4*Math.sin(b*1.5),z:11*Math.sin(b)}});
+  COMETS.forEach(function(c){var b=c.ph+h*TAU/40;c.pos={x:150*Math.cos(b),y:14*Math.sin(b*2),z:92*Math.sin(b)}});
+}
+
+/* ===================== update ===================== */
+var dm4=new THREE.Object3D();
+function put(im,i,x,y,z,ry,s){dm4.position.set(x,y,z);dm4.rotation.set(0,ry||0,0);var k=s==null?1:s;dm4.scale.set(k,k,k);dm4.updateMatrix();im.setMatrixAt(i,dm4.matrix)}
+function update(dt){
+  var prev=st.min;st.min+=dt*12*st.speed;var wrapped=false;if(st.min>=1440){st.min-=1440;st.day++;wrapped=true}
+  if(!world)return;
+  var m=st.min,dts=dt*Math.sqrt(st.speed),dh=dt*12*st.speed/60;st.simT+=dts;
+  Feed.tick(dt,st.speed,m,prev,wrapped);
+  SPK.forEach(function(d){d.orb=lerp(d.orb,orbitFor(d.age),Math.min(1,dt*1.2));d.ang+=dh*TAU/(26*Math.pow(d.orb/30,1.5))});
+  positions();
+  if(wrapped){stats.pub=0;stats.rej=0}
+  var i;
+  PLANTS.forEach(function(p){p.pile=Math.max(0,p.pile-.03*dts)});
+  GPILE.v=Math.max(0,GPILE.v-.04*dts);
+  for(i=lasers.length-1;i>=0;i--){lasers[i].t+=lasers[i].v*dts;if(lasers[i].t>=1)lasers.splice(i,1)}
+  for(i=pods.length-1;i>=0;i--){var pd=pods[i];pd.t+=pd.v*dts;if(pd.t>=1){GPILE.v=Math.min(1.4,GPILE.v+.06*pd.cars);if(INGEST)addRing(INGEST.pos,COL.bronze,INGEST.r+3,6);pods.splice(i,1)}}
+  for(i=crates.length-1;i>=0;i--){var cr=crates[i];cr.t+=cr.v*dts;if(!cr.crossed&&cr.t>=.5){cr.crossed=true;if(cr.reject){stats.rej++;burst(gerSlot(cr.a,INGEST.r+1),6);crates.splice(i,1);continue}}if(cr.t>=1)crates.splice(i,1)}
+  var hold=Feed.inEv('hold',m);
+  shuttles.forEach(function(s){
+    if(s.state==='idle')return;
+    if(s.state==='dock'){s.wait-=dts;s.beacon.opacity=hold?.5+.5*Math.sin(st.simT*8):0;if(s.wait<=0&&!hold){s.state='fly';s.t=0}return}
+    s.t+=.16*dts;s.beacon.opacity=0;if(s.t>=1){s.state='idle';s.g.visible=false;addRing(EARTH,COL.silver,9,7)}
+  });
+  for(i=copies.length-1;i>=0;i--){var cp=copies[i];cp.t+=cp.v*dts;if(cp.t>=1){cp.d.glow=1;copies.splice(i,1)}}
+  for(i=golds.length-1;i>=0;i--){var gd=golds[i];gd.t+=gd.v*dts;if(gd.t>=1){var cands=[];for(var q=0;q<ringPts.length;q++)if(ringPts[q].d===gd.d)cands.push(q);if(cands.length)ringPts[rnd(cands)].pop=0;stats.pub++;addRing(EARTH,COL.gold,8,6);golds.splice(i,1)}}
+  for(i=orbs.length-1;i>=0;i--){orbs[i].t+=.45*dts;if(orbs[i].t>=1){if(TB.models)TB.models.flash=.7;orbs.splice(i,1)}}
+  for(i=serves.length-1;i>=0;i--){var sv=serves[i];sv.tt+=.6*dts;if(sv.tt>=1){sv.t.flash=.7;serves.splice(i,1)}}
+  for(i=queries.length-1;i>=0;i--){queries[i].t+=.35*dts;if(queries[i].t>=1){addRing(EARTH,COL.query,7,6);queries.splice(i,1)}}
+  for(i=drones.length-1;i>=0;i--){var dr=drones[i];dr.t+=dr.v*dts;if(dr.t>=1){var tg=SB[dr.tgt];if(tg){addRing(tg.pos,COL.rel,6,6);tg.glow=1}drones.splice(i,1)}}
+  SPK.forEach(function(d){d.glow=Math.max(0,d.glow-.6*dts);d.r=lerp(d.r,planetR(d),Math.min(1,dt*4))});
+  ringPts.forEach(function(p){if(p.pop<1)p.pop=Math.min(1,p.pop+dts*1.2)});
+  TW.forEach(function(t){t.flash=Math.max(0,t.flash-2*dts)});
+  for(i=sparks.length-1;i>=0;i--){var sk=sparks[i];sk.x+=sk.vx*dts;sk.y+=sk.vy*dts;sk.z+=sk.vz*dts;sk.life-=1.6*dts;if(sk.life<=0)sparks.splice(i,1)}
+  for(i=0;i<RP.length;i++){var r=RP[i];if(r.life>0){r.r+=r.speed*dts;r.life=1-(r.r-.8)/(r.max-.8);if(r.life<=0){r.m.visible=false;r.mat.opacity=0}else{r.m.scale.set(r.r,r.r,r.r);r.mat.opacity=r.life*.85}}}
+  updateAlerts(m,dt);
+  if(st.wall)tour(dt);
+}
+
+/* ===================== render sync ===================== */
+var tmpP=new THREE.Vector3(),camPos=new THREE.Vector3();
+function syncCam(dt){
+  keyCam(dt);
+  if(!dragging3d&&(Math.abs(wv.x)>.002||Math.abs(wv.y)>.002)){rotLocal(vY,wv.y*dt);rotLocal(vX,wv.x*dt);var dec=Math.exp(-dt*2.8);wv.x*=dec;wv.y*=dec}
+  if(spin&&!dragging3d)rotWorldY(dt*.12);
+  if(follow){var fp=follow.get();camT.T.set(fp.x,fp.y,fp.z)}
+  var k=1-Math.exp(-dt*4.5);cam.T.lerp(camT.T,k);cam.D=lerp(cam.D,camT.D,k);cam.Q.slerp(camT.Q,k);
+  applyCam();camPos.copy(camera.position);
+}
+function lateOf(d){if(!d.late&&d.age>d.sla*1.03)d.late=true;else if(d.late&&d.age<d.sla*.97)d.late=false;return d.late}
+function sync(dt){
+  var m=st.min,n,i;
+  syncCam(dt);drawGizmo();
+
+  earthG.rotation.y=st.simT*.15;cloud.rotation.y=st.simT*.05;
+  var ringRot=st.simT*.03,tilt=rad(18),ct=Math.cos(tilt),stt=Math.sin(tilt);
+  ringPts.forEach(function(p,ix){var a=p.a+ringRot,x=7.4*Math.cos(a),z=7.4*Math.sin(a);put(sats,ix,x,z*stt,z*ct,0,p.pop<1?.3+p.pop*1.4:1)});sats.instanceMatrix.needsUpdate=true;
+  satMat.emissiveIntensity=.45+.25*Math.sin(st.simT*2);
+  SPK.forEach(function(d){
+    d.g.position.set(d.pos.x,d.pos.y,d.pos.z);var r=d.r;d.mesh.scale.set(r,r,r);d.at.scale.set(r,r,r);d.mesh.rotation.y=st.simT*.2;
+    d.orbitLine.scale.set(d.orb,1,d.orb);d.orbitLine.material.color.setHex(lateOf(d)?COL.amber:d.color);
+    if(d.rg)d.rg.scale.set(r,r,r);
+    d.pm.emissiveIntensity=.12+.35*d.act+.6*d.glow;
+    if(d.au){d.au.scale.set(r,r,r);d.au.rotation.z=st.simT;d.aum.opacity=wlOn('ml')?(Feed.st.ml||0)*.55*(d.id==='operations'&&Feed.inEv('maint',m)?1.6:1):0}
+    d.moonsArr.forEach(function(mo){var a=mo.ph+st.simT*.6;mo.m.position.set((r+mo.r)*Math.cos(a),.3,(r+mo.r)*Math.sin(a))});
+    if(d.tether){setCurve(d.tether,EARTH,mid(EARTH,d.pos,4),d.pos);d.tether.mat.opacity=(wlOn('transfer')?(d.metastore==='secondary'?.35:.12)+.3*d.act:0)*d.tether.f.k}
+  });
+  if(INGEST){
+    var gr=INGEST.r;byard.scale.set(gr+1.6,gr+1.6,1);bym.emissiveIntensity=.2+.6*Math.min(1,GPILE.v);
+    gant.scale.set(gr+.9,gr+.9,gr+.9);gant.rotation.set(Math.PI/2+Math.sin(st.simT*.8)*.4,st.simT*.9,0);
+    for(i=0;i<40;i++){var da=i/40*TAU+st.simT*.08,dr=gr+1.8+((i*7)%5)*.2,h2=.5+Math.min(1,GPILE.v)*1.4*((i*13)%7)/7;dm4.position.set(INGEST.pos.x+dr*Math.cos(da),INGEST.pos.y+h2*.3,INGEST.pos.z+dr*Math.sin(da));dm4.rotation.set(0,da,0);dm4.scale.set(1,h2,1);dm4.updateMatrix();debris.setMatrixAt(i,dm4.matrix)}debris.instanceMatrix.needsUpdate=true;
+    for(i=0;i<INGEST.m.products;i++){var ma=i/INGEST.m.products*TAU-st.simT*.12;put(gsats,i,INGEST.pos.x+(gr+3.6)*Math.cos(ma),INGEST.pos.y+Math.sin(ma*3)*.4,INGEST.pos.z+(gr+3.6)*Math.sin(ma),0)}gsats.instanceMatrix.needsUpdate=true;
+  }
+  var gtarget=function(p,o){return INGEST?toward(p,INGEST.pos,INGEST.r+o):EARTH};
+  PLANTS.forEach(function(p){p.lm.emissiveIntensity=p.act*1.6;p.cm.emissiveIntensity=.15+.8*p.act;p.crate.scale.set(1,.4+Math.min(1,p.pile)*1.6,1);p.rock.rotation.y+=dt*.05;
+    if(p.laser){var tg=gtarget(p.pos,2.6),L=p.laser,pos=L.line.geometry.attributes.position;pos.setXYZ(0,p.pos.x,p.pos.y+4.8,p.pos.z);pos.setXYZ(1,tg.x,tg.y,tg.z);pos.needsUpdate=true;L.mat.opacity=(wlOn('stream')?.06+.25*p.act:0)*L.f.k}});
+  COMETS.forEach(function(c){c.g.position.set(c.pos.x,c.pos.y,c.pos.z);c.g.rotation.y=Math.atan2(-c.pos.z,c.pos.x)+Math.PI;var act=Feed.inEv('fedq',m);setCurve(c.beam,c.pos,mid(c.pos,EARTH,10),EARTH);c.beam.mat.opacity=(wlOn('federated')?(act?.55:.12):0)*c.beam.f.k});
+  yring.rotation.y=st.simT*.4;ym.emissiveIntensity=.25+.6*(Feed.st.build||0);
+  TW.forEach(function(t){
+    var col=t.lvl==='alert'?COL.red:(t.lvl==='warn'?COL.amber:COL.ok);
+    t.g.position.set(t.pos.x,t.pos.y,t.pos.z);t.g.rotation.y=Math.atan2(t.pos.x,t.pos.z);var s=1+t.act*.5+t.flash*.3;t.g.scale.set(s,s,s);
+    t.cm.emissive.setHex(col);t.cm.emissiveIntensity=.25+.6*t.act+t.flash;t.dm.emissive.setHex(col);t.lm.color.setHex(col);
+    if(t._n!==t.note){t._n=t.note;t.lab.el.innerHTML='';t.lab.el.appendChild(document.createTextNode(t.name));var sm=document.createElement('small');sm.textContent=t.site+'. '+t.note;t.lab.el.appendChild(sm)}
+  });
+  shuttles.forEach(function(s){
+    if(s.state==='idle'||!INGEST){s.g.visible=false;return}
+    s.g.visible=wlOn('transfer')&&zoneOn('ingest');
+    var a=toward(EARTH,INGEST.pos,INGEST.r+1.6);
+    if(s.state==='dock'){s.g.position.set(a.x,a.y+1.2,a.z);s.g.rotation.y=Math.atan2(a.z,-a.x);return}
+    var c=mid(a,EARTH,6),p=Q3(a,c,EARTH,Math.min(1,s.t)),p2=Q3(a,c,EARTH,Math.min(1,s.t+.02));s.g.position.set(p.x,p.y,p.z);s.g.rotation.y=Math.atan2(-(p2.z-p.z),p2.x-p.x);
+  });
+  fadables.forEach(function(f){var target=(!zoneOn(f.zone)||(f.tier!=='none'&&!tierOn(f.tier)))?.14:1;f.k=lerp(f.k,target,Math.min(1,dt*6));for(var j=0;j<f.mats.length;j++)f.mats[j].opacity=f.base[j]*f.k});
+
+  var zP=zoneOn;
+  n=0;if(wlOn('batch')&&zP('belt'))pods.forEach(function(pd){var a={x:pd.p.pos.x,y:pd.p.pos.y+2,z:pd.p.pos.z},b=gtarget(pd.p.pos,2.4),c=mid(a,b);for(var q=0;q<pd.cars;q++){var tt=pd.t-q*.025;if(tt<0||tt>1||n>=400)continue;var p=Q3(a,c,b,tt),p2=Q3(a,c,b,Math.min(1,tt+.01));put(IM.pod,n++,p.x,p.y,p.z,Math.atan2(-(p2.z-p.z),p2.x-p.x))}});IM.pod.count=n;IM.pod.instanceMatrix.needsUpdate=true;
+  n=0;if(wlOn('stream')&&zP('belt'))lasers.forEach(function(l){if(n>=400)return;var a={x:l.p.pos.x,y:l.p.pos.y+4.8,z:l.p.pos.z},b=gtarget(l.p.pos,2.6);put(IM.laser,n++,lerp(a.x,b.x,l.t),lerp(a.y,b.y,l.t),lerp(a.z,b.z,l.t),0)});IM.laser.count=n;IM.laser.instanceMatrix.needsUpdate=true;
+  var nb=0,ns=0;if(INGEST&&wlOn('transform')&&zP('ingest'))crates.forEach(function(c){var gr2=INGEST.r,rr=c.t<.5?lerp(gr2+2.2,gr2+.9,c.t*2):lerp(gr2+.9,gr2+3.6,(c.t-.5)*2),p=gerSlot(c.a+c.t*.8,rr);p.y+=Math.sin(c.t*Math.PI)*1.6;if(c.t<.5){if(nb<200)put(IM.crb,nb++,p.x,p.y,p.z,0)}else{if(ns<200)put(IM.crs,ns++,p.x,p.y,p.z,0)}});IM.crb.count=nb;IM.crs.count=ns;IM.crb.instanceMatrix.needsUpdate=true;IM.crs.instanceMatrix.needsUpdate=true;
+  n=0;if(wlOn('transfer')&&zP('planets'))copies.forEach(function(cp){if(n>=240)return;var a={x:0,y:1,z:0},b=cp.d.pos,c=mid(a,b,5),p=Q3(a,c,b,cp.t),p2=Q3(a,c,b,Math.min(1,cp.t+.02));put(IM.copy,n++,p.x,p.y,p.z,Math.atan2(-(p2.z-p.z),p2.x-p.x))});IM.copy.count=n;IM.copy.instanceMatrix.needsUpdate=true;
+  n=0;if(wlOn('transform')&&zP('planets'))golds.forEach(function(gd){if(n>=240)return;var a=gd.d.pos,b={x:0,y:-1,z:0},c=mid(a,b,-5),p=Q3(a,c,b,gd.t);put(IM.gold,n++,p.x,p.y,p.z,0)});IM.gold.count=n;IM.gold.instanceMatrix.needsUpdate=true;
+  n=0;if(TB.models&&wlOn('ml')&&zP('planets'))orbs.forEach(function(o){if(n>=200)return;var a=o.d.pos,b=TB.models.pos,c=mid(a,b,10),p=Q3(a,c,b,o.t);put(IM.orb,n++,p.x,p.y,p.z,0)});IM.orb.count=n;IM.orb.instanceMatrix.needsUpdate=true;
+  n=0;if(wlOn('serve')&&zP('stations'))serves.forEach(function(sv){if(n>=400)return;var a=sv.r==='ingest'&&INGEST?INGEST.pos:EARTH,b=sv.t.pos,c=mid(a,b,sv.r==='ingest'?6:2.5),p=Q3(a,c,b,Math.min(1,sv.tt));put(IM.serve,n++,p.x,p.y,p.z,0)});IM.serve.count=n;IM.serve.instanceMatrix.needsUpdate=true;
+  n=0;if(wlOn('federated')&&zP('comets'))queries.forEach(function(qq){if(n>=200)return;var a=qq.c.pos,c=mid(a,EARTH,10),p=Q3(a,c,EARTH,qq.t);put(IM.query,n++,p.x,p.y,p.z,0)});IM.query.count=n;IM.query.instanceMatrix.needsUpdate=true;
+  n=0;if(wlOn('build')&&zP('yard'))drones.forEach(function(d){if(n>=120)return;var a=YARD.pos,b=readPos(d.tgt),c=mid(a,b,8),p=Q3(a,c,b,Math.min(1,d.t));put(IM.drone,n++,p.x,p.y+Math.sin(st.simT*9+n)*.12,p.z,st.simT*3)});IM.drone.count=n;IM.drone.instanceMatrix.needsUpdate=true;
+  n=0;sparks.forEach(function(sk){if(n<150)put(IM.spk,n++,sk.x,sk.y,sk.z,0,clamp(sk.life,0,1))});IM.spk.count=n;IM.spk.instanceMatrix.needsUpdate=true;
+
+  var w=stage.clientWidth,hh=stage.clientHeight;
+  labels.forEach(function(L){
+    var p=L.get();tmpP.set(p.x,p.y,p.z);var ok=cam.D<=L.maxCam;
+    tmpP.project(camera);
+    if(!ok||tmpP.z>1||tmpP.z<-1){L.el.style.transform='translate(-9999px,-9999px)';return}
+    L.el.style.transform='translate('+((tmpP.x*.5+.5)*w).toFixed(1)+'px,'+((-tmpP.y*.5+.5)*hh).toFixed(1)+'px) translate(-50%,-100%)';
+  });
+}
+
+/* ===================== env panel ===================== */
+var lastNow='';
+function mixNow(m){
+  var h=m/60,avg=0;PLANTS.forEach(function(p){avg+=p.act});avg/=Math.max(1,PLANTS.length);
+  var ta=0;TW.forEach(function(t){ta+=t.act});ta/=Math.max(1,TW.length);
+  var wa=0;DOMS.forEach(function(d){wa+=d.act});wa/=Math.max(1,DOMS.length);
+  var sh=shuttles.some(function(s){return s.state==='fly'})?.9:(shuttles.some(function(s){return s.state==='dock'})?.6:.1);
+  return {stream:avg,batch:BATCH(h)*(.6+.4*avg),transfer:clamp(sh*.5+wa*.5,0,1),transform:clamp(((Feed.st.hubAct||0)+wa)/2*1.2,0,1),ml:Feed.st.ml||0,serve:ta,federated:COMETS.length?(Feed.inEv('fedq',m)?.9:.12):0,build:clamp((Feed.st.build||0)*ENV.mock.deploysPerHour/1.5,0,1)};
+}
+function updatePanel(){
+  var m=st.min,mi=Math.floor(m);
+  $('clk').textContent=pad2(Math.floor(mi/60))+':'+pad2(mi%60);
+  if(!scrubbing)scrub.value=mi;
+  var act=Feed.active(m).sort(function(a,b){return b.t0-a.t0}).slice(0,3),key=act.map(function(e){return e.id}).join('|')+ENV.id;
+  if(key!==lastNow){
+    lastNow=key;var ul=$('now');ul.innerHTML='';
+    if(!act.length){var li=document.createElement('li');li.className='info';li.innerHTML='<h3>Steady state</h3><p>Pipelines run on schedule. No incidents open.</p>';ul.appendChild(li)}
+    act.forEach(function(e){var li=document.createElement('li');li.className=e.lvl;var h3=document.createElement('h3');h3.textContent=e.title;var p=document.createElement('p');p.textContent=e.text;li.appendChild(h3);li.appendChild(p);li.addEventListener('click',function(){goFollow(anchorGetter(e.anchors[0]),60)});ul.appendChild(li)});
+  }
+  var late=0;
+  SPK.forEach(function(d){var li=freshRows[d.id],isLate=lateOf(d);if(isLate)late++;li.className=isLate?'warn':'ok';li.querySelector('.tm').textContent=fmtAge(d.age);li.querySelector('.bar i').style.width=Math.round(clamp(d.age/d.sla,0,1.5)/1.5*100)+'%';li.querySelector('.st').textContent=(isLate?'Past target of ':'Within target of ')+fmtAge(d.sla)+(d.metastore==='secondary'?'. Secondary metastore.':'.');
+    d.labSmall.textContent=fmtAge(d.age)+' old'+(isLate?', past target':'')+(d.metastore==='secondary'?', secondary metastore':'');d.labSmall.className=isLate?'late':''});
+  $('m-late').textContent=late;
+  var mx=mixNow(m);WL.forEach(function(w){var v=clamp(mx[w.k]||0,0,1);wlEls[w.k].pc.textContent=Math.round(v*100)+'%';wlEls[w.k].bar.style.width=Math.round(v*100)+'%'});
+  var rec=0;PLANTS.forEach(function(p){rec+=p.act});$('m-rec').textContent=Math.round(rec*180);
+  $('m-yard').textContent=Math.round(GPILE.v*40+pods.length);
+  $('m-ship').textContent=shuttles.filter(function(s){return s.state==='fly'}).length;$('m-pub').textContent=stats.pub;$('m-rej').textContent=stats.rej;
+  TW.forEach(function(t){var li=boardRows[t.id];li.className=t.lvl;li.querySelector('.bar i').style.width=Math.round(t.act*100)+'%';li.querySelector('.st').textContent=t.site+'. '+t.note});
+  GROUPS.forEach(function(g){var li=regRows[g.id],lh=localH(g.tz,m),night=lh<6||lh>=21,n=g.plants.length;li.className=night?'night':'ok';li.querySelector('.tm').textContent=fmtLocal(g.tz,m);li.querySelector('.bar i').style.width=Math.round(g.act*100)+'%';li.querySelector('.st').textContent=n+(n>1?' sites. ':' site. ')+(night?'Night':(g.act>.7?'Full shift':(g.act>.3?'Partial':'Quiet')));
+    g.lab.el.innerHTML='';g.lab.el.appendChild(document.createTextNode(g.name));var sm=document.createElement('small');sm.textContent=fmtLocal(g.tz,m)+(night?' night':' day')+', '+n+(n>1?' sites':' site');g.lab.el.appendChild(sm)});
+  officeRows.forEach(function(o){var lh=localH(o.off,m),night=lh<6||lh>=21,a=o.studio?STUDIO(lh):OFFICE(lh);o.li.className=night?'night':'ok';o.li.querySelector('.tm').textContent=fmtLocal(o.off,m);o.li.querySelector('.bar i').style.width=Math.round(a*100)+'%';o.li.querySelector('.st').textContent=night?'Night':(a>.6?'Busy':'Quiet')});
+}
+
+/* ===================== home page: a galaxy of environment systems ===================== */
+var homeEl=$('home'),hlabelsEl=$('hlabels'),flying=false;
+$('cfgpre').textContent=JSON.stringify(CONFIG,null,2);
+$('cfgBtn').addEventListener('click',function(){$('cfgd').hidden=!$('cfgd').hidden});
+$('cfgx').addEventListener('click',function(){$('cfgd').hidden=true});
+var homeScene=new THREE.Scene();
+homeScene.add(new THREE.AmbientLight(0x8EA2C6,.5));
+(function(){var hl=new THREE.DirectionalLight(0xFFF1D6,1.1);hl.position.set(SUNP.x,SUNP.y,SUNP.z);homeScene.add(hl);
+  var n=2400,arr=new Float32Array(n*3);for(var i=0;i<n;i++){var u=Math.random()*2-1,a=Math.random()*TAU,r=1300+Math.random()*700,q=Math.sqrt(1-u*u);arr[i*3]=r*q*Math.cos(a);arr[i*3+1]=r*u;arr[i*3+2]=r*q*Math.sin(a)}
+  var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(arr,3));homeScene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xBFD0F0,size:1.6,sizeAttenuation:false})));
+  homeScene.add(sunM.clone());homeScene.add(sunG.clone());})();
+var homeOrb=function(age){return 12+(orbitFor(age)-24)*.62};
+var HS=[],HPICK=[],HB=[],hdrones=[],SYS_GAP=200;
+var ORDER=CONFIG.promotion.order.filter(function(id){return ENVS[id]});CONFIG.environments.forEach(function(e){if(ORDER.indexOf(e.id)<0)ORDER.push(e.id)});
+var MAXP=1;CONFIG.environments.forEach(function(e){resolveTopology(e).spokes.forEach(function(sp){MAXP=Math.max(MAXP,sp.m.pipelines)})});
+function unitLine(col,op,dashed){var pts=[];for(var q=0;q<=96;q++){var a=q/96*TAU;pts.push(new THREE.Vector3(Math.cos(a),0,Math.sin(a)))}var m=dashed?new THREE.LineDashedMaterial({color:col,transparent:true,opacity:op,dashSize:.04,gapSize:.04}):new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op});var l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),m);if(dashed)l.computeLineDistances();return l}
+ORDER.forEach(function(id,i){
+  var env=ENVS[id],topo=resolveTopology(env),script=scriptFor(env,topo),x=(i-(ORDER.length-1)/2)*SYS_GAP,g=new THREE.Group(),tc=parseInt(TIERCOL[env.tier].slice(1),16);
+  g.position.set(x,0,0);homeScene.add(g);
+  var core=new THREE.Mesh(new THREE.SphereGeometry(5,32,22),new THREE.MeshStandardMaterial({color:0x2A6FBF,emissive:0x0D3466,emissiveIntensity:.5,roughness:.75}));g.add(core);
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(6.4,28,18),glowMat(0x4FA3FF,.14,THREE.BackSide)));
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(7.6,.12,8,64),new THREE.MeshStandardMaterial({color:0xF3D36B,emissive:0xF3D36B,emissiveIntensity:.5}));ring.rotation.x=Math.PI/2-.3;g.add(ring);
+  var halo=new THREE.Mesh(new THREE.RingGeometry(79,80.5,128),glowMat(tc,.5,THREE.DoubleSide));halo.rotation.x=-Math.PI/2;g.add(halo);
+  var halo2=new THREE.Mesh(new THREE.RingGeometry(80.5,90,128),glowMat(tc,.06,THREE.DoubleSide));halo2.rotation.x=-Math.PI/2;g.add(halo2);
+  var bn=900,arr=new Float32Array(bn*3);for(var b=0;b<bn;b++){var a=Math.random()*TAU,r=67+Math.random()*8;arr[b*3]=r*Math.cos(a);arr[b*3+1]=(Math.random()-.5)*2.4;arr[b*3+2]=r*Math.sin(a)}
+  var bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(arr,3));g.add(new THREE.Points(bg,new THREE.PointsMaterial({color:0x7A6A5A,size:1.3,sizeAttenuation:false,transparent:true,opacity:.6})));
+  var sp=topo.spokes.map(function(s,k){var col=parseInt(s.color.slice(1),16),m=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.25,roughness:.7}),r=1.1+2.4*Math.sqrt(s.m.pipelines/MAXP),mesh=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),m);mesh.scale.set(r,r,r);g.add(mesh);
+    mesh.add(new THREE.Mesh(new THREE.SphereGeometry(1.2,18,12),glowMat(col,.16,THREE.BackSide)));
+    var ol=unitLine(col,.3,s.metastore==='secondary');g.add(ol);
+    return {s:s,col:col,mesh:mesh,ol:ol,ang:.3+k*1.3,orb:homeOrb(ageFor(env,s,st.min,script)),late:false}});
+  var comets=(topo.foreign||[]).map(function(f,k){var c=new THREE.Mesh(new THREE.SphereGeometry(1.1,12,10),new THREE.MeshStandardMaterial({color:0xCFEFFF,emissive:0x7FD6FF,emissiveIntensity:.7}));g.add(c);return {mesh:c,ph:k*2.6+.7}});
+  var pillar=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.4,110,12,1,true),glowMat(COL.red,0));pillar.position.y=55;pillar.visible=false;g.add(pillar);
+  var hit=new THREE.Mesh(new THREE.SphereGeometry(88,16,12),new THREE.MeshBasicMaterial({visible:false}));hit.userData.pick={kind:'sys',id:id};g.add(hit);HPICK.push(hit);
+  var fm=env.federation.mode==='multi-metastore'?(env.federation.metastores||[]).length+' metastores':(env.federation.mode==='multi-workspace'?(env.federation.workspaces||2)+' workspaces':'single workspace');
+  if((env.federation.foreignCatalogs||[]).length)fm+=', '+env.federation.foreignCatalogs.length+' foreign catalogs';
+  var el=document.createElement('div');el.className='sysl';el.style.setProperty('--c',TIERCOL[env.tier]);el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label','Open '+env.name);
+  el.innerHTML='<div class="nm"><b></b><span></span></div><div class="fm"></div><dl><div><dt>Running</dt><dd data-k="running">0</dd></div><div><dt>Failed 24 h</dt><dd data-k="failed">0</dd></div><div><dt>Past target</dt><dd data-k="late">0</dd></div><div><dt>Deploys</dt><dd data-k="deploys">0</dd></div><div><dt>Products</dt><dd data-k="products">0</dd></div><div><dt>Alerts</dt><dd data-k="alerts">0</dd></div></dl>';
+  el.querySelector('b').textContent=env.name;el.querySelector('.nm span').textContent=env.tier;el.querySelector('.fm').textContent='Adapter: '+env.adapter+'. '+fm+'.';
+  el.addEventListener('click',function(){flyIn(id)});el.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();flyIn(id)}});
+  hlabelsEl.appendChild(el);
+  HS.push({id:id,env:env,topo:topo,script:script,g:g,x:x,core:core,ring:ring,halo:halo,sp:sp,comets:comets,pillar:pillar,el:el});
+});
+for(var hb=1;hb<HS.length;hb++){(function(A,B){var p0={x:A.x+82,y:3,z:0},p1={x:B.x-82,y:3,z:0},c={x:(p0.x+p1.x)/2,y:46,z:0},pts=[];for(var q=0;q<=48;q++){var pp=Q3(p0,c,p1,q/48);pts.push(new THREE.Vector3(pp.x,pp.y,pp.z))}
+  homeScene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:COL.rel,transparent:true,opacity:.45})));
+  var lab=document.createElement('div');lab.className='brl';hlabelsEl.appendChild(lab);HB.push({from:A,to:B,p0:p0,c:c,p1:p1,lab:lab,acc:0,blocked:false})})(HS[hb-1],HS[hb])}
+var hDrone=new THREE.InstancedMesh(new THREE.BoxGeometry(1.8,.6,1.8),new THREE.MeshStandardMaterial({color:COL.rel,emissive:0x3B2F88,emissiveIntensity:1}),80);hDrone.count=0;hDrone.frustumCulled=false;homeScene.add(hDrone);
+var hBlock=new THREE.Mesh(new THREE.SphereGeometry(1.8,14,10),glowMat(COL.red,.9));hBlock.visible=false;homeScene.add(hBlock);
+function homeD(){var a=stage.clientWidth/Math.max(1,stage.clientHeight),need=HS.length*SYS_GAP+60;return clamp(need/2/(Math.tan(rad(FOV/2))*Math.min(a,2.2))+70,260,1500)}
+function goHome(){follow=null;camT.T.set(0,0,0);camT.D=homeD();camT.Q.copy(qPreset(24,0));wv.x=wv.y=0}
+function homeTick(dt){
+  var m=st.min,dh=st.playing?dt*12*st.speed/60:0,t=performance.now()/1000;
+  HS.forEach(function(S){
+    S.core.rotation.y+=dt*.2;S.ring.rotation.z+=dt*.05;
+    var act=activeIn(S.script,m),bad=act.filter(function(e){return e.lvl!=='info'}),alert=bad.some(function(e){return e.lvl==='alert'});
+    S.pillar.visible=bad.length>0;if(bad.length){S.pillar.material.color.setHex(alert?COL.red:COL.amber);S.pillar.material.opacity=.16+.1*Math.sin(t*3)}
+    S.halo.material.opacity=.42+.1*Math.sin(t*1.1+S.x*.01);
+    S.sp.forEach(function(o){var age=ageFor(S.env,o.s,m,S.script),sla=slaFor(S.env,o.s);o.orb=lerp(o.orb,homeOrb(age),Math.min(1,dt*1.2));o.ang+=dh*TAU/(20*Math.pow(o.orb/20,1.5));
+      o.mesh.position.set(o.orb*Math.cos(o.ang),0,o.orb*Math.sin(o.ang));o.ol.scale.set(o.orb,1,o.orb);
+      if(!o.late&&age>sla*1.03)o.late=true;else if(o.late&&age<sla*.97)o.late=false;o.ol.material.color.setHex(o.late?COL.amber:o.col)});
+    S.comets.forEach(function(c){var b=c.ph+(st.day*24+m/60)*TAU/40;c.mesh.position.set(95*Math.cos(b),8*Math.sin(b*2),58*Math.sin(b))});
+  });
+  HB.forEach(function(B){B.blocked=activeIn(B.from.script,m).some(function(e){return e.id==='contract'});
+    B.acc+=(st.playing?dt*st.speed:0)*B.from.env.mock.deploysPerHour*.3*(.3+STUDIO(localH(5.5,m)));
+    while(B.acc>=1){B.acc-=1;hdrones.push({B:B,t:0})}});
+  for(var i=hdrones.length-1;i>=0;i--){var d=hdrones[i];if(st.playing)d.t+=dt*.3*Math.sqrt(st.speed);if(d.B.blocked&&d.t>=.47){hdrones.splice(i,1);continue}if(d.t>=1)hdrones.splice(i,1)}
+  var n=0;hdrones.forEach(function(d){if(n>=80)return;var p=Q3(d.B.p0,d.B.c,d.B.p1,Math.min(1,d.t));put(hDrone,n++,p.x,p.y,p.z,t*2)});hDrone.count=n;hDrone.instanceMatrix.needsUpdate=true;
+  var bb=HB.filter(function(b){return b.blocked})[0];hBlock.visible=!!bb;if(bb){var p=Q3(bb.p0,bb.c,bb.p1,.5);hBlock.position.set(p.x,p.y,p.z);var sc=1+.35*Math.sin(t*6);hBlock.scale.set(sc,sc,sc)}
+  if(!userMoved&&!dragging3d&&!flying)camT.Q.copy(qPreset(24,4*Math.sin(t*.11)));
+}
+function homeLabels(){
+  var w=stage.clientWidth,hh=stage.clientHeight;
+  HS.forEach(function(S){tmpP.set(S.x,0,90);tmpP.project(camera);if(tmpP.z>1||tmpP.z<-1){S.el.style.transform='translate(-9999px,-9999px)';return}S.el.style.transform='translate('+((tmpP.x*.5+.5)*w).toFixed(1)+'px,'+((-tmpP.y*.5+.5)*hh+8).toFixed(1)+'px) translate(-50%,0)'});
+  HB.forEach(function(B){var p=Q3(B.p0,B.c,B.p1,.5);tmpP.set(p.x,p.y+4,p.z);tmpP.project(camera);if(tmpP.z>1||tmpP.z<-1){B.lab.style.transform='translate(-9999px,-9999px)';return}B.lab.style.transform='translate('+((tmpP.x*.5+.5)*w).toFixed(1)+'px,'+((-tmpP.y*.5+.5)*hh).toFixed(1)+'px) translate(-50%,-100%)'});
+}
+var halKey='';
+function updateHome(){
+  var m=st.min,mi=Math.floor(m);$('hclk').textContent=pad2(Math.floor(mi/60))+':'+pad2(mi%60);
+  var all=[];
+  HS.forEach(function(S){var hv=envHealth(S.env,m);
+    [['running',hv.running,''],['failed',hv.failed,hv.failed>5?'bad':(hv.failed>0?'warn':'')],['late',hv.late,hv.late?'warn':''],['deploys',hv.deploys,''],['products',hv.products,''],['alerts',hv.alerts,hv.alerts?'bad':'']].forEach(function(r){var dd=S.el.querySelector('dd[data-k="'+r[0]+'"]');dd.textContent=r[1];dd.className=r[2]});
+    hv.active.forEach(function(ev){all.push({env:S.env,ev:ev})})});
+  HB.forEach(function(B){var hv=envHealth(B.from.env,m),n=Math.max(0,Math.floor(hv.deploys*(B.from.env.tier==='dev'?.35:.6)));B.lab.innerHTML='<b>'+n+'</b> promoted today'+(B.blocked?'<br><span class="blk">1 release blocked</span>':'')});
+  var key=all.map(function(a){return a.env.id+a.ev.id}).join('|');
+  if(key!==halKey){halKey=key;var ul=$('hal');ul.innerHTML='';
+    if(!all.length){var li=document.createElement('li');li.className='info';li.innerHTML='<span class="t">now</span><b>No open incidents</b><span></span><p>All environments are on schedule.</p>';ul.appendChild(li)}
+    all.sort(function(a,b){var o={alert:0,warn:1,info:2};return o[a.ev.lvl]-o[b.ev.lvl]||b.ev.t0-a.ev.t0}).forEach(function(a){var li=document.createElement('li');li.className=a.ev.lvl;li.style.setProperty('--c',TIERCOL[a.env.tier]);
+      var tt=document.createElement('span');tt.className='t';tt.textContent=pad2(Math.floor(a.ev.t0/60))+':'+pad2(a.ev.t0%60);var b=document.createElement('b');b.textContent=a.ev.title;var en=document.createElement('span');en.className='env';en.textContent=a.env.name;var p=document.createElement('p');p.textContent=a.ev.text;
+      li.appendChild(tt);li.appendChild(b);li.appendChild(en);li.appendChild(p);li.addEventListener('click',function(){flyIn(a.env.id,a.ev)});ul.appendChild(li)});
+  }
+}
+function flyIn(id,ev){if(flying)return;var S=HS.filter(function(x){return x.id===id})[0];if(!S){enterEnv(id,ev);return}flying=true;follow=null;camT.T.set(S.x,0,0);camT.D=120;tipEl.hidden=true;setTimeout(function(){flying=false;enterEnv(id,ev)},650)}
+function snapCam(){cam.T.copy(camT.T);cam.D=camT.D;cam.Q.copy(camT.Q)}
+function showHome(){if(ENV&&!st.home)camSaved[ENV.id]={T:cam.T.clone(),D:cam.D,Q:cam.Q.clone()};if(st.wall)setWall(false);st.home=true;homeEl.hidden=false;appEl.classList.add('homeview');tipEl.hidden=true;cardEl.hidden=true;userMoved=false;goHome();snapCam();halKey='';updateHome();try{history.replaceState(null,'','#/')}catch(e){}}
+function enterEnv(id,focusEv){
+  if(ENV&&!st.home)camSaved[ENV.id]={T:cam.T.clone(),D:cam.D,Q:cam.Q.clone()};
+  st.home=false;homeEl.hidden=true;appEl.classList.remove('homeview');st.pin=null;cardEl.hidden=true;tipEl.hidden=true;
+  if(!ENV||ENV.id!==id||!world)buildWorld(id);
+  var sv=camSaved[id];if(sv){camT.T.copy(sv.T);camT.D=sv.D;camT.Q.copy(sv.Q);follow=null;snapCam()}else{userMoved=false;goView('over');snapCam()}
+  setBtns(viewBtns,'over');
+  if(focusEv){var e2=EV.filter(function(e){return e.id===focusEv.id})[0];if(e2)goFollow(anchorGetter(e2.anchors[0]),60)}
+  try{history.replaceState(null,'','#/env/'+id)}catch(e){}
+}
+
+/* ===================== loop ===================== */
+var last=performance.now(),pAcc=0,hAcc=0;
+function frame(ts){
+  var dt=Math.min(.05,(ts-last)/1000);last=ts;
+  if(st.playing){if(world&&!st.home)update(dt);else{st.min+=dt*12*st.speed;if(st.min>=1440){st.min-=1440;st.day++}}}
+  else if(world&&!st.home){positions();updateAlerts(st.min,0)}
+  idleT+=dt;if(st.wall&&idleT>4)appEl.classList.add('idle');
+  if(st.home){homeTick(dt);syncCam(dt);homeLabels();renderer.render(homeScene,camera);hAcc+=dt;if(hAcc>.4){hAcc=0;updateHome()}}
+  else{sync(dt);renderer.render(scene,camera);pAcc+=dt;if(pAcc>.25||!st.playing){pAcc=0;updatePanel()}}
+  requestAnimationFrame(frame);
+}
+setPlaying(st.playing);
+var hm=/#\/env\/(\w+)/.exec(location.hash||'');
+if(/[?&]wall=1/.test(location.search)){enterEnv(hm&&ENVS[hm[1]]?hm[1]:'prod');setWall(true)}
+else if(hm&&ENVS[hm[1]])enterEnv(hm[1]);
+else enterEnv('prod');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
