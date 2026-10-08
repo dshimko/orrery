@@ -11,7 +11,7 @@ test.describe('OpenLineage public samples', () => {
     page.on('pageerror', (error) => errors.push(error.message));
     await page.setViewportSize({ width: 1600, height: 900 });
 
-    await page.goto(`${BASE}/?date=2026-10-07&t=10:45&paused=1`);
+    await page.goto(`${BASE}/?date=2026-10-07&t=10:45&paused=1&howto=0`);
     await page.getByTestId('orloj').locator('canvas').waitFor();
     await expect(page.getByTestId('glance-table').locator('tbody tr')).toHaveCount(1);
     await expect(page.getByTestId('glance-table')).not.toContainText(/unavailable/i);

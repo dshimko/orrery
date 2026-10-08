@@ -6,18 +6,22 @@ import { FreshnessIndicator } from '../components/FreshnessIndicator.js';
 import { GlanceTable } from '../components/GlanceTable.js';
 import { HomeAlerts } from '../components/HomeAlerts.js';
 import { HomeAnnouncer } from '../components/HomeAnnouncer.js';
+import { HowToReadToggle } from '../components/HowToReadToggle.js';
 import { Brand } from '../components/Brand.js';
 import { Link } from '../components/Link.js';
+import { OrlojLegend } from '../components/OrlojLegend.js';
 import { OrlojStage } from '../components/OrlojStage.js';
 import { SummaryDialog } from '../components/SummaryDialog.js';
 import { TimeControls } from '../components/TimeControls.js';
 import { UpcomingPanel } from '../components/UpcomingPanel.js';
+import { WallKey } from '../components/WallKey.js';
 import { WallToggle } from '../components/WallToggle.js';
 import { useAlertWatch } from '../hooks/useAlertWatch.js';
 import { useFreshness } from '../hooks/useFreshness.js';
 import { useTabTitle } from '../hooks/useTabTitle.js';
 import { type Bootstrap, useBootstrap } from '../hooks/useBootstrap.js';
 import { useHomeFeeds } from '../hooks/useHomeFeeds.js';
+import { useHowToRead } from '../hooks/useHowToRead.js';
 import { useSimClock } from '../hooks/useSimClock.js';
 import { prefersReducedMotion, useSharedClock } from '../hooks/useSharedClock.js';
 import { logoUrlOf, type Api } from '../lib/api.js';
@@ -79,6 +83,7 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
   const [pinned, setPinned] = useState({ minuteOfDay: link.minuteOfDay, date: link.date });
   const [summaryId, setSummaryId] = useState<string | null>(null);
   const isWall = isWallQuery(query);
+  const howToRead = useHowToRead(query, isWall);
 
   const url = pageUrl('/', clockLink(time, pinned), {}, isWall);
   useEffect(() => {
@@ -170,6 +175,11 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
           status={
             <FreshnessIndicator isLive={isLive} summary={freshness.summary()} nowMs={Date.now()} />
           }
+          extra={
+            isWall ? undefined : (
+              <HowToReadToggle isOn={howToRead.isOn} onToggle={howToRead.toggle} />
+            )
+          }
         />
         <AlertBanner items={watch.items} onDismiss={watch.dismiss} />
         <OrlojStage
@@ -177,8 +187,10 @@ function HomeReady({ api, data, query }: HomeReadyProps) {
           visuals={visuals}
           time={() => controller.state()}
           reducedMotion={reducedMotion}
+          isAnnotated={howToRead.isOn}
           onSelect={setSummaryId}
         />
+        {isWall ? <WallKey /> : <OrlojLegend faces={faces} />}
         <div className="home-grid">
           <section className="panel" aria-labelledby="glance-h">
             <h2 id="glance-h">Environments at a glance</h2>

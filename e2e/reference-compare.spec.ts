@@ -29,7 +29,7 @@ test('reference vs port: Orloj home at 10:40', async ({ page }, info) => {
   await page.goto(pathToFileURL(resolve('reference/orloj-home.html')).href);
   await page.waitForTimeout(1500);
   await info.attach('reference-orloj', { body: await page.screenshot(), contentType: 'image/png' });
-  await page.goto('/?date=2026-10-07&t=10:40&paused=1');
+  await page.goto('/?date=2026-10-07&t=10:40&paused=1&howto=0');
   await page.getByTestId('orloj').locator('canvas').waitFor();
   await page.waitForTimeout(2000);
   await info.attach('port-orloj', { body: await page.screenshot(), contentType: 'image/png' });

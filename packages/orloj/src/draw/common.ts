@@ -3,6 +3,8 @@ import type { Visuals } from '@orrery/core';
 import type { Geometry } from '../geometry.js';
 import type { FaceSmooth } from '../smooth.js';
 import { FONT_SANS, FONT_SERIF } from '../constants.js';
+import { ORLOJ_STRINGS } from '../strings.js';
+import type { OrlojStrings } from '../types.js';
 
 export type Ctx = CanvasRenderingContext2D;
 
@@ -13,7 +15,14 @@ export interface DrawEnv {
   /** Decorative clock in seconds; advances only while time runs and motion is allowed (rule 8). */
   deco: number;
   smooth: FaceSmooth;
+  /** Text for the permanent labels; defaults to `ORLOJ_STRINGS`. */
+  strings?: OrlojStrings;
+  /** Permanent labels draw unless this is false (the view turns them off at one column). */
+  showLabels?: boolean;
 }
+
+/** The strings a draw function uses: the view's resolved set, or the defaults. */
+export const stringsOf = (env: DrawEnv): OrlojStrings => env.strings ?? ORLOJ_STRINGS;
 
 export const serif = (weight: number, px: number): string => `${weight} ${px}px ${FONT_SERIF}`;
 export const sans = (weight: number, px: number): string => `${weight} ${px}px ${FONT_SANS}`;

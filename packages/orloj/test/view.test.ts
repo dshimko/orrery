@@ -71,11 +71,16 @@ function runFrame(ts: number): void {
   for (const cb of callbacks) cb(ts);
 }
 
-function setup(time: () => OrlojTime, faces: readonly OrlojFace[], reducedMotion = false) {
+function setup(
+  time: () => OrlojTime,
+  faces: readonly OrlojFace[],
+  reducedMotion = false,
+  width = 1200,
+) {
   const doc = new FakeDocument();
   const container = {
     ownerDocument: doc,
-    clientWidth: 1200,
+    clientWidth: width,
     appendChild: vi.fn(),
   } as unknown as HTMLElement;
   const view = createOrlojView(container, { visuals, faces, time, reducedMotion });
@@ -220,5 +225,94 @@ describe('createOrlojView', () => {
     view.dispose();
     view.setFaces(faces);
     expect(view.layout().columns).toBe(1);
+  });
+});
+
+describe('annotation mode', () => {
+  const DIM_RECT = 'fillRect(0,0,440,820)';
+  const paused = () => ({ at: AT, paused: true });
+  const lastFrame = (calls: readonly string[]): string[] => {
+    const n = calls.filter((c) => c.startsWith('clearRect')).length;
+    return frameCalls(calls, n - 1);
+  };
+
+  it('draws no veil or markers until annotation is switched on', () => {
+    const { canvas, view } = setup(paused, faces);
+    runFrame(1000);
+    expect(lastFrame(canvas.fake.calls).filter((c) => c === DIM_RECT).length).toBe(0);
+    view.dispose();
+  });
+
+  it('veils every face but the first and draws numbered markers and labels', () => {
+    const { canvas, view } = setup(paused, faces);
+    runFrame(1000);
+    const plain = lastFrame(canvas.fake.calls);
+    view.setAnnotation(true);
+    runFrame(1016);
+    const annotated = lastFrame(canvas.fake.calls);
+    expect(annotated.filter((c) => c === DIM_RECT).length).toBe(faces.length - 1);
+    expect(annotated.some((c) => c === 'set fillStyle=rgba(11,14,21,0.7)')).toBe(true);
+    const texts = annotated.filter((c) => c.startsWith('fillText'));
+    expect(texts.length).toBeGreaterThan(plain.filter((c) => c.startsWith('fillText')).length);
+    expect(texts.some((c) => c.includes('fillText(Sun hand: '))).toBe(true);
+    expect(texts.some((c) => c.startsWith('fillText(14,'))).toBe(true);
+    view.setAnnotation(false);
+    runFrame(1032);
+    expect(lastFrame(canvas.fake.calls).filter((c) => c === DIM_RECT).length).toBe(0);
+    view.dispose();
+  });
+
+  it('keeps paused frames pixel-identical while annotating', () => {
+    const { canvas, view } = setup(paused, faces);
+    view.setAnnotation(true);
+    for (let i = 0; i < 4; i += 1) runFrame(1000 + i * 16);
+    const first = lastFrame(canvas.fake.calls);
+    runFrame(2000);
+    expect(lastFrame(canvas.fake.calls)).toEqual(first);
+    view.dispose();
+  });
+
+  it('draws markers only, with no definitions, at one column', () => {
+    const { canvas, view } = setup(paused, faces, false, 600);
+    expect(view.layout().columns).toBe(1);
+    view.setAnnotation(true);
+    runFrame(1000);
+    const annotated = lastFrame(canvas.fake.calls);
+    expect(annotated.filter((c) => c === DIM_RECT).length).toBe(faces.length - 1);
+    expect(annotated.some((c) => c.includes('fillText(Sun hand: '))).toBe(false);
+    expect(annotated.some((c) => c.startsWith('fillText(14,'))).toBe(true);
+    expect(annotated.some((c) => c.startsWith('fillText(UTC now,'))).toBe(false);
+    view.dispose();
+  });
+
+  it('annotates the first non-error face and does not throw on error faces', () => {
+    const withError = [{ ...(faces[0] as OrlojFace), error: 'boom' }, ...faces.slice(1)];
+    const { canvas, view } = setup(paused, withError);
+    view.setAnnotation(true);
+    expect(() => runFrame(1000)).not.toThrow();
+    const annotated = lastFrame(canvas.fake.calls);
+    expect(annotated.filter((c) => c === DIM_RECT).length).toBe(withError.length - 1);
+    expect(annotated.some((c) => c.includes('fillText(Sun hand: '))).toBe(true);
+    view.dispose();
+    const allError = faces.map((f) => ({ ...f, error: 'boom' }));
+    const second = setup(paused, allError);
+    second.view.setAnnotation(true);
+    expect(() => runFrame(2000)).not.toThrow();
+    second.view.dispose();
+  });
+
+  it('draws the permanent labels at three columns but not at one', () => {
+    const wide = setup(paused, faces);
+    runFrame(1000);
+    expect(lastFrame(wide.canvas.fake.calls).some((c) => c.startsWith('fillText(UTC now,'))).toBe(
+      true,
+    );
+    wide.view.dispose();
+    const narrow = setup(paused, faces, false, 600);
+    runFrame(1016);
+    expect(lastFrame(narrow.canvas.fake.calls).some((c) => c.startsWith('fillText(UTC now,'))).toBe(
+      false,
+    );
+    narrow.view.dispose();
   });
 });

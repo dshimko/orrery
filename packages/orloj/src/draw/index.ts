@@ -6,10 +6,12 @@ import { drawDialFrame, drawNoonSuns, drawRing, drawSky } from './dial.js';
 import { drawErrorDial } from './error.js';
 import { drawFacade, drawPlaque, drawProcession, drawRooster } from './facade.js';
 import { drawFigures } from './figures.js';
+import { drawDialLabels } from './labels.js';
 import { drawHub, drawMoon, drawStarHand, drawSunHand } from './hands.js';
 import { drawSpokes } from './spokes.js';
 
 export type { DrawEnv } from './common.js';
+export { DIM_FILL, drawAnnotation, drawDim } from './annotation.js';
 
 /** Draws one face in face units; the caller sets the transform for the face's origin and scale. */
 export function drawFace(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
@@ -31,6 +33,7 @@ export function drawFace(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
   drawStarHand(ctx, model, env);
   drawSunHand(ctx, model, env);
   drawHub(ctx, model.products, env);
+  drawDialLabels(ctx, model, env);
   drawFigures(ctx, model, env);
   drawCalendar(ctx, model, env);
 }

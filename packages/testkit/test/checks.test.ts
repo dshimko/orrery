@@ -118,6 +118,19 @@ describe('contract checks reject violations', () => {
     expect(() => checkSnapshot(snapshot, topology, new Date(0))).toThrow(/snapshot.at/);
   });
 
+  it('accepts valid unavailable parts and rejects bad keys and reasons', () => {
+    const ok = { ...snapshot, unavailable: { spend: 'No cost data.', schedule: 'None.' } };
+    expect(() => checkSnapshot(ok, topology, AT)).not.toThrow();
+    const badKey = { ...snapshot, unavailable: { weather: 'Cloudy.' } } as unknown as Snapshot;
+    expect(() => checkSnapshot(badKey, topology, AT)).toThrow(/unknown snapshot part "weather"/);
+    const empty = { ...snapshot, unavailable: { spend: '  ' } };
+    expect(() => checkSnapshot(empty, topology, AT)).toThrow(/unavailable.spend/);
+    const long = { ...snapshot, unavailable: { spend: 'x'.repeat(201) } };
+    expect(() => checkSnapshot(long, topology, AT)).toThrow(/at most 200/);
+    const boundary = { ...snapshot, unavailable: { spend: 'x'.repeat(200) } };
+    expect(() => checkSnapshot(boundary, topology, AT)).not.toThrow();
+  });
+
   it('rejects unknown snapshot ids and non-consecutive calendar days', () => {
     const ghost = {
       ...snapshot,

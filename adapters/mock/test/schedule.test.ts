@@ -59,3 +59,13 @@ describe('mock rolling schedule', () => {
     expect(await scheduleAt(at('23:30'))).toEqual(await scheduleAt(at('23:30')));
   });
 });
+
+describe('mock availability', () => {
+  it.each(['dev', 'stg', 'prod'] as const)(
+    '%s: supplies every snapshot part, so `unavailable` is absent',
+    async (id) => {
+      const snapshot = await (await started(demoEnv(id))).snapshot(at('10:15'));
+      expect(snapshot).not.toHaveProperty('unavailable');
+    },
+  );
+});

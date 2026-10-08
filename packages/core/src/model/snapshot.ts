@@ -52,6 +52,9 @@ export interface CalendarDay {
   isPast: boolean;
 }
 
+/** Parts of a snapshot an adapter may have no source for. */
+export type SnapshotPart = 'schedule' | 'calendar' | 'spend' | 'backlog' | 'consumers';
+
 export interface Snapshot {
   envId: string;
   /** ISO timestamp the snapshot describes. */
@@ -81,4 +84,10 @@ export interface Snapshot {
   /** Planned windows starting within the next 24 hours of `at` (rolling window): transfers, releases, and scripted events. */
   schedule: ScheduledWindow[];
   calendar: { year: number; month: number; days: CalendarDay[] };
+  /**
+   * Parts this adapter cannot supply, with a client-safe reason, e.g.
+   * `{ schedule: 'No schedule data from this adapter.' }`. A missing key means available. The
+   * field stays zeroed or empty for unavailable parts; views hide or explain them.
+   */
+  unavailable?: Partial<Record<SnapshotPart, string>>;
 }

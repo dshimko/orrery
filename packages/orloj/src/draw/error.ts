@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ERROR_TEXT, GOLD, GOLD_DARK, INK, PANEL } from '../constants.js';
 import type { FaceModel } from '../model/index.js';
-import { roundRect, sans, serif, text, wrapLines, type Ctx, type DrawEnv } from './common.js';
+import {
+  roundRect,
+  sans,
+  serif,
+  stringsOf,
+  text,
+  wrapLines,
+  type Ctx,
+  type DrawEnv,
+} from './common.js';
 import { drawDialFrame, drawSky } from './dial.js';
 import { drawHub, drawSunHand } from './hands.js';
 
@@ -12,7 +21,6 @@ const MAX_LINES = 6;
 const PANEL_PADDING = 14;
 const TITLE_HEIGHT = 24;
 const ELLIPSIS = '…';
-const ERROR_TITLE = 'No data';
 
 /** Wraps to the line limit, ending the last visible line with an ellipsis when cut. */
 function limitLines(lines: readonly string[]): string[] {
@@ -49,7 +57,7 @@ export function drawErrorDial(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
   roundRect(ctx, cx - PANEL_WIDTH / 2, top, PANEL_WIDTH, height, 6);
   ctx.fill();
   ctx.stroke();
-  text(ctx, ERROR_TITLE, cx, top + PANEL_PADDING, serif(700, 13), GOLD);
+  text(ctx, stringsOf(env).canvas.errorTitle, cx, top + PANEL_PADDING, serif(700, 13), GOLD);
   lines.forEach((line, i) => {
     text(
       ctx,

@@ -72,7 +72,9 @@ describe('tooltip text with local time', () => {
     const texts = hitTexts('America/New_York');
     expect(texts.get('sun-hand')).toContain('10:45 UTC (06:45 EDT)');
     const arc = [...texts].find(([part]) => part.startsWith('arc:'));
-    expect(arc?.[1]).toMatch(/\d\d:\d\d–\d\d:\d\d UTC \(\d\d:\d\d–\d\d:\d\d E[SD]T\)\.$/);
+    expect(arc?.[1]).toMatch(
+      /\d\d:\d\d–\d\d:\d\d UTC \(\d\d:\d\d–\d\d:\d\d E[SD]T\)\. Click the face/,
+    );
     expect(texts.get('star-hand') ?? '').toMatch(/UTC \(\d\d:\d\d E[SD]T\)/);
     const tick = [...texts].find(([part]) => part.startsWith('tick:'));
     expect(tick?.[1]).toMatch(/UTC \(\d\d:\d\d E[SD]T\): /);

@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Runs to Snapshot: freshness, activity, counts, alerts, backlog, and a calendar of zeros (run
-// events carry no releases or promotions). Pure and deterministic for a given model, runs, and time.
+// events carry no releases or promotions). Spend and the calendar are marked unavailable; the
+// schedule is marked unavailable when no run carries a nominal time. Backlog and consumer activity
+// are derived from run events, so they stay available. Pure and deterministic for a given model, runs, and time.
 import {
   DEFAULT_EVENT_WORKLOAD,
   type CalendarDay,
   type Snapshot,
+  type SnapshotPart,
   type Status,
   type UseCaseState,
 } from '@orrery/core';
@@ -135,6 +138,21 @@ function calendarOf(atMs: number): Snapshot['calendar'] {
   return { year, month: month + 1, days };
 }
 
+export const UNAVAILABLE_REASONS = {
+  spend: 'No cost data from OpenLineage events.',
+  calendar: 'No release data from OpenLineage events.',
+  schedule: 'No schedule data: events carry no nominal times.',
+} as const satisfies Partial<Record<SnapshotPart, string>>;
+
+function unavailableParts(runs: readonly Run[]): NonNullable<Snapshot['unavailable']> {
+  const hasNominalTime = runs.some((run) => run.nominalStartMs !== undefined);
+  return {
+    spend: UNAVAILABLE_REASONS.spend,
+    calendar: UNAVAILABLE_REASONS.calendar,
+    ...(hasNominalTime ? {} : { schedule: UNAVAILABLE_REASONS.schedule }),
+  };
+}
+
 /** The full state of one environment at `at`, from runs whose events are at or before it. */
 export function buildSnapshot(model: Model, runs: readonly Run[], at: Date): Snapshot {
   const atMs = at.getTime();
@@ -209,5 +227,6 @@ export function buildSnapshot(model: Model, runs: readonly Run[], at: Date): Sna
     alerts: open.map((a) => a.alert),
     schedule: scheduleOf(model, runs, atMs),
     calendar: calendarOf(atMs),
+    unavailable: unavailableParts(runs),
   };
 }

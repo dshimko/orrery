@@ -14,6 +14,8 @@ export interface TimeControlsProps {
   onGoLive: () => void;
   /** Extra status next to the clock, e.g. the freshness indicator. */
   status?: ReactNode;
+  /** Extra controls after the scrubber, e.g. the How to read toggle. */
+  extra?: ReactNode;
   /** IANA zone for the local time; the browser's by default. Injectable for tests. */
   timeZone?: string;
 }
@@ -31,6 +33,7 @@ export function TimeControls({
   onScrub,
   onGoLive,
   status,
+  extra,
   timeZone,
 }: TimeControlsProps) {
   const minute = Math.floor(minuteOfDay(time.at));
@@ -94,6 +97,7 @@ export function TimeControls({
           onScrub(Number(event.target.value));
         }}
       />
+      {extra}
     </section>
   );
 }

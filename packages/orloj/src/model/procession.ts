@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { lcg, type Snapshot, type Visuals } from '@orrery/core';
+import { fill } from '../strings.js';
+import type { OrlojStrings } from '../types.js';
 import { MS_PER_DAY, clamp } from './format.js';
 import type { WindowSpan } from './schedule.js';
 import type { ProcessionFigure, ProcessionModel } from './types.js';
@@ -65,6 +67,7 @@ export function buildProcession(
   at: Date,
   minuteOfDay: number,
   visuals: Visuals,
+  strings: OrlojStrings,
 ): ProcessionModel {
   const cfg = visuals.orloj.procession;
   const hour = at.getUTCHours();
@@ -97,6 +100,9 @@ export function buildProcession(
     figures,
     progress,
     hasRelease,
-    text: `${figures.length} scheduled runs this hour: ${describe(visuals, figures)}. They parade at the top of each hour.`,
+    text: fill(strings.model.processionText, {
+      count: figures.length,
+      mix: describe(visuals, figures),
+    }),
   };
 }

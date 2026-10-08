@@ -286,6 +286,14 @@ describe('replay (public sample)', () => {
     expect(snapshot.spokes.every((s) => !s.pastTarget)).toBe(true);
   });
 
+  it('marks spend and the calendar unavailable, but not the schedule (the sample has nominal times)', async () => {
+    const adapter = await sample('2031-07-19T03:07:00Z');
+    const { unavailable } = await adapter.snapshot(new Date('2031-07-19T03:07:00Z'));
+    expect(unavailable?.spend).toBe('No cost data from OpenLineage events.');
+    expect(unavailable?.calendar).toBe('No release data from OpenLineage events.');
+    expect(unavailable).not.toHaveProperty('schedule');
+  });
+
   it('moves the sample to the anchor and repeats it daily when configured', async () => {
     await writeFile(path.join(dir, 'anchored.json'), JSON.stringify(SAMPLE));
     const adapter = await started(

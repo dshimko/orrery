@@ -2,6 +2,8 @@
 import type { Alert, ScheduledWindow, Snapshot, Visuals } from '@orrery/core';
 import { hourAngle } from '../geometry.js';
 import { formatMinute, MS_PER_MINUTE } from './format.js';
+import { fill } from '../strings.js';
+import type { OrlojStrings } from '../types.js';
 import type { ArcModel, StarModel, TickModel } from './types.js';
 
 const MINUTES_PER_DAY = 1440;
@@ -13,18 +15,6 @@ export interface WindowSpan {
   startMinute: number;
   durationMinutes: number;
 }
-
-const SEVERITY_LABEL = {
-  incident: 'Incident',
-  warning: 'Warning',
-  info: 'Planned',
-} as const;
-
-const KIND_LABEL = {
-  transfer: 'transfer',
-  release: 'release',
-  scripted: 'scheduled event',
-} as const;
 
 /** Parses each window to minutes of its own UTC day; drops windows with invalid timestamps. */
 export function windowSpans(schedule: readonly ScheduledWindow[]): WindowSpan[] {
@@ -47,11 +37,22 @@ function isWithin(span: WindowSpan, minute: number): boolean {
   return delta < span.durationMinutes;
 }
 
-function arcText(span: WindowSpan, alerts: readonly Alert[]): string {
+function arcText(span: WindowSpan, alerts: readonly Alert[], strings: OrlojStrings): string {
   const { window } = span;
   const alert = alerts.find((a) => a.title === window.title);
   if (alert) return alert.text;
-  return `${SEVERITY_LABEL[window.severity]} ${KIND_LABEL[window.kind]}.`;
+  const t = strings.model;
+  const severity = {
+    incident: t.severityIncident,
+    warning: t.severityWarning,
+    info: t.severityPlanned,
+  }[window.severity];
+  const kind = {
+    transfer: t.kindTransfer,
+    release: t.kindRelease,
+    scripted: t.kindScripted,
+  }[window.kind];
+  return fill(t.arcFallback, { severity, kind });
 }
 
 /** Arcs on the 24-hour ring: every non-transfer window, colored by severity. */
@@ -60,6 +61,7 @@ export function buildArcs(
   snapshot: Snapshot,
   minute: number,
   colors: Visuals['colors'],
+  strings: OrlojStrings,
 ): ArcModel[] {
   return spans
     .filter((s) => s.window.kind !== 'transfer')
@@ -70,8 +72,12 @@ export function buildArcs(
       const endLabel = formatMinute(span.startMinute + span.durationMinutes);
       return {
         id: span.window.id,
-        title: `${span.window.title} ${startLabel} to ${endLabel}`,
-        text: arcText(span, snapshot.alerts),
+        title: fill(strings.model.arcTitle, {
+          title: span.window.title,
+          start: startLabel,
+          end: endLabel,
+        }),
+        text: arcText(span, snapshot.alerts, strings),
         startAngle,
         endAngle,
         midAngle: (startAngle + endAngle) / 2,
@@ -87,20 +93,27 @@ export function buildArcs(
 }
 
 /** Silver ticks for transfers from the ingest spoke to the core. */
-export function buildTicks(spans: readonly WindowSpan[]): TickModel[] {
+export function buildTicks(spans: readonly WindowSpan[], strings: OrlojStrings): TickModel[] {
   return spans
     .filter((s) => s.window.kind === 'transfer')
     .map((span) => ({
       id: span.window.id,
       title: span.window.title,
-      text: `${formatMinute(span.startMinute)} UTC: consolidated silver moves from the ingest spoke to the core.`,
+      text: fill(strings.model.tickText, {
+        time: formatMinute(span.startMinute),
+        utc: strings.model.utc,
+      }),
       angle: hourAngle(span.startMinute / MINUTES_PER_HOUR),
       minute: span.startMinute,
     }));
 }
 
 /** The next window start after `minute`; wraps to the first start tomorrow. */
-export function nextStar(spans: readonly WindowSpan[], minute: number): StarModel | null {
+export function nextStar(
+  spans: readonly WindowSpan[],
+  minute: number,
+  strings: OrlojStrings,
+): StarModel | null {
   if (spans.length === 0) return null;
   const sorted = [...spans].sort((a, b) => a.startMinute - b.startMinute);
   const next = sorted.find((s) => s.startMinute > minute) ?? sorted[0];
@@ -109,6 +122,10 @@ export function nextStar(spans: readonly WindowSpan[], minute: number): StarMode
     angle: hourAngle(next.startMinute / MINUTES_PER_HOUR),
     title: next.window.title,
     minute: next.startMinute,
-    label: `${next.window.title} at ${formatMinute(next.startMinute)} UTC`,
+    label: fill(strings.model.starLabel, {
+      title: next.window.title,
+      time: formatMinute(next.startMinute),
+      utc: strings.model.utc,
+    }),
   };
 }

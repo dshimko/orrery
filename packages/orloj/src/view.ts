@@ -2,13 +2,29 @@
 // The framework-free Orloj view: canvas, frame loop, input, and the public API.
 import { createTextGate } from '@orrery/core';
 import { describeFaces } from './aria.js';
-import { drawFace } from './draw/index.js';
+import { drawAnnotation, drawDim, drawFace, type DrawEnv } from './draw/index.js';
 import { geometryFor } from './geometry.js';
 import { findHit, toPixelHits } from './hit-test.js';
 import { faceAt, faceOrigin, orlojLayout } from './layout.js';
-import { createFaceModel, faceHits, maxPipelinesAcross, type FaceModel } from './model/index.js';
+import {
+  annotationAnchors,
+  createFaceModel,
+  faceHits,
+  firstLoadedIndex,
+  labelSide,
+  maxPipelinesAcross,
+  type FaceModel,
+} from './model/index.js';
 import { settledSmooth, spokeDistances, stepSmooth, type FaceSmooth } from './smooth.js';
-import type { OrlojFace, OrlojHit, OrlojLayout, OrlojOptions, OrlojView } from './types.js';
+import { legendEntries, resolveStrings } from './strings.js';
+import type {
+  LegendEntry,
+  OrlojFace,
+  OrlojHit,
+  OrlojLayout,
+  OrlojOptions,
+  OrlojView,
+} from './types.js';
 
 const MS_PER_SECOND = 1000;
 const MAX_FRAME_SECONDS = 0.05;
@@ -27,16 +43,19 @@ export function createOrlojView(container: HTMLElement, options: OrlojOptions): 
   const timeZone = options.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const isReduced = options.reducedMotion ?? prefersReducedMotion();
   const gate = createTextGate(visuals.stability.domHz);
+  const strings = resolveStrings(options.strings);
 
   const canvas = doc.createElement('canvas');
   canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', describeFaces([]));
+  canvas.setAttribute('aria-label', describeFaces([], strings));
   canvas.style.display = 'block';
   container.appendChild(canvas);
   const ctx = canvas.getContext('2d');
 
   let faces: readonly OrlojFace[] = options.faces;
   let maxPipelines = maxPipelinesAcross(faces);
+  let entries: LegendEntry[] = legendEntries(faces, options.strings);
+  let isAnnotating = false;
   let smooth = new Map<string, FaceSmooth>();
   let hits: OrlojHit[] = [];
   let layout: OrlojLayout = orlojLayout(FALLBACK_WIDTH_PX, faces.length, visuals);
@@ -63,6 +82,29 @@ export function createOrlojView(container: HTMLElement, options: OrlojOptions): 
     if (canvas.style.height !== cssHeight) canvas.style.height = cssHeight;
   }
 
+  function applyFaceTransform(index: number): void {
+    if (!ctx) return;
+    const origin = faceOrigin(layout, index, visuals);
+    const k = pixelRatio * layout.scale;
+    ctx.setTransform(k, 0, 0, k, pixelRatio * origin.x, pixelRatio * origin.y);
+  }
+
+  /** Veils every face but the first loaded one, then draws its markers and definitions. */
+  function drawAnnotationLayer(models: readonly FaceModel[], env: DrawEnv): void {
+    if (!ctx) return;
+    const target = firstLoadedIndex(models);
+    const model = models[target];
+    if (!model) return;
+    models.forEach((_, index) => {
+      if (index === target) return;
+      applyFaceTransform(index);
+      drawDim(ctx, env);
+    });
+    applyFaceTransform(target);
+    const side = labelSide(layout, target, models.length);
+    drawAnnotation(ctx, annotationAnchors(model, geo, entries, side), env);
+  }
+
   function renderFrame(dt: number): void {
     if (!ctx) return;
     const time = options.time();
@@ -72,29 +114,39 @@ export function createOrlojView(container: HTMLElement, options: OrlojOptions): 
     const nextSmooth = new Map<string, FaceSmooth>();
     const nextHits: OrlojHit[] = [];
     const models: FaceModel[] = [];
+    let lastEnv: DrawEnv | null = null;
     faces.forEach((face, index) => {
-      const model = createFaceModel(face, time, visuals, maxPipelines);
+      const model = createFaceModel(face, time, visuals, maxPipelines, strings);
       const prev = smooth.get(model.envId) ?? settledSmooth(model);
       const state = stepSmooth(prev, model, dt, visuals);
       nextSmooth.set(model.envId, state);
       models.push(model);
       const origin = faceOrigin(layout, index, visuals);
-      const k = pixelRatio * layout.scale;
-      ctx.setTransform(k, 0, 0, k, pixelRatio * origin.x, pixelRatio * origin.y);
-      drawFace(ctx, model, { visuals, geo, deco, smooth: state });
+      applyFaceTransform(index);
+      const env: DrawEnv = {
+        visuals,
+        geo,
+        deco,
+        smooth: state,
+        strings,
+        showLabels: layout.columns > 1,
+      };
+      lastEnv = env;
+      drawFace(ctx, model, env);
       nextHits.push(
         ...toPixelHits(
           model.envId,
-          faceHits(model, geo, spokeDistances(state), { at: time.at, timeZone }),
+          faceHits(model, geo, spokeDistances(state), { at: time.at, timeZone }, strings),
           origin.x,
           origin.y,
           layout.scale,
         ),
       );
     });
+    if (isAnnotating && lastEnv) drawAnnotationLayer(models, lastEnv);
     smooth = nextSmooth;
     hits = nextHits;
-    const label = describeFaces(models);
+    const label = describeFaces(models, strings);
     if (gate(ARIA_KEY, label, performance.now())) canvas.setAttribute('aria-label', label);
   }
 
@@ -158,6 +210,7 @@ export function createOrlojView(container: HTMLElement, options: OrlojOptions): 
       if (isDisposed) return;
       faces = next;
       maxPipelines = maxPipelinesAcross(next);
+      entries = legendEntries(next, options.strings);
       resize();
     },
     onHover(listener) {
@@ -169,6 +222,9 @@ export function createOrlojView(container: HTMLElement, options: OrlojOptions): 
       return () => void selectListeners.delete(listener);
     },
     layout: () => layout,
+    setAnnotation(on) {
+      isAnnotating = on;
+    },
     dispose() {
       if (isDisposed) return;
       isDisposed = true;

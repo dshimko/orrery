@@ -20,7 +20,7 @@ for (const envId of ['dev', 'stg', 'prod']) {
 
 test('Orloj home matches its baseline', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto('/?date=2026-10-07&t=10:45&paused=1');
+  await page.goto('/?date=2026-10-07&t=10:45&paused=1&howto=0');
   await page
     .locator('[data-testid="orloj"][data-ready="true"] canvas')
     .waitFor({ timeout: 20_000 });
@@ -28,6 +28,20 @@ test('Orloj home matches its baseline', async ({ page }) => {
   await expect(page.getByTestId('orloj')).toHaveScreenshot('orloj-home.png', {
     timeout: 20_000,
     // Canvas 2D renders byte-stably, so stay strict: small icon changes must fail.
+    maxDiffPixelRatio: 0.001,
+    animations: 'disabled',
+  });
+});
+
+test('Orloj annotation mode matches its baseline', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto('/?date=2026-10-07&t=10:45&paused=1&howto=1');
+  await page
+    .locator('[data-testid="orloj"][data-ready="true"] canvas')
+    .waitFor({ timeout: 20_000 });
+  await page.waitForTimeout(1500);
+  await expect(page.getByTestId('orloj')).toHaveScreenshot('orloj-howto.png', {
+    timeout: 20_000,
     maxDiffPixelRatio: 0.001,
     animations: 'disabled',
   });

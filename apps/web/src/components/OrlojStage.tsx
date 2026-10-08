@@ -9,12 +9,15 @@ import {
 } from '@orrery/orloj';
 import { useEffect, useRef, useState } from 'react';
 import { whenFontsReady } from '../lib/fonts.js';
+import { GUIDANCE_TEXT } from '../lib/orloj-text.js';
 
 export interface OrlojStageProps {
   faces: readonly OrlojFace[];
   visuals: Visuals;
   time: () => OrlojTime;
   reducedMotion: boolean;
+  /** Annotation mode: numbered leader lines and definitions on the first face. */
+  isAnnotated?: boolean;
   onSelect: (envId: string) => void;
 }
 
@@ -37,11 +40,18 @@ export function isReady(faces: readonly OrlojFace[]): boolean {
   );
 }
 
-export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: OrlojStageProps) {
+export function OrlojStage({
+  faces,
+  visuals,
+  time,
+  reducedMotion,
+  isAnnotated = false,
+  onSelect,
+}: OrlojStageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<OrlojView | null>(null);
-  const latest = useRef({ faces, time, onSelect });
-  latest.current = { faces, time, onSelect };
+  const latest = useRef({ faces, time, onSelect, isAnnotated });
+  latest.current = { faces, time, onSelect, isAnnotated };
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [areFontsReady, setAreFontsReady] = useState(false);
@@ -71,6 +81,7 @@ export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: Or
       setFailure('The clock faces could not start. The table below has the same information.');
       return;
     }
+    view.setAnnotation(latest.current.isAnnotated);
     viewRef.current = view;
     setFailure(null);
     const offHover = view.onHover((hit) => {
@@ -90,6 +101,10 @@ export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: Or
   useEffect(() => {
     viewRef.current?.setFaces(faces);
   }, [faces]);
+
+  useEffect(() => {
+    viewRef.current?.setAnnotation(isAnnotated);
+  }, [isAnnotated]);
 
   return (
     <section className="orloj-stage" aria-label="Environment clock faces">
@@ -114,6 +129,11 @@ export function OrlojStage({ faces, visuals, time, reducedMotion, onSelect }: Or
           <b>{tooltip.hit.title}</b>
           {tooltip.hit.text}
         </div>
+      )}
+      {isAnnotated && (
+        <p className="orloj-dismiss-hint" data-testid="howto-hint">
+          {GUIDANCE_TEXT.dismissHint}
+        </p>
       )}
       {failure && <p className="scene-error">{failure}</p>}
     </section>

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // The pure face model: everything the drawing code needs, computed from data, time, and visuals.
-import type { Severity } from '@orrery/core';
+import type { Severity, SnapshotPart } from '@orrery/core';
 
 /** A tooltip region in face units (0..faceW, 0..faceH). */
 export interface FaceHit {
@@ -159,4 +159,6 @@ export interface FaceModel {
   procession: ProcessionModel;
   rooster: RoosterModel;
   calendar: CalendarModel | null;
+  /** Parts the adapter cannot supply, with their reasons (empty when all are available). */
+  unavailable: Partial<Record<SnapshotPart, string>>;
 }

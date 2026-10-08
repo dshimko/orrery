@@ -5,9 +5,11 @@ import {
   DEFAULT_EVENT_WORKLOAD,
   type CalendarDay,
   type Snapshot,
+  type SnapshotPart,
   type Status,
   type UseCaseState,
 } from '@orrery/core';
+import type { QueryName } from '../queries.js';
 import { schemaMatches } from '../discovery/matchers.js';
 import type { Discovery, Model, ModelObject } from '../discovery/types.js';
 import { schemaKey } from '../rows.js';
@@ -162,8 +164,44 @@ function calendarOf(model: Model, evidence: Evidence, atMs: number): Snapshot['c
   return { year, month: month + 1, days };
 }
 
-/** The full state of one environment at `at`. */
-export function buildSnapshot(discovery: Discovery, evidence: Evidence, at: Date): Snapshot {
+export const UNAVAILABLE_REASONS = {
+  schedule: 'No schedule data from this adapter.',
+  calendar: 'No release data: job history is not readable.',
+  spend: 'No cost data: system billing tables are not readable.',
+  backlog: 'No backlog data: job and pipeline run history is not readable.',
+  consumers: 'No consumer data: query history is not readable.',
+} as const satisfies Record<SnapshotPart, string>;
+
+/**
+ * Parts this adapter cannot supply. The schedule is never available (decision 83). The others
+ * depend on which source queries degraded for the current viewer: a part is unavailable when its
+ * source failed on any target, except backlog, which needs both run histories to be lost.
+ */
+export function unavailableParts(
+  degraded: ReadonlySet<QueryName>,
+): NonNullable<Snapshot['unavailable']> {
+  const parts: Partial<Record<SnapshotPart, string>> = {
+    schedule: UNAVAILABLE_REASONS.schedule,
+  };
+  if (degraded.has('job_changes')) parts.calendar = UNAVAILABLE_REASONS.calendar;
+  if (degraded.has('billing_usage')) parts.spend = UNAVAILABLE_REASONS.spend;
+  if (degraded.has('job_runs') && degraded.has('pipeline_updates')) {
+    parts.backlog = UNAVAILABLE_REASONS.backlog;
+  }
+  if (degraded.has('station_reads')) parts.consumers = UNAVAILABLE_REASONS.consumers;
+  return parts;
+}
+
+/**
+ * The full state of one environment at `at`. `degraded` names the queries that failed for the
+ * viewer; it decides which parts are marked unavailable.
+ */
+export function buildSnapshot(
+  discovery: Discovery,
+  evidence: Evidence,
+  at: Date,
+  degraded: ReadonlySet<QueryName> = new Set(),
+): Snapshot {
   const { model, topology } = discovery;
   const atMs = at.getTime();
   const freshness = spokeFreshness(model, evidence, atMs);
@@ -242,5 +280,6 @@ export function buildSnapshot(discovery: Discovery, evidence: Evidence, at: Date
     alerts: open.map((a) => a.alert),
     schedule: [],
     calendar: calendarOf(model, evidence, atMs),
+    unavailable: unavailableParts(degraded),
   };
 }

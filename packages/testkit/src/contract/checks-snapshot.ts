@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
-import type { Snapshot, Topology } from '@orrery/core';
+import type { Snapshot, SnapshotPart, Topology } from '@orrery/core';
 import { ensure, ensureKnown, ensureUnique } from './assert.js';
 import { topologyIds } from './ids.js';
 
 const SEVERITIES: readonly string[] = ['incident', 'warning', 'info'];
+const SNAPSHOT_PARTS: readonly string[] = [
+  'schedule',
+  'calendar',
+  'spend',
+  'backlog',
+  'consumers',
+] satisfies SnapshotPart[];
+/** Longest reason an adapter may give for an unavailable part. */
+export const MAX_UNAVAILABLE_REASON_LENGTH = 200;
 
 function ensureUnit(value: number, what: string): void {
   ensure(
@@ -62,6 +71,19 @@ function checkCountsAndAlerts(snapshot: Snapshot): void {
   });
 }
 
+function checkUnavailable(snapshot: Snapshot): void {
+  if (snapshot.unavailable === undefined) return;
+  for (const [part, reason] of Object.entries(snapshot.unavailable)) {
+    ensure(SNAPSHOT_PARTS.includes(part), `unavailable has unknown snapshot part "${part}"`);
+    ensure(
+      typeof reason === 'string' &&
+        reason.trim().length > 0 &&
+        reason.length <= MAX_UNAVAILABLE_REASON_LENGTH,
+      `unavailable.${part} must be a non-empty string of at most ${MAX_UNAVAILABLE_REASON_LENGTH} characters`,
+    );
+  }
+}
+
 export function checkSnapshot(snapshot: Snapshot, topology: Topology, at: Date): void {
   ensure(
     snapshot.envId === topology.envId,
@@ -73,4 +95,5 @@ export function checkSnapshot(snapshot: Snapshot, topology: Topology, at: Date):
   );
   checkActivities(snapshot, topology);
   checkCountsAndAlerts(snapshot);
+  checkUnavailable(snapshot);
 }

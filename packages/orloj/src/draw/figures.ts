@@ -12,7 +12,7 @@ import {
 } from '../constants.js';
 import type { FaceModel } from '../model/index.js';
 import { clamp } from '../model/format.js';
-import { archPath, sans, serif, text, type Ctx, type DrawEnv } from './common.js';
+import { archPath, sans, serif, stringsOf, text, type Ctx, type DrawEnv } from './common.js';
 import {
   BELL_PIVOT_Y,
   BELL_SWING_AMPLITUDE,
@@ -112,14 +112,6 @@ export function captionLayout(lineCount: number): CaptionLayout {
     bottom: lastDy + halfLabel,
   };
 }
-
-/** Each figure's caption label, so layout tests can match icons to their line counts. */
-export const FIGURE_LABELS = {
-  spend: 'spend per hour',
-  freshness: 'past target',
-  incidents: 'incidents',
-  consumers: 'consumer activity',
-} as const;
 
 function caption(ctx: Ctx, x: number, y: number, value: string, label: string, color = INK): void {
   const lines = wrapCaption(label);
@@ -285,7 +277,7 @@ function drawSpend(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
   const { x, y } = SPEND_POS;
   niche(ctx, x, y);
   drawCoins(ctx, x, y, GOLD, coinCount(env.smooth.purse));
-  caption(ctx, x, y, String(model.figures.spend), FIGURE_LABELS.spend);
+  caption(ctx, x, y, String(model.figures.spend), stringsOf(env).canvas.figureSpend);
 }
 
 function drawFreshness(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
@@ -295,7 +287,14 @@ function drawFreshness(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
   niche(ctx, x, y);
   const color = late > 0 ? env.visuals.colors.warning : GOLD;
   drawHourglass(ctx, x, y, color, freshShare(late, f.spokeCount), env.deco);
-  caption(ctx, x, y, String(late), FIGURE_LABELS.freshness, late > 0 ? BAD_TEXT_LATE : INK);
+  caption(
+    ctx,
+    x,
+    y,
+    String(late),
+    stringsOf(env).canvas.figureFreshness,
+    late > 0 ? BAD_TEXT_LATE : INK,
+  );
 }
 
 function drawIncidents(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
@@ -310,7 +309,7 @@ function drawIncidents(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
       : f.incidentLevel === 'warning'
         ? BAD_TEXT_WARNING
         : INK;
-  caption(ctx, x, y, String(f.openIncidents), FIGURE_LABELS.incidents, textColor);
+  caption(ctx, x, y, String(f.openIncidents), stringsOf(env).canvas.figureIncidents, textColor);
 }
 
 function drawConsumers(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
@@ -318,7 +317,7 @@ function drawConsumers(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
   const activity = model.figures.consumerActivity;
   niche(ctx, x, y);
   drawEye(ctx, x, y, GOLD, activity, env.deco);
-  caption(ctx, x, y, `${Math.round(activity * 100)}%`, FIGURE_LABELS.consumers);
+  caption(ctx, x, y, `${Math.round(activity * 100)}%`, stringsOf(env).canvas.figureConsumers);
 }
 
 /** Coins (spend), hourglass (past target), bell (incidents), eye (consumers). */

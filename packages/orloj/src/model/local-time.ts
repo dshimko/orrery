@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Browser-local renderings of UTC clock times for tooltips. The dial itself stays UTC.
+import { ORLOJ_STRINGS } from '../strings.js';
 import { MS_PER_DAY, MS_PER_MINUTE, formatMinute } from './format.js';
 
 /** Where local times are computed: the anchor instant (for DST) and an IANA zone. */
@@ -53,11 +54,12 @@ export function utcWithLocal(
   start: number,
   end: number | undefined,
   context: LocalTimeContext | undefined,
+  utcWord: string = ORLOJ_STRINGS.model.utc,
 ): string {
   const utc =
     end === undefined
-      ? `${formatMinute(start)} UTC`
-      : `${formatMinute(start)}–${formatMinute(end)} UTC`;
+      ? `${formatMinute(start)} ${utcWord}`
+      : `${formatMinute(start)}–${formatMinute(end)} ${utcWord}`;
   const local = context ? localRange(start, end, context) : '';
   return local === '' ? utc : `${utc} (${local})`;
 }
@@ -67,7 +69,11 @@ export function localizeUtcText(
   text: string,
   minute: number,
   context: LocalTimeContext | undefined,
+  utcWord: string = ORLOJ_STRINGS.model.utc,
 ): string {
   if (!context) return text;
-  return text.replace(`${formatMinute(minute)} UTC`, utcWithLocal(minute, undefined, context));
+  return text.replace(
+    `${formatMinute(minute)} ${utcWord}`,
+    utcWithLocal(minute, undefined, context, utcWord),
+  );
 }

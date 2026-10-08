@@ -344,3 +344,30 @@ describe('determinism', () => {
     }
   });
 });
+
+describe('unavailable parts', () => {
+  const marked = (events: RunEvent[], atMin: number) => {
+    const runs = buildRuns(events, T0 + atMin * MIN);
+    return buildSnapshot(buildModel(env, runs), runs, at(atMin)).unavailable;
+  };
+
+  it('always marks spend and the calendar, and the schedule when no run has a nominal time', () => {
+    expect(marked(EVENTS, 100)).toEqual({
+      spend: 'No cost data from OpenLineage events.',
+      calendar: 'No release data from OpenLineage events.',
+      schedule: 'No schedule data: events carry no nominal times.',
+    });
+  });
+
+  it('leaves the schedule available once an event carries a nominal time', () => {
+    const [first, ...rest] = EVENTS;
+    if (!first) throw new Error('fixture is empty');
+    const nominal = [{ ...first, nominalStartMs: T0 + MIN }, ...rest];
+    const result = marked(nominal, 100);
+    expect(result).toEqual({
+      spend: 'No cost data from OpenLineage events.',
+      calendar: 'No release data from OpenLineage events.',
+    });
+    expect(result).not.toHaveProperty('schedule');
+  });
+});

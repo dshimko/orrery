@@ -233,6 +233,60 @@ describe('on-behalf-of-user isolation', () => {
     expect(alice.message).toContain('billing_usage@primary');
   });
 
+  it('marks the schedule always, and spend only for a viewer whose billing read was denied', async () => {
+    const world = new FixtureWorld(STG_SCENARIOS);
+    let viewer = 'obo:alice';
+    const adapter = await started(
+      stgEnv(),
+      world,
+      at('10:15'),
+      {},
+      { tokensFor: () => ({ token: async () => 't', cacheKey: () => viewer }) },
+    );
+    world.failQuery('*', 'billing_usage', denied);
+    const alice = await adapter.snapshot(at('10:15'));
+    world.clearFailures();
+    viewer = 'obo:bob';
+    const bob = await adapter.snapshot(at('10:15'));
+
+    expect(alice.unavailable).toEqual({
+      schedule: 'No schedule data from this adapter.',
+      spend: 'No cost data: system billing tables are not readable.',
+    });
+    expect(bob.unavailable).toEqual({ schedule: 'No schedule data from this adapter.' });
+  });
+
+  it('marks the calendar and consumers when their sources are denied', async () => {
+    const world = new FixtureWorld(STG_SCENARIOS);
+    const adapter = await started(stgEnv(), world);
+    world.failQuery('*', 'job_changes', denied);
+    world.failQuery('*', 'station_reads', denied);
+
+    const snapshot = await adapter.snapshot(at('10:15'));
+
+    expect(Object.keys(snapshot.unavailable ?? {}).sort()).toEqual([
+      'calendar',
+      'consumers',
+      'schedule',
+    ]);
+    expect(snapshot.unavailable?.calendar).toBe('No release data: job history is not readable.');
+  });
+
+  it('marks the backlog only when both run histories are unreadable', async () => {
+    const partial = new FixtureWorld(STG_SCENARIOS);
+    const partialAdapter = await started(stgEnv(), partial);
+    partial.failQuery('*', 'job_runs', denied);
+    expect((await partialAdapter.snapshot(at('10:15'))).unavailable).not.toHaveProperty('backlog');
+
+    const total = new FixtureWorld(STG_SCENARIOS);
+    const totalAdapter = await started(stgEnv(), total);
+    total.failQuery('*', 'job_runs', denied);
+    total.failQuery('*', 'pipeline_updates', denied);
+    expect((await totalAdapter.snapshot(at('10:15'))).unavailable?.backlog).toBe(
+      'No backlog data: job and pipeline run history is not readable.',
+    );
+  });
+
   it('shares results between calls of the same service principal', async () => {
     const world = new FixtureWorld(STG_SCENARIOS);
     const adapter = await started(

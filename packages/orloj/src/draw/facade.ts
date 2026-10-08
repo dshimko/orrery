@@ -20,6 +20,7 @@ import {
   roundRect,
   sans,
   serif,
+  stringsOf,
   text,
   type Ctx,
   type DrawEnv,
@@ -159,5 +160,5 @@ export function drawRooster(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
   ctx.quadraticCurveTo(-10, -4, -6, 0);
   ctx.fill();
   ctx.restore();
-  if (crow) text(ctx, 'Day closed clean', x, y + 22, sans(600, 11), CHALK);
+  if (crow) text(ctx, stringsOf(env).canvas.roosterCrowing, x, y + 22, sans(600, 11), CHALK);
 }

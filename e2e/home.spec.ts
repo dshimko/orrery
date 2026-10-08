@@ -6,7 +6,7 @@ import { FIXED, openSystem } from './fixtures.js';
 
 async function openHome(page: Page, width = 1600, base = ''): Promise<void> {
   await page.setViewportSize({ width, height: 1000 });
-  await page.goto(`${base}/?${FIXED}`);
+  await page.goto(`${base}/?${FIXED}&howto=0`);
   await page
     .locator('[data-testid="orloj"][data-ready="true"] canvas')
     .waitFor({ timeout: 20_000 });

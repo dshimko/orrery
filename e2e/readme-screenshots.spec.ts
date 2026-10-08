@@ -11,7 +11,7 @@ const VIEWPORT = { width: 1600, height: 900 };
 
 test('Orloj home', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto(`/?${FIXED}`);
+  await page.goto(`/?${FIXED}&howto=0`);
   await page
     .locator('[data-testid="orloj"][data-ready="true"] canvas')
     .waitFor({ timeout: 20_000 });

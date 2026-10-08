@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+import { ORLOJ_STRINGS, fill } from '../strings.js';
+import type { OrlojStrings } from '../types.js';
+
 const MINUTES_PER_DAY = 1440;
 const MINUTES_PER_HOUR = 60;
 export const MS_PER_MINUTE = 60_000;
@@ -20,10 +23,12 @@ export function minuteOfUtcDay(at: Date): number {
 }
 
 /** Compact age text, e.g. "45 min", "3.1 h", "1.5 d". */
-export function formatAge(minutes: number): string {
-  if (minutes < MINUTES_PER_HOUR) return `${Math.round(minutes)} min`;
-  if (minutes < MINUTES_PER_DAY) return `${(minutes / MINUTES_PER_HOUR).toFixed(1)} h`;
-  return `${(minutes / MINUTES_PER_DAY).toFixed(1)} d`;
+export function formatAge(minutes: number, strings: OrlojStrings = ORLOJ_STRINGS): string {
+  const t = strings.model;
+  if (minutes < MINUTES_PER_HOUR) return fill(t.ageMinutes, { n: Math.round(minutes) });
+  if (minutes < MINUTES_PER_DAY)
+    return fill(t.ageHours, { n: (minutes / MINUTES_PER_HOUR).toFixed(1) });
+  return fill(t.ageDays, { n: (minutes / MINUTES_PER_DAY).toFixed(1) });
 }
 
 export function clamp(value: number, min: number, max: number): number {

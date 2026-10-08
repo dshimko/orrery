@@ -2,7 +2,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { drawFace } from '../src/draw/index.js';
 import {
-  FIGURE_LABELS,
   NICHE_HALF_HEIGHT,
   bellSwing,
   captionLayout,
@@ -22,13 +21,19 @@ import {
 import { geometryFor } from '../src/geometry.js';
 import { createFaceModel, maxPipelinesAcross } from '../src/model/index.js';
 import { settledSmooth } from '../src/smooth.js';
-import type { OrlojFace } from '../src/index.js';
+import { ORLOJ_STRINGS, type OrlojFace } from '../src/index.js';
 import { createFakeContext } from './fake-canvas.js';
 import { loadFaces, timeAt, visuals } from './fixture.js';
 
 const NICHE_HALF_WIDTH = 27;
 const MARGIN = 2;
 const KINDS: IconKind[] = ['spend', 'freshness', 'incidents', 'consumers'];
+const FIGURE_LABELS: Record<IconKind, string> = {
+  spend: ORLOJ_STRINGS.canvas.figureSpend,
+  freshness: ORLOJ_STRINGS.canvas.figureFreshness,
+  incidents: ORLOJ_STRINGS.canvas.figureIncidents,
+  consumers: ORLOJ_STRINGS.canvas.figureConsumers,
+};
 
 describe('icon extents', () => {
   for (const kind of KINDS) {

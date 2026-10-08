@@ -9,6 +9,8 @@ import {
   type Visuals,
 } from '@orrery/core';
 import { hourAngle } from '../geometry.js';
+import { fill } from '../strings.js';
+import type { OrlojStrings } from '../types.js';
 import { MS_PER_DAY, formatMinute } from './format.js';
 import type { NoonSunModel, SpokeModel } from './types.js';
 
@@ -99,6 +101,7 @@ function noonSun(
   color: string,
   utcOffset: number,
   minuteOfDay: number,
+  strings: OrlojStrings,
 ): NoonSunModel {
   const hour = noonHour(utcOffset);
   return {
@@ -108,12 +111,20 @@ function noonSun(
     kind,
     color,
     angle: hourAngle(hour),
-    text: `${formatMinute(hour * MINUTES_PER_HOUR)} UTC. Local time now ${localTime(utcOffset, minuteOfDay)}.`,
+    text: fill(strings.model.noonText, {
+      time: formatMinute(hour * MINUTES_PER_HOUR),
+      utc: strings.model.utc,
+      local: localTime(utcOffset, minuteOfDay),
+    }),
   };
 }
 
 /** Local noon for each source region and each distinct office. */
-export function buildNoonSuns(topology: Topology, minuteOfDay: number): NoonSunModel[] {
+export function buildNoonSuns(
+  topology: Topology,
+  minuteOfDay: number,
+  strings: OrlojStrings,
+): NoonSunModel[] {
   const suns = topology.sourceGroups.map((g) =>
     noonSun(
       `source:${g.id}`,
@@ -123,6 +134,7 @@ export function buildNoonSuns(topology: Topology, minuteOfDay: number): NoonSunM
       SOURCE_NOON_COLOR,
       g.utcOffset,
       minuteOfDay,
+      strings,
     ),
   );
   const seen = new Set<string>();
@@ -134,21 +146,23 @@ export function buildNoonSuns(topology: Topology, minuteOfDay: number): NoonSunM
       isStudio
         ? noonSun(
             `office:${u.site}`,
-            'ES',
+            strings.model.studioCode,
             u.site,
             'studio',
             STUDIO_NOON_COLOR,
             u.utcOffset,
             minuteOfDay,
+            strings,
           )
         : noonSun(
             `office:${u.site}`,
-            `O${u.site.slice(-1)}`,
+            fill(strings.model.officeCode, { n: u.site.slice(-1) }),
             u.site,
             'office',
             OFFICE_NOON_COLOR,
             u.utcOffset,
             minuteOfDay,
+            strings,
           ),
     );
   }

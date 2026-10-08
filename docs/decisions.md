@@ -436,3 +436,32 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
     baseline allows 0.1% of pixels to differ. At the old 1%, all twelve niche icons could
     change without the test noticing. The WebGL system views vary by up to about 0.2% between
     runs under software rendering, so they keep 1%.
+87. **Adapters declare unavailable snapshot parts.** `Snapshot.unavailable?: Partial<Record<SnapshotPart,
+string>>` is additive: a missing key means the part is available. Reasons are client-safe
+    plain text of at most 200 characters, and the contract suite checks them.
+    - **Databricks:** always marks `schedule` (decision 83). It marks `calendar`, `spend`,
+      `backlog`, and `consumers` per viewer when their source queries can't be read
+      (decision 78). `backlog` is marked only when both run histories fail.
+    - **OpenLineage:** marks `spend` and `calendar`, and marks `schedule` when no run carries a
+      nominal time.
+    - **Mock:** marks nothing.
+88. **In-product guidance for the Orloj view:**
+    - **Strings:** all Orloj text lives in one i18n-ready module (`packages/orloj/src/strings.ts`,
+      `ORLOJ_STRINGS`), which can be overridden through `OrlojOptions.strings`. Its wording
+      follows `reference/orloj-home.html`, and a test keeps user-facing literals out of other
+      files.
+    - **Labels and tooltips:** faces carry permanent "UTC now", "fresher", and "next" labels,
+      which scale with the face and are hidden at one column. Every part's tooltip gives its
+      definition, its current value (or the adapter's reason when the part is unavailable), and
+      the click action.
+    - **"How to read":** a button, or the `?` key, turns on annotation mode. It numbers each
+      available part on the first face with leader lines and one-line definitions, and dims
+      the other faces. It shows on a first visit, and dismissal is remembered in `localStorage`
+      (`orrery.orloj.howToRead.dismissed`). The `howto=1` or `howto=0` parameter forces it on
+      or off.
+    - **Legend:** a collapsible "How to read the clock" legend (closed by default) lists every
+      part, numbered to match the annotation, with purpose and how-to-use lines. Parts with no
+      data from the active adapter show the reason instead of a definition.
+    - **Wall display:** shows only a one-line key strip.
+    - **Tests:** axe runs with the legend open and with annotation on, there is a keyboard path
+      to the toggle, and annotation mode has its own 0.1% visual baseline.

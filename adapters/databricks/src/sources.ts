@@ -46,6 +46,12 @@ export class Degradations {
     if (notes.size === 0) this.byViewer.delete(viewer);
   }
 
+  /** Names of the queries that failed on the last attempt on any target, for this viewer. */
+  names(viewer: string): Set<QueryName> {
+    const keys = [...(this.byViewer.get(viewer)?.keys() ?? [])];
+    return new Set(keys.map((key) => key.slice(0, key.indexOf('@')) as QueryName));
+  }
+
   messages(viewer: string): string[] {
     return [...(this.byViewer.get(viewer)?.entries() ?? [])]
       .sort(([a], [b]) => a.localeCompare(b))

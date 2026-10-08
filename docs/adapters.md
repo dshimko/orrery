@@ -45,6 +45,34 @@ The return types (`Topology`, `Snapshot`, `PlatformEvent`) are in `packages/core
 `env` is a `ResolvedEnvironment`: the environment's config with its topology resolved
 (`env.resolvedTopology`), so `extends`, `exclude`, and `overrides` are already applied.
 
+### Parts an adapter cannot supply
+
+A snapshot always carries every field, but an adapter may have no source for some parts. Declare
+them in the optional `Snapshot.unavailable`, a map from part to reason:
+
+```ts
+unavailable: {
+  spend: 'No cost data from this adapter.';
+}
+```
+
+- **Parts:** `schedule`, `calendar`, `spend`, `backlog`, `consumers`.
+- **When to set it:** only when the adapter has no real source for the part (or, for a part that
+  can be denied per viewer, when the source is unreadable for this viewer). Leave the matching
+  field zeroed or empty; views hide or explain the part instead of showing a misleading zero.
+  Decide per snapshot, deterministically. A part derived from events is available, even when it
+  is quiet.
+- **Reasons** are short, specific, client-safe plain text, 1 to 200 characters. They reach the
+  browser, so never include hostnames, SQL, tokens, or raw error messages.
+- **A missing key means available.** Omit the field entirely when everything is supplied (the
+  mock adapter does).
+- The contract suite rejects unknown part names and empty or over-long reasons.
+
+The bundled adapters: Databricks always marks `schedule`, and marks `calendar`, `spend`,
+`backlog`, and `consumers` when their source queries are unreadable for the current viewer.
+OpenLineage always marks `spend` and `calendar`, and marks `schedule` when no loaded run carries a
+nominal time; its backlog and consumer activity come from run events, so they stay available.
+
 ## Lifecycle
 
 1. **Load.** The server creates one adapter instance per environment by calling the factory.
@@ -235,7 +263,8 @@ The suite checks that the adapter:
   `env.resolvedTopology`, use-case `reads` that exist, unique site ids, and known metastores;
 - returns a snapshot for a given time: `envId`, `at` equal to the requested ISO time, activities in
   0 to 1, non-negative integer counts, unique alert ids, valid severities, and calendar days
-  numbered `1..n`;
+  numbered `1..n`, and any `unavailable` keys valid with non-empty reasons of at most 200
+  characters;
 - uses `ctx.clock` when `snapshot()` has no argument;
 - returns ordered events inside the window whose ids exist in the topology, with `envId` set and
   every `alert.close` matching an open alert;

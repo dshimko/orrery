@@ -144,12 +144,12 @@ export class DatabricksAdapter implements OrreryAdapter {
   }
 
   async snapshot(at?: Date): Promise<Snapshot> {
-    const { ctx, sources } = this.ready();
+    const { ctx, degraded, sources } = this.ready();
     const when = at ?? ctx.clock.now();
     const signal = this.signalWith(ctx.signal);
     const discovery = await this.discoverOrThrow(signal);
     const rows = await fetchSnapshotRows(sources, when.getTime(), signal);
-    return buildSnapshot(discovery, parseEvidence(rows), when);
+    return buildSnapshot(discovery, parseEvidence(rows), when, degraded.names(sources.viewer()));
   }
 
   events(since: Date, until?: Date, signal?: AbortSignal): AsyncIterable<PlatformEvent> {

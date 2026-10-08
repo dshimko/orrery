@@ -111,6 +111,13 @@ const eventsOf = (rows: RowSets, from = 120, to = 0): PlatformEvent[] =>
     since: new Date(NOW.getTime() - from * MIN),
     until: new Date(NOW.getTime() - to * MIN),
   }).map((item) => item.event);
+
+describe('unavailable parts', () => {
+  it('always marks the schedule and nothing else when no query degraded', () => {
+    expect(snapshotOf({}).unavailable).toEqual({ schedule: 'No schedule data from this adapter.' });
+  });
+});
+
 const spoke = (s: ReturnType<typeof snapshotOf>, id: string) => s.spokes.find((x) => x.id === id);
 
 describe('snapshot freshness', () => {

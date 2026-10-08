@@ -10,7 +10,17 @@ import {
   SUN_RAY,
 } from '../constants.js';
 import type { FaceModel } from '../model/index.js';
-import { circle, sans, serif, starShape, text, type Ctx, type DrawEnv } from './common.js';
+import { fill } from '../strings.js';
+import {
+  circle,
+  sans,
+  serif,
+  starShape,
+  stringsOf,
+  text,
+  type Ctx,
+  type DrawEnv,
+} from './common.js';
 
 const RELEASE_COLOR = '#9B8CFF';
 const RELEASE_COLOR_FUTURE = 'rgba(155,140,255,.25)';
@@ -91,8 +101,22 @@ export function drawCalendar(ctx: Ctx, model: FaceModel, env: DrawEnv): void {
   ctx.lineWidth = 2;
   ctx.stroke();
   text(ctx, String(cal.totalReleases), cx, cy - 9, serif(700, 20), INK);
-  text(ctx, 'releases', cx, cy + 7, sans(500, CENTER_LABEL_PX), MUTED);
-  text(ctx, 'this month', cx, cy + 7 + CENTER_LABEL_PX + 1, sans(500, CENTER_LABEL_PX), MUTED);
-  text(ctx, 'Release calendar', cx, cy + CR + 26, serif(600, 13), GOLD);
-  text(ctx, `Next: ${cal.nextText}`, cx, cy + CR + 50, sans(500, 12.5), NOTE);
+  text(ctx, stringsOf(env).canvas.calendarReleases, cx, cy + 7, sans(500, CENTER_LABEL_PX), MUTED);
+  text(
+    ctx,
+    stringsOf(env).canvas.calendarMonth,
+    cx,
+    cy + 7 + CENTER_LABEL_PX + 1,
+    sans(500, CENTER_LABEL_PX),
+    MUTED,
+  );
+  text(ctx, stringsOf(env).canvas.calendarTitle, cx, cy + CR + 26, serif(600, 13), GOLD);
+  text(
+    ctx,
+    fill(stringsOf(env).canvas.calendarNext, { text: cal.nextText }),
+    cx,
+    cy + CR + 50,
+    sans(500, 12.5),
+    NOTE,
+  );
 }
