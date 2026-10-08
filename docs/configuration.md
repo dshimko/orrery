@@ -73,7 +73,6 @@ reference):
 - `catalog`, `schema`: globs. `*` matches any run of characters, `?` one character, and matching
   is case-insensitive.
 - `tag`, `pipelineTag`, `jobTag`, `dashboardTag`: key and value maps of tags.
-- `sqlPredicate`: a custom predicate (not supported by the Databricks adapter yet, decision 52).
 
 When a matcher has several keys, all of them must match. The Databricks adapter evaluates schema
 clauses (`catalog`, `schema`, `tag`) against schemas, with the environment tag stripped from the
@@ -412,6 +411,5 @@ Path notation: `a.b` is a key, `a[]` is an item of a list, and `a.*` is any key 
 | `match.pipelineTag`  | map of string |          |         | values: non-empty | Tags that a pipeline must carry. Places pipelines in a spoke or source group.                                                    |
 | `match.jobTag`       | map of string |          |         | values: non-empty | Tags that a job must carry. Places jobs in a spoke.                                                                              |
 | `match.dashboardTag` | map of string |          |         | values: non-empty | Tags that a dashboard must carry. Accepted, but the Databricks adapter cannot resolve it and reports it in health (decision 52). |
-| `match.sqlPredicate` | string        |          |         | non-empty         | Custom SQL predicate. Accepted, but not supported by the Databricks adapter and reported in health (decision 52).                |
 
 <!-- END GENERATED -->

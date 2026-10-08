@@ -15,9 +15,6 @@ post-milestone-7 backlog pass are recorded in `docs/decisions.md` (75–80).
 
 ## Needs a design decision
 
-- **`sqlPredicate` matchers:** these mean executing SQL supplied in config. Decide whether to
-  support them (for example as a bound `WHERE` fragment checked by the read-only guard and
-  evaluated in a wrapper query) or remove them from the schema.
 - **`dashboardTag`, the job schedule, and promotion events for Databricks:** there is no
   verified system-table source for dashboard tags or the job trigger format. Promotion events
   need a rule for detecting a release in the next environment.

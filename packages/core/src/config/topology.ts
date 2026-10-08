@@ -17,10 +17,9 @@ export const Matcher = strictObject({
   pipelineTag: TagMatch.optional(),
   jobTag: TagMatch.optional(),
   dashboardTag: TagMatch.optional(),
-  sqlPredicate: z.string().min(1).optional(),
 }).refine((m) => Object.keys(m).length > 0, {
   message:
-    'A matcher needs at least one of: catalog, schema, tag, pipelineTag, jobTag, dashboardTag, sqlPredicate.',
+    'A matcher needs at least one of: catalog, schema, tag, pipelineTag, jobTag, dashboardTag.',
 });
 
 const Freshness = strictObject({

@@ -6,8 +6,8 @@
 //   tag                        the `tags` facet of the dataset (or job)
 //   jobTag / pipelineTag       tags and jobType facets of the job (for a dataset: of its producers)
 //
-// All given clauses must match. `sqlPredicate` and `dashboardTag` cannot be evaluated from run
-// events, so a matcher that uses either never matches (reported in health).
+// All given clauses must match. `dashboardTag` cannot be evaluated from run events, so a
+// matcher that uses it never matches (reported in health).
 import { matchGlob, type Matcher } from '@orrery/core';
 import type { DatasetRef, JobRef, Tags } from './types.js';
 
@@ -31,7 +31,6 @@ export function jobSubject(job: JobRef): Subject {
 /** Names of clauses this adapter cannot evaluate. */
 export function unsupportedClauses(matcher: Matcher): string[] {
   const names: string[] = [];
-  if (matcher.sqlPredicate !== undefined) names.push('sqlPredicate');
   if (matcher.dashboardTag !== undefined) names.push('dashboardTag');
   return names;
 }

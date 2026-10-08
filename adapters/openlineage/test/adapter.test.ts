@@ -162,7 +162,7 @@ spokes:
   - id: sql
     name: Sql
     role: domain
-    match: { sqlPredicate: "x = 1" }
+    match: { dashboardTag: { panel: x } }
     freshness: { cadenceMinutes: 60, targetMinutes: 90 }
 sourceGroups:
   - id: lonely
@@ -176,7 +176,7 @@ useCases:
     const adapter = await started(fileOptions('gaps.ndjson'), iso(T0), topology);
     const health = await adapter.health();
     expect(health.status).toBe('degraded');
-    expect(health.message).toContain('Spoke "sql" uses sqlPredicate');
+    expect(health.message).toContain('Spoke "sql" uses dashboardTag');
     expect(health.message).toContain('Use case "dash" uses dashboardTag');
     expect(health.message).toContain('Spoke "empty" matches no dataset.');
     expect(health.message).toContain('(1 more)');

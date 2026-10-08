@@ -270,6 +270,18 @@ describe('defaults and YAML', () => {
     expect(issuesOf(parseConfig('a: [\n'))[0]).toMatch(/^\(yaml\): /);
   });
 
+  it('rejects sqlPredicate, which was removed from matchers (decision 81)', () => {
+    const topologies = {
+      base: {
+        hub: { id: 'c', name: 'C' },
+        spokes: [{ ...SPOKE, match: { schema: '*_sales_*', sqlPredicate: 'x = 1' } }],
+      },
+    };
+    expect(issuesOf(validateConfig(baseConfig({ topologies })))).toEqual([
+      expect.stringContaining('Unknown key "sqlPredicate".'),
+    ]);
+  });
+
   it('rejects an empty matcher', () => {
     const topologies = {
       base: { hub: { id: 'c', name: 'C' }, spokes: [{ ...SPOKE, match: {} }] },

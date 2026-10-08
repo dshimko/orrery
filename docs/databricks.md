@@ -112,7 +112,6 @@ late run arrives.
 
 The full list is in `docs/decisions.md`, milestone 5:
 
-- `sqlPredicate` matchers are not supported yet.
 - `dashboardTag` cannot be resolved from documented system tables.
 - The schedule is empty, because job trigger formats are unverified.
 - Promotions are not detected yet.

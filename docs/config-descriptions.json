@@ -178,6 +178,5 @@
   "match.tag": "Unity Catalog tags (key and value pairs) that a schema must carry.",
   "match.pipelineTag": "Tags that a pipeline must carry. Places pipelines in a spoke or source group.",
   "match.jobTag": "Tags that a job must carry. Places jobs in a spoke.",
-  "match.dashboardTag": "Tags that a dashboard must carry. Accepted, but the Databricks adapter cannot resolve it and reports it in health (decision 52).",
-  "match.sqlPredicate": "Custom SQL predicate. Accepted, but not supported by the Databricks adapter and reported in health (decision 52)."
+  "match.dashboardTag": "Tags that a dashboard must carry. Accepted, but the Databricks adapter cannot resolve it and reports it in health (decision 52)."
 }

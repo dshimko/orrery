@@ -63,13 +63,13 @@ Replay never applies to Marquez, whose events are real.
 
 Matchers in the topology decide where each thing belongs. All clauses of a matcher must match.
 
-| Matcher                        | Matches                                                                                                                    |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `catalog`                      | glob on the **namespace** of a dataset (or job)                                                                            |
-| `schema`                       | glob on the dataset **name**, or on its **first dotted segment** (`public` matches `public.menus`); on a job, its name     |
-| `tag`                          | the dataset's `tags` facet (`[{ key, value }]`); on a job, its job tags                                                    |
-| `jobTag`, `pipelineTag`        | the job's `tags` facet and `jobType` facet (`processingType`, `integration`, `jobType`); for a dataset, its producing jobs |
-| `sqlPredicate`, `dashboardTag` | **never match** (run events cannot answer them); reported in health as `degraded`                                          |
+| Matcher                 | Matches                                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `catalog`               | glob on the **namespace** of a dataset (or job)                                                                            |
+| `schema`                | glob on the dataset **name**, or on its **first dotted segment** (`public` matches `public.menus`); on a job, its name     |
+| `tag`                   | the dataset's `tags` facet (`[{ key, value }]`); on a job, its job tags                                                    |
+| `jobTag`, `pipelineTag` | the job's `tags` facet and `jobType` facet (`processingType`, `integration`, `jobType`); for a dataset, its producing jobs |
+| `dashboardTag`          | **never match** (run events cannot answer them); reported in health as `degraded`                                          |
 
 - **Spokes.** A dataset belongs to the first spoke whose matcher accepts it. Domain spokes are
   tried first (in config order), then ingest spokes, so an ingest spoke is the catch-all for the

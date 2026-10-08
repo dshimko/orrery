@@ -64,12 +64,8 @@ describe('subjectMatches', () => {
   });
 
   it('never matches a matcher that uses a clause events cannot answer', () => {
-    expect(subjectMatches({ catalog: 'lake', sqlPredicate: 'x = 1' }, asset('a'))).toBe(false);
     expect(subjectMatches({ dashboardTag: { use_case: 'x' } }, asset('a'))).toBe(false);
-    expect(unsupportedClauses({ sqlPredicate: 'x', dashboardTag: { a: 'b' } })).toEqual([
-      'sqlPredicate',
-      'dashboardTag',
-    ]);
+    expect(unsupportedClauses({ dashboardTag: { a: 'b' } })).toEqual(['dashboardTag']);
     expect(unsupportedClauses({ catalog: 'x' })).toEqual([]);
   });
 });

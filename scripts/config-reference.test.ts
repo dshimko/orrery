@@ -43,7 +43,7 @@ describe('configuration reference', () => {
     expect(paths).toContain('environments[].scope.catalogs');
     expect(paths).toContain('topologies.*.spokes[].freshness.targetMinutes');
     expect(paths).toContain('visuals.orloj.dial.center');
-    expect(paths).toContain('match.sqlPredicate');
+    expect(paths).toContain('match.dashboardTag');
   });
 
   it('fails loudly when a description is missing', async () => {

@@ -3,9 +3,9 @@
 //
 // Clauses split in two kinds. Schema clauses (`catalog`, `schema`, `tag`) describe where data
 // lives and are evaluated against schemas, with the catalog's environment tag stripped.
-// Workload clauses (`pipelineTag`, `jobTag`) describe pipelines and jobs. `dashboardTag` and
-// `sqlPredicate` cannot be evaluated from the verified system tables, so a matcher that uses
-// either never matches (see docs/decisions.md).
+// Workload clauses (`pipelineTag`, `jobTag`) describe pipelines and jobs. `dashboardTag`
+// cannot be evaluated from the verified system tables, so a matcher that uses it never matches
+// (see docs/decisions.md).
 import { matchGlob, type Matcher } from '@orrery/core';
 import { tagsContain, type Tags } from '../rows.js';
 import type { ObjectKind } from './types.js';
@@ -26,7 +26,6 @@ export function hasSchemaClauses(matcher: Matcher): boolean {
 /** Names of clauses this adapter cannot evaluate. */
 export function unsupportedClauses(matcher: Matcher): string[] {
   const names: string[] = [];
-  if (matcher.sqlPredicate !== undefined) names.push('sqlPredicate');
   if (matcher.dashboardTag !== undefined) names.push('dashboardTag');
   return names;
 }
@@ -37,7 +36,7 @@ function hasWorkloadClauses(matcher: Matcher): boolean {
 
 /** Whether the schema satisfies every schema clause. False when the matcher has none. */
 export function schemaMatches(matcher: Matcher, facts: SchemaFacts): boolean {
-  if (!hasSchemaClauses(matcher) || matcher.sqlPredicate !== undefined) return false;
+  if (!hasSchemaClauses(matcher)) return false;
   if (matcher.catalog !== undefined && !matchGlob(matcher.catalog, facts.base)) return false;
   if (matcher.schema !== undefined && !matchGlob(matcher.schema, facts.schema)) return false;
   return matcher.tag === undefined || tagsContain(facts.tags, matcher.tag);

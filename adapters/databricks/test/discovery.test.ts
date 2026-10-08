@@ -204,12 +204,8 @@ describe('matcher semantics', () => {
 
   it('never matches a matcher without schema clauses or with unsupported ones', () => {
     expect(schemaMatches({ pipelineTag: { a: 'b' } }, facts)).toBe(false);
-    expect(schemaMatches({ schema: '*', sqlPredicate: 'x = 1' }, facts)).toBe(false);
     expect(objectMatches({ dashboardTag: { a: 'b' } }, 'job', { a: 'b' }, [])).toBe(false);
-    expect(unsupportedClauses({ sqlPredicate: 'x', dashboardTag: { a: 'b' } })).toEqual([
-      'sqlPredicate',
-      'dashboardTag',
-    ]);
+    expect(unsupportedClauses({ dashboardTag: { a: 'b' } })).toEqual(['dashboardTag']);
   });
 
   it('applies pipelineTag to pipelines only and jobTag to jobs only', () => {

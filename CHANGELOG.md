@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Removed
+
+- `sqlPredicate` matchers (decision 81). Configs that use it fail validation with the
+  unknown-key error; use `catalog`, `schema`, `tag`, `pipelineTag`, `jobTag`, or
+  `dashboardTag`.
+
 ### Added
 
 - `@orrery/adapter-openlineage`: an optional read-only adapter that renders OpenLineage

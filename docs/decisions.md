@@ -381,3 +381,9 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
 80. **Validated but unapplied config keys are marked "Reserved"** in the generated reference:
     `product.timezone`, `visuals.theme`, `visuals.workloads[].source`, and
     `visuals.stability.meanAgeCadenceMinutes`.
+
+81. **`sqlPredicate` is removed from the matcher schema.** It would have meant executing SQL
+    supplied in config, and no adapter supported it. A config that still uses it fails
+    validation with the unknown-key error. Matchers are now `catalog`, `schema`, `tag`,
+    `pipelineTag`, `jobTag`, and `dashboardTag`. This supersedes the `sqlPredicate` part of
+    decisions 10 and 52.
