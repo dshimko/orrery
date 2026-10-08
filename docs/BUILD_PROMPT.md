@@ -1,6 +1,6 @@
 # Orrery: build prompt for an open-source lakehouse activity visualizer
 
-Oct 7, 2026 · @Dushan
+Oct 7, 2026
 
 ## How to use this prompt
 

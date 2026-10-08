@@ -29,7 +29,8 @@
     "check:denylist": "node scripts/check-denylist.mjs",
     "check:size": "size-limit",
     "ci": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm check:spdx && pnpm check:licenses && pnpm check:denylist && pnpm test:coverage && pnpm build && pnpm check:size",
-    "test:visual:update": "sh scripts/visual-baselines.sh"
+    "test:visual:update": "sh scripts/visual-baselines.sh",
+    "validate-config": "pnpm --filter @orrery/core build >/dev/null && node scripts/validate-config.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

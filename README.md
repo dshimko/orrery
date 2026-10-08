@@ -71,6 +71,7 @@ before you start.
 
 ## Documentation
 
+- [Running in a corporate environment](docs/corporate.md): private config, proxies and CAs, and every environment variable
 - [Configuration](docs/configuration.md): every config key, matchers, `${env:NAME}` secrets,
   `extends` and `overrides`, environment scope, and validation errors.
 - [Writing an adapter](docs/adapters.md): the `OrreryAdapter` interface, events, the contract test

@@ -13,6 +13,8 @@ What is private lives in paths that `.gitignore` already excludes:
 | `adapters-private/` | Adapters that only your organization uses          |
 | `public/private/`   | Your logo (`logo.svg`, `logo.png`, or `logo.webp`) |
 
+> Testing inside a corporate network? See [corporate.md](corporate.md) for proxies, CAs, mirrors, config validation, and the environment-variable reference.
+
 ## 1. Create the private repository and keep `upstream`
 
 Clone the public repository under the name `upstream`, create an empty private repository on your

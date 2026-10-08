@@ -70,7 +70,9 @@ export const Environment = strictObject({
   tier: Id,
   topology: Id,
   overrides: TopologyOverrides.optional(),
-  adapter: z.union([Id, z.array(Id).min(1)]),
+  adapter: z.union([Id, z.array(Id).min(1)], {
+    error: 'Set adapter to mock, databricks, openlineage, or a name registered under "adapters".',
+  }),
   mock: MockProfile.optional(),
   connection: Connection.optional(),
   federation: Federation.optional(),
