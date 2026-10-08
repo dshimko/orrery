@@ -10,6 +10,27 @@ pipelines, data products, freshness, workloads, and consumers, live or in replay
 Orrery is read-only, runs its adapters only on the server, and is configured with one YAML file.
 The default demo uses a deterministic mock adapter, so no credentials are needed.
 
+## Screenshots
+
+The Orloj clock view: one astronomical clock face per environment, with schedules, freshness,
+and incidents across the day. These come from the all-mock demo config
+(`config/examples/demo.yaml`) at 10:45 UTC.
+
+![Orloj clock view with dev, stg, and prod faces](docs/images/orloj-home.png)
+
+The system view of production as a solar system. The hub sits at the center, spokes orbit by
+data age, sources fill the asteroid belt, and the cross-domain quality alert is flagged.
+
+![Orrery system view of the production environment](docs/images/system-view-prod.png)
+
+The same view rendering the public OpenLineage sample events (`config/examples/openlineage.yaml`).
+
+![Orrery system view of the OpenLineage sample](docs/images/system-view-openlineage.png)
+
+To regenerate the images, run
+`ORRERY_SCREENSHOTS=1 pnpm exec playwright test e2e/readme-screenshots.spec.ts` after
+`pnpm build`.
+
 ## Quick start
 
 Requirements: Node 24 LTS (Node 22.19+ also works) and pnpm 10 (`corepack enable`).

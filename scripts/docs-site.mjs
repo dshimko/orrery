@@ -182,6 +182,29 @@ function resolveRelative(href, source, site) {
   return { error: `link to a file that does not exist: ${href}` };
 }
 
+/** Local images may come only from docs/images and only as raster files (no SVG scripts). */
+const IMAGE_DIR = 'docs/images/';
+const IMAGE_EXT = /\.(png|jpe?g|webp|gif)$/i;
+
+/** Registers a relative image for copying into the site and returns its output path. */
+function siteImage(href, source, site, errors) {
+  const resolved = resolveRelative(href, source, site);
+  if (resolved.error) {
+    errors.push(`${source}: ${resolved.error}`);
+    return undefined;
+  }
+  const repoPath = resolved.repoPath;
+  if (!repoPath || !repoPath.startsWith(IMAGE_DIR) || !IMAGE_EXT.test(repoPath)) {
+    errors.push(
+      `${source}: images must be PNG, JPEG, WebP, or GIF files under ${IMAGE_DIR}: ${href}`,
+    );
+    return undefined;
+  }
+  const out = `images/${repoPath.slice(IMAGE_DIR.length)}`;
+  site.images.set(out, repoPath);
+  return out;
+}
+
 function plainText(html) {
   return unescapeHtml(html.replace(/<[^>]*>/g, ''));
 }
@@ -230,8 +253,13 @@ export function createMarkdown(source, site, errors) {
       },
       image({ href, title, text }) {
         const target = classifyHref(href);
-        if (target.kind !== 'external') return escapeHtml(text);
-        return `<img src="${escapeHtml(target.href)}" alt="${escapeHtml(text)}"${renderTitle(title)}>`;
+        if (target.kind === 'external') {
+          return `<img src="${escapeHtml(target.href)}" alt="${escapeHtml(text)}"${renderTitle(title)}>`;
+        }
+        if (target.kind !== 'relative') return escapeHtml(text);
+        const out = siteImage(target.href, source, site, errors);
+        if (!out) return escapeHtml(text);
+        return `<img src="${escapeHtml(out)}" alt="${escapeHtml(text)}"${renderTitle(title)}>`;
       },
     },
   });
@@ -297,6 +325,7 @@ export function renderSite(root = REPO_ROOT) {
     root,
     pages,
     byRepoPath: new Map(pages.map((page) => [toPosix(page.source), page])),
+    images: new Map(),
   };
   const files = new Map();
   for (const page of pages) {
@@ -304,6 +333,8 @@ export function renderSite(root = REPO_ROOT) {
     files.set(page.out, renderPage(page, body, site));
   }
   files.set(STYLE_OUT, readFileSync(STYLE_FILE, 'utf8'));
+  for (const [out, repoPath] of site.images)
+    files.set(out, readFileSync(path.join(root, repoPath)));
   return { files, errors };
 }
 
@@ -327,6 +358,12 @@ export function checkLinks(files) {
   let linkCount = 0;
   for (const [name, html] of files) {
     if (!name.endsWith('.html')) continue;
+    for (const match of html.matchAll(/\ssrc="([^"]*)"/g)) {
+      const src = unescapeHtml(match[1] ?? '');
+      if (classifyHref(src).kind === 'external') continue;
+      linkCount += 1;
+      if (!files.has(src)) errors.push(`${name}: broken image "${src}" (not in the site)`);
+    }
     for (const match of html.matchAll(/\shref="([^"]*)"/g)) {
       const href = unescapeHtml(match[1] ?? '');
       if (classifyHref(href).kind === 'external') continue;
@@ -347,9 +384,14 @@ export function checkLinks(files) {
 export function writeSite(files, outDir) {
   mkdirSync(outDir, { recursive: true });
   for (const entry of readdirSync(outDir)) {
-    if (entry.endsWith('.html') || entry === STYLE_OUT) rmSync(path.join(outDir, entry));
+    if (entry.endsWith('.html') || entry === STYLE_OUT || entry === 'images') {
+      rmSync(path.join(outDir, entry), { recursive: true });
+    }
   }
-  for (const [name, content] of files) writeFileSync(path.join(outDir, name), content);
+  for (const [name, content] of files) {
+    mkdirSync(path.dirname(path.join(outDir, name)), { recursive: true });
+    writeFileSync(path.join(outDir, name), content);
+  }
 }
 
 function parseArgs(args) {

@@ -6,6 +6,7 @@ import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import {
   REPO_ROOT,
   checkLinks,
+  createMarkdown,
   createSlugger,
   discoverSources,
   renderSite,
@@ -222,5 +223,38 @@ describe('page discovery and slugs', () => {
     expect(slug('Matcher keys (match)')).toBe('matcher-keys-match');
     expect(slug('1. Create the private repository')).toBe('1-create-the-private-repository');
     expect(slug('Secrets: ${env:NAME}')).toBe('secrets-envname');
+  });
+});
+
+describe('local images', () => {
+  it('copies README screenshots from docs/images into the site and renders them', () => {
+    const { files, errors } = renderSite(REPO_ROOT);
+    expect(errors).toEqual([]);
+    expect(files.get('index.html')).toContain('<img src="images/orloj-home.png"');
+    expect(Buffer.isBuffer(files.get('images/orloj-home.png'))).toBe(true);
+    expect(checkLinks(files).errors).toEqual([]);
+  });
+
+  it('rejects images outside docs/images, non-raster files, and missing files', () => {
+    const site = { root: REPO_ROOT, pages: [], byRepoPath: new Map(), images: new Map() };
+    const errors: string[] = [];
+    const markdown = createMarkdown('README.md', site, errors);
+    const html = markdown.parse(
+      '![a](scripts/docs-site.css) ![b](docs/images/missing.png) ![c](../outside.png)',
+      { async: false },
+    );
+    expect(html).not.toContain('<img');
+    expect(errors).toEqual([
+      expect.stringContaining('images must be PNG, JPEG, WebP, or GIF files under docs/images/'),
+      expect.stringContaining('does not exist'),
+      expect.stringContaining('leaves the repository'),
+    ]);
+  });
+
+  it('flags an image that is not part of the site', () => {
+    const files = new Map([['index.html', '<p><img src="images/nope.png" alt="x"></p>']]);
+    expect(checkLinks(files).errors).toEqual([
+      expect.stringContaining('broken image "images/nope.png"'),
+    ]);
   });
 });
