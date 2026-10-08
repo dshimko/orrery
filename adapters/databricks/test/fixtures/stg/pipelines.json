@@ -1,0 +1,11 @@
+[
+  {
+    "workspace_id": "3001",
+    "pipeline_id": "s-sales",
+    "name": "Sales staging refresh",
+    "pipeline_type": "ETL_PIPELINE",
+    "tags_json": "{\"domain\":\"sales\"}",
+    "continuous": "false",
+    "change_time": "2026-09-15T10:00:00.000Z"
+  }
+]

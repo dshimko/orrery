@@ -1,0 +1,16 @@
+[
+  {
+    "workspace_id": "1001",
+    "pipeline_id": "p-ingest-a",
+    "event_minute": "2026-10-07T10:20:00.000Z",
+    "passed": "900",
+    "failed": "0"
+  },
+  {
+    "workspace_id": "1001",
+    "pipeline_id": "p-ingest-a",
+    "event_minute": "2026-10-07T10:40:00.000Z",
+    "passed": "850",
+    "failed": "25"
+  }
+]

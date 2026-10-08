@@ -1,0 +1,22 @@
+[
+  {
+    "catalog_name": "stg_sales",
+    "schema_name": "retail_sales_gold"
+  },
+  {
+    "catalog_name": "stg_sales",
+    "schema_name": "retail_sales_silver"
+  },
+  {
+    "catalog_name": "sales_stg",
+    "schema_name": "eu_sales_gold"
+  },
+  {
+    "catalog_name": "stg_landing",
+    "schema_name": "landing_bronze"
+  },
+  {
+    "catalog_name": "prod_sales",
+    "schema_name": "retail_sales_gold"
+  }
+]

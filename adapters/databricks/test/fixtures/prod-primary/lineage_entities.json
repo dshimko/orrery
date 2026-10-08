@@ -1,0 +1,66 @@
+[
+  {
+    "workspace_id": "1001",
+    "entity_type": "PIPELINE",
+    "entity_id": "p-ingest-a",
+    "target_table_catalog": "prod_landing",
+    "target_table_schema": "landing_bronze",
+    "last_write": "2026-10-07T09:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "entity_type": "PIPELINE",
+    "entity_id": "p-ingest-b",
+    "target_table_catalog": "prod_landing",
+    "target_table_schema": "landing_raw",
+    "last_write": "2026-10-07T09:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "entity_type": "PIPELINE",
+    "entity_id": "p-sales-silver",
+    "target_table_catalog": "prod_sales",
+    "target_table_schema": "retail_sales_silver",
+    "last_write": "2026-10-07T09:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "entity_type": "PIPELINE",
+    "entity_id": "p-sales-gold",
+    "target_table_catalog": "prod_sales",
+    "target_table_schema": "retail_sales_gold",
+    "last_write": "2026-10-07T09:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "entity_type": "PIPELINE",
+    "entity_id": "p-stg-only",
+    "target_table_catalog": "stg_sales",
+    "target_table_schema": "retail_sales_gold",
+    "last_write": "2026-10-07T09:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "entity_type": "JOB",
+    "entity_id": "j-sales-nightly",
+    "target_table_catalog": "prod_sales",
+    "target_table_schema": "retail_sales_silver",
+    "last_write": "2026-10-07T09:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "entity_type": "JOB",
+    "entity_id": "j-ml",
+    "target_table_catalog": "prod_sales",
+    "target_table_schema": "retail_sales_silver",
+    "last_write": "2026-10-07T09:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "entity_type": "JOB",
+    "entity_id": "j-transfer",
+    "target_table_catalog": "prod_landing",
+    "target_table_schema": "landing_silver",
+    "last_write": "2026-10-07T09:00:00.000Z"
+  }
+]

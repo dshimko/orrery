@@ -1,5 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Clock, Logger, OrreryConfig } from '@orrery/core';
+import {
+  FORWARDED_TOKEN_HEADER,
+  currentUserToken,
+  readForwardedToken,
+  runWithUserToken,
+  trustsForwardedToken,
+} from './user-token.js';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { systemClock } from './clock.js';
 import { ApiError, errorBody } from './errors.js';
@@ -69,11 +76,15 @@ export async function buildServer(options: BuildServerOptions): Promise<FastifyI
   const logger = options.logger ?? createJsonLogger();
   const clock = options.clock ?? systemClock;
   const shutdown = new AbortController();
+  const env = options.env ?? process.env;
+  const trustsToken = trustsForwardedToken(env);
   const runtimes = await startEnvironments(config, {
     clock,
     logger,
-    env: options.env ?? process.env,
+    env,
     signal: shutdown.signal,
+    peers: config.environments,
+    userToken: currentUserToken,
     ...(options.initTimeoutMs === undefined ? {} : { initTimeoutMs: options.initTimeoutMs }),
   });
   const limit = options.rateLimit ?? DEFAULT_RATE_LIMIT;
@@ -90,6 +101,13 @@ export async function buildServer(options: BuildServerOptions): Promise<FastifyI
   const app = Fastify({ logger: false });
   app.addHook('onRequest', async (_request, reply) => {
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) reply.header(name, value);
+  });
+  // Callback style so the rest of the request runs inside the token's async context.
+  app.addHook('onRequest', (request, _reply, done) => {
+    const token = trustsToken
+      ? readForwardedToken(request.headers[FORWARDED_TOKEN_HEADER])
+      : undefined;
+    runWithUserToken(token, done);
   });
   // Ends live streams first, so closing the server is not held open by them.
   app.addHook('preClose', async () => {

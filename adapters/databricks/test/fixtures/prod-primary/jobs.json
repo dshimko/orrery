@@ -1,0 +1,23 @@
+[
+  {
+    "workspace_id": "1001",
+    "job_id": "j-sales-nightly",
+    "name": "Sales nightly load",
+    "tags_json": "{\"domain\":\"sales\",\"release\":\"r-128\"}",
+    "change_time": "2026-09-20T10:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "job_id": "j-ml",
+    "name": "Demand forecast model training",
+    "tags_json": "{\"workload\":\"ml\"}",
+    "change_time": "2026-09-20T10:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "job_id": "j-transfer",
+    "name": "Ingest to core transfer",
+    "tags_json": "{}",
+    "change_time": "2026-09-20T10:00:00.000Z"
+  }
+]

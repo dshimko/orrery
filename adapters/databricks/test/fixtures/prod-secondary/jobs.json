@@ -1,0 +1,9 @@
+[
+  {
+    "workspace_id": "2001",
+    "job_id": "j-fin",
+    "name": "Finance daily refresh",
+    "tags_json": "{\"domain\":\"finance\",\"release\":\"r-127\"}",
+    "change_time": "2026-09-20T10:00:00.000Z"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "catalog_name": "prod_finance",
+    "schema_name": "finance_silver"
+  },
+  {
+    "catalog_name": "prod_finance",
+    "schema_name": "finance_gold"
+  }
+]

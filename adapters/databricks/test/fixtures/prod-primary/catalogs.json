@@ -1,0 +1,37 @@
+[
+  {
+    "catalog_name": "prod_sales",
+    "created": "2026-01-05T09:00:00.000Z",
+    "last_altered": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "catalog_name": "sales_prod",
+    "created": "2026-01-05T09:00:00.000Z",
+    "last_altered": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "catalog_name": "prod_landing",
+    "created": "2026-01-05T09:00:00.000Z",
+    "last_altered": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "catalog_name": "stg_sales",
+    "created": "2026-01-05T09:00:00.000Z",
+    "last_altered": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "catalog_name": "scratch_lab",
+    "created": "2026-01-05T09:00:00.000Z",
+    "last_altered": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "catalog_name": "legacy_wh",
+    "created": "2026-01-05T09:00:00.000Z",
+    "last_altered": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "catalog_name": "system",
+    "created": "2026-01-05T09:00:00.000Z",
+    "last_altered": "2026-09-01T09:00:00.000Z"
+  }
+]

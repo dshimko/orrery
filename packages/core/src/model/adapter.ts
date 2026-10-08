@@ -25,6 +25,13 @@ export interface AdapterContext {
   env: Readonly<Record<string, string | undefined>>;
   /** Aborts long-running work such as live event streams on shutdown. */
   signal?: AbortSignal;
+  /** Every configured environment, so an adapter can detect catalogs claimed twice. */
+  peers?: readonly ResolvedEnvironment[];
+  /**
+   * The current viewer's forwarded access token, when the server runs in on-behalf-of-user
+   * mode. Adapters call it per query; it returns undefined outside a user request.
+   */
+  userToken?: () => string | undefined;
 }
 
 export interface AdapterHealth {

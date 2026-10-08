@@ -1,0 +1,7 @@
+[
+  {
+    "target_table_catalog": "prod_sales",
+    "target_table_schema": "retail_sales_gold",
+    "last_write": "2026-10-07T09:30:00.000Z"
+  }
+]

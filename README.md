@@ -5,7 +5,7 @@ view, shows one astronomical clock face per environment (for example dev, stg, p
 there you can fly into any environment's **system view**: a 3D solar system of sources,
 pipelines, data products, freshness, workloads, and consumers, live or in replay.
 
-> Status: milestone 4 (Orloj clock view and navigation). The views and adapters land in later milestones; see
+> Status: milestone 5 (Databricks adapter). The views and adapters land in later milestones; see
 > `docs/BUILD_PROMPT.md`.
 
 ## Quick start

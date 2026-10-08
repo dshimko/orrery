@@ -56,6 +56,10 @@ importers:
       '@orrery/core':
         specifier: workspace:*
         version: link:../../packages/core
+    devDependencies:
+      '@orrery/testkit':
+        specifier: workspace:*
+        version: link:../../packages/testkit
 
   adapters/mock:
     dependencies:
@@ -75,6 +79,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@orrery/adapter-databricks':
+        specifier: workspace:*
+        version: link:../../adapters/databricks
       '@orrery/adapter-mock':
         specifier: workspace:*
         version: link:../../adapters/mock

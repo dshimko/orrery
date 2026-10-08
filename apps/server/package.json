@@ -25,7 +25,8 @@
     "@orrery/adapter-mock": "workspace:*",
     "@orrery/core": "workspace:*",
     "fastify": "5.12.5",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "@orrery/adapter-databricks": "workspace:*"
   },
   "devDependencies": {
     "@orrery/testkit": "workspace:*",

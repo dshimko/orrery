@@ -1,0 +1,12 @@
+[
+  {
+    "catalog_name": "prod_landing",
+    "schema_name": "landing_bronze",
+    "table_name": "events",
+    "status": "Healthy",
+    "freshness_status": "Healthy",
+    "last_commit": "2026-10-07T10:10:00.000Z",
+    "expected_commit": "2026-10-07T10:25:00.000Z",
+    "event_time": "2026-10-07T10:12:00.000Z"
+  }
+]

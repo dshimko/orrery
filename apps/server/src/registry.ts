@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+import { createHash } from 'node:crypto';
+import { currentUserToken } from './user-token.js';
+import { DatabricksAdapter } from '@orrery/adapter-databricks';
 import { MockAdapter } from '@orrery/adapter-mock';
 import {
   adapterList,
@@ -15,7 +18,7 @@ import { errorMessage } from './logger.js';
 
 export const ADAPTER_INIT_TIMEOUT_MS = 10_000;
 
-const NOT_YET_AVAILABLE = new Set(['databricks', 'openlineage']);
+const NOT_YET_AVAILABLE = new Set(['openlineage']);
 
 /** One configured environment: a live adapter, or the reason there is none. */
 export interface EnvRuntime {
@@ -31,6 +34,10 @@ export interface RegistryDeps {
   env: Readonly<Record<string, string | undefined>>;
   signal: AbortSignal;
   initTimeoutMs?: number;
+  /** Every configured environment, passed to adapters as `ctx.peers`. */
+  peers?: readonly ResolvedEnvironment[];
+  /** The current request's viewer token (on-behalf-of-user mode). */
+  userToken?: () => string | undefined;
 }
 
 function unavailable(env: ResolvedEnvironment, message: string): EnvRuntime {
@@ -62,6 +69,7 @@ async function createAdapter(
   config: OrreryConfig,
 ): Promise<OrreryAdapter | { message: string }> {
   if (name === 'mock') return new MockAdapter();
+  if (name === 'databricks') return new DatabricksAdapter();
   if (NOT_YET_AVAILABLE.has(name)) return { message: `The ${name} adapter is not available yet.` };
   const registered = config.adapters?.[name];
   if (!registered) return { message: `The adapter "${name}" is not registered.` };
@@ -102,7 +110,14 @@ async function bootAdapter(
   }
   if (!isAdapter(adapter)) return unavailable(env, adapter.message);
   onCreated(adapter);
-  const context: AdapterContext = { clock: deps.clock, logger: deps.logger, env: deps.env, signal };
+  const context: AdapterContext = {
+    clock: deps.clock,
+    logger: deps.logger,
+    env: deps.env,
+    signal,
+    ...(deps.peers ? { peers: deps.peers } : {}),
+    ...(deps.userToken ? { userToken: deps.userToken } : {}),
+  };
   await adapter.init(env, context);
   return { env, adapter };
 }
@@ -162,11 +177,23 @@ export async function startEnvironments(
 }
 
 const HEALTH_CACHE_MS = 5000;
-const healthCache = new WeakMap<EnvRuntime, { atMs: number; value: Promise<AdapterHealth> }>();
+/** Viewers cached per environment; the oldest entries go first beyond this. */
+const MAX_HEALTH_VIEWERS = 256;
+type HealthEntry = { atMs: number; value: Promise<AdapterHealth> };
+const healthCache = new WeakMap<EnvRuntime, Map<string, HealthEntry>>();
 
 /**
- * Health for the home page card, cached for a few seconds per environment with one shared
- * in-flight call, so polling clients cannot drive unbounded adapter work.
+ * Cache key for the current viewer. In on-behalf-of-user mode health reflects what that viewer
+ * may see (for example unmatched catalog names), so results are never shared across viewers.
+ */
+function viewerKey(): string {
+  const token = currentUserToken();
+  return token ? `user:${createHash('sha256').update(token).digest('hex')}` : 'anonymous';
+}
+
+/**
+ * Health for the home page card, cached for a few seconds per environment and viewer with one
+ * shared in-flight call, so polling clients cannot drive unbounded adapter work.
  */
 export function cachedHealthOf(
   runtime: EnvRuntime,
@@ -174,10 +201,20 @@ export function cachedHealthOf(
   logger: Logger,
   nowMs: () => number = () => performance.now(),
 ): Promise<AdapterHealth> {
-  const hit = healthCache.get(runtime);
-  if (hit && nowMs() - hit.atMs < HEALTH_CACHE_MS) return hit.value;
+  const byViewer = healthCache.get(runtime) ?? new Map<string, HealthEntry>();
+  healthCache.set(runtime, byViewer);
+  const key = viewerKey();
+  const now = nowMs();
+  const hit = byViewer.get(key);
+  if (hit && now - hit.atMs < HEALTH_CACHE_MS) return hit.value;
+  for (const [k, entry] of byViewer) if (now - entry.atMs >= HEALTH_CACHE_MS) byViewer.delete(k);
+  while (byViewer.size >= MAX_HEALTH_VIEWERS) {
+    const oldest = byViewer.keys().next().value;
+    if (oldest === undefined) break;
+    byViewer.delete(oldest);
+  }
   const value = healthOf(runtime, clock, logger);
-  healthCache.set(runtime, { atMs: nowMs(), value });
+  byViewer.set(key, { atMs: now, value });
   return value;
 }
 

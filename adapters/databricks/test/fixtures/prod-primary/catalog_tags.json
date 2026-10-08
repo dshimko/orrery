@@ -1,0 +1,12 @@
+[
+  {
+    "catalog_name": "prod_landing",
+    "tag_name": "domain",
+    "tag_value": "ingest"
+  },
+  {
+    "catalog_name": "prod_landing",
+    "tag_name": "owner_team",
+    "tag_value": "platform"
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "table_catalog": "prod_landing",
+    "table_schema": "landing_bronze",
+    "table_count": "4",
+    "last_altered": "2026-10-01T08:00:00.000Z"
+  },
+  {
+    "table_catalog": "prod_landing",
+    "table_schema": "landing_silver",
+    "table_count": "2",
+    "last_altered": "2026-10-01T08:00:00.000Z"
+  },
+  {
+    "table_catalog": "prod_sales",
+    "table_schema": "retail_sales_silver",
+    "table_count": "6",
+    "last_altered": "2026-10-01T08:00:00.000Z"
+  },
+  {
+    "table_catalog": "prod_sales",
+    "table_schema": "retail_sales_gold",
+    "table_count": "12",
+    "last_altered": "2026-10-01T08:00:00.000Z"
+  },
+  {
+    "table_catalog": "sales_prod",
+    "table_schema": "eu_sales_gold",
+    "table_count": "3",
+    "last_altered": "2026-10-01T08:00:00.000Z"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "workspace_id": "1001",
+    "pipeline_id": "p-ingest-a",
+    "name": "Regional ingest stream A",
+    "pipeline_type": "INGESTION_PIPELINE",
+    "tags_json": "{\"source_region\":\"a\"}",
+    "continuous": "true",
+    "change_time": "2026-09-15T10:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "pipeline_id": "p-ingest-b",
+    "name": "Regional ingest batch B",
+    "pipeline_type": "INGESTION_PIPELINE",
+    "tags_json": "{\"source_region\":\"b\"}",
+    "continuous": "false",
+    "change_time": "2026-09-15T10:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "pipeline_id": "p-sales-silver",
+    "name": "Sales silver refresh",
+    "pipeline_type": "ETL_PIPELINE",
+    "tags_json": "{\"domain\":\"sales\"}",
+    "continuous": "false",
+    "change_time": "2026-09-15T10:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "pipeline_id": "p-sales-gold",
+    "name": "Sales gold products",
+    "pipeline_type": "ETL_PIPELINE",
+    "tags_json": "{\"domain\":\"sales\"}",
+    "continuous": "false",
+    "change_time": "2026-09-15T10:00:00.000Z"
+  },
+  {
+    "workspace_id": "1001",
+    "pipeline_id": "p-stg-only",
+    "name": "Staging only pipeline",
+    "pipeline_type": "ETL_PIPELINE",
+    "tags_json": "{}",
+    "continuous": "false",
+    "change_time": "2026-09-15T10:00:00.000Z"
+  }
+]

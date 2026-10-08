@@ -1,0 +1,42 @@
+[
+  {
+    "catalog_name": "prod_landing",
+    "schema_name": "landing_bronze"
+  },
+  {
+    "catalog_name": "prod_landing",
+    "schema_name": "landing_raw"
+  },
+  {
+    "catalog_name": "prod_landing",
+    "schema_name": "landing_silver"
+  },
+  {
+    "catalog_name": "prod_sales",
+    "schema_name": "retail_sales_bronze"
+  },
+  {
+    "catalog_name": "prod_sales",
+    "schema_name": "retail_sales_silver"
+  },
+  {
+    "catalog_name": "prod_sales",
+    "schema_name": "retail_sales_gold"
+  },
+  {
+    "catalog_name": "sales_prod",
+    "schema_name": "eu_sales_gold"
+  },
+  {
+    "catalog_name": "stg_sales",
+    "schema_name": "retail_sales_gold"
+  },
+  {
+    "catalog_name": "scratch_lab",
+    "schema_name": "tmp_work"
+  },
+  {
+    "catalog_name": "legacy_wh",
+    "schema_name": "erp"
+  }
+]

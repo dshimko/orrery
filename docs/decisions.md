@@ -200,3 +200,65 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
     page and the system view and fails on any serious or critical violation. The
     keyboard-only walkthrough covers controls, the summary dialog (Escape returns focus), and
     canvas camera keys.
+
+## Milestone 5: Databricks adapter
+
+49. **The sources were verified against the Databricks docs first** (`docs/databricks-sources.md`),
+    and every `.sql` file links its page. Where the docs contradict the spec:
+    - `information_schema.catalogs` has no catalog type, so foreign catalogs come from
+      `tables.table_type = 'FOREIGN'`.
+    - Query history has no list of tables read, so reads come from lineage joined on
+      `statement_id`.
+    - `event_log()` is owner-only, so pipeline expectations come from the Beta pipeline-events
+      table.
+    - `last_altered` tracks definition changes, not data, so it is not used for freshness.
+50. **Freshness uses a fallback chain:** data-quality monitoring results, then the last
+    successful run of matched pipelines or jobs, then the last lineage write. A spoke with no
+    evidence reports 7 days and past target.
+51. **Optional sources degrade, they do not fail:** Beta or preview tables (data-quality
+    monitoring, pipeline events, `zerobus_ingest`) and tables the principal cannot read.
+    Health becomes `degraded` and names what is missing.
+52. **No `sqlPredicate` or `dashboardTag` matching yet.** `sqlPredicate` would mean executing
+    config-supplied SQL, which needs its own design and review. `dashboardTag` has no verified
+    system-table source. Both are reported in health and are in `TODO.md`.
+53. **Schedule, promotions, and volume are not implemented yet.** The schedule is empty (job
+    trigger format unverified), there are no promotion events, and volume is 0. The calendar
+    counts releases from job changes tagged with `options.releaseTagKey` (default `release`).
+    `promotion.tagKey` is not yet passed to adapters.
+54. **Matcher semantics:**
+    - Schema clauses (`catalog`, `schema`, `tag`) match schemas, with the environment tag
+      stripped from the catalog name.
+    - `pipelineTag` and `jobTag` match pipelines and jobs.
+    - A pipeline or job is placed in a spoke by its tags, or by the schemas it wrote in the last
+      7 days of lineage.
+    - An environment without a scope owns every catalog no peer claims.
+55. **One run, one vehicle.** A pipeline update triggered by a job that is already attributed
+    to a spoke emits no second vehicle. Alerts open when a run fails and close on the next
+    success, or after 24 h.
+56. **On-behalf-of-user is evaluated per request.** The adapter queries lazily, with no
+    queries at `init`. Caches and in-flight requests are keyed by a SHA-256 of the viewer token.
+    The forwarded header is trusted only behind the Apps proxy or with
+    `ORRERY_TRUST_FORWARDED_TOKEN=1`.
+57. **The SQL header order is `-- Doc:` first, then SPDX.** The registry accepts the Doc line
+    anywhere in the leading comment block.
+58. **Fixes from the milestone 5 review:**
+    - **Health is cached per viewer.** In on-behalf-of-user mode it is keyed by a hash of the
+      viewer token.
+    - **Event-window bounds are snapped** outward to the 30 s poll interval, so callers share
+      cache entries. The cache is also bounded by row count.
+    - **Snapshot queries take priority** over event-window queries, and no query waits more
+      than 30 s for a slot.
+    - **Date partition filters are widened by a day** on each side, so a non-UTC warehouse
+      session cannot drop rows.
+    - **When catalog tags cannot be read** and any related environment scopes by tag, an
+      unscoped environment claims nothing and health is `error`.
+    - **Live streams end** on auth errors, so the client reconnects with a fresh token, and
+      after 15 minutes at most.
+    - **Catalog conflicts are checked only against related environments,** those sharing host
+      and warehouse or a non-default metastore id. The default `primary` id is a placeholder
+      and is not matched.
+    - **The read-only guard knows raw literals** and rejects external or side-effecting
+      functions (`http_request`, `ai_query`, `read_files`, `EXECUTE`, and others).
+    - **Statements are cancelled on every error path.**
+    - **Platform catalogs are never owned** (`system`, `samples`, `hive_metastore`, and
+      `__*`).

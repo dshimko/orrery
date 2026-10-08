@@ -13,7 +13,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "sql"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -21,5 +22,8 @@
   },
   "dependencies": {
     "@orrery/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@orrery/testkit": "workspace:*"
   }
 }

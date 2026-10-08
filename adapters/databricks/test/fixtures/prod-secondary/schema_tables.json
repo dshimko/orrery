@@ -1,0 +1,14 @@
+[
+  {
+    "table_catalog": "prod_finance",
+    "table_schema": "finance_silver",
+    "table_count": "5",
+    "last_altered": "2026-10-01T08:00:00.000Z"
+  },
+  {
+    "table_catalog": "prod_finance",
+    "table_schema": "finance_gold",
+    "table_count": "7",
+    "last_altered": "2026-10-01T08:00:00.000Z"
+  }
+]

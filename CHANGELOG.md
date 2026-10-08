@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `@orrery/adapter-databricks`: a read-only adapter over the SQL Statement Execution API with
+  an allowlist of 18 documented queries (fork-overridable via `options.sqlDir`), catalog
+  scoping by prefix, suffix, or tag, the three federation modes, foreign-catalog comets,
+  polling with TTL caches, service-principal, OAuth M2M, PAT, and on-behalf-of-user auth,
+  recorded fixtures for the shared contract suite, and a live smoke test (`ORRERY_LIVE=1`).
+- `docs/databricks.md` (permissions, auth, queries) and `docs/databricks-sources.md`
+  (verified system-table reference).
 - `@orrery/orloj`: framework-free Canvas 2D Orloj clock faces with the sky, 24-hour ring
   arcs, sun and star hands, spoke medallions, moon, procession, figures, calendar dial,
   rooster, tooltips, and error faces.

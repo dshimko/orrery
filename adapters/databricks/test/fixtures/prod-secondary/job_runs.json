@@ -1,0 +1,12 @@
+[
+  {
+    "workspace_id": "2001",
+    "job_id": "j-fin",
+    "run_id": "f1",
+    "started_at": "2026-10-07T08:00:00.000Z",
+    "ended_at": "2026-10-07T08:30:00.000Z",
+    "result_state": "SUCCEEDED",
+    "termination_code": "SUCCESS",
+    "trigger_type": "CRON"
+  }
+]

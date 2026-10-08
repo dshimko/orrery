@@ -2,6 +2,17 @@
 
 Cross-milestone backlog. Each item: where, what, and the fix direction.
 
+## From the milestone 5 Databricks review
+
+- **[LOW] Late system-table data in live mode.** A run that lands in the system tables up to an
+  hour late does not retract a "past target" freshness event that was already sent
+  (`adapters/databricks/src/convert/events.ts` `crossingEvents`). Hold back crossings newer
+  than `now - ingestion lag`.
+- **[LOW] Degradation notes are shared across viewers in on-behalf-of-user mode.** If one viewer
+  lacks access to an optional table, another viewer's health says "degraded"
+  (`adapters/databricks/src/sources.ts` `Degradations`). These notes carry only query names and
+  error codes. Key them per viewer.
+
 ## From the milestone 3 server review
 
 - **[MEDIUM] Rate limits are per environment, not per client.** One client inside the limit
@@ -17,6 +28,10 @@ Cross-milestone backlog. Each item: where, what, and the fix direction.
 
 ## Product follow-ups
 
+- **Databricks gaps (decisions 52 and 53):** `sqlPredicate` matchers (needs a design for safely
+  executing config-supplied SQL), `dashboardTag`, the schedule from job triggers, promotion
+  events, volume, and passing `promotion.tagKey` to adapters. Run the live smoke test against a
+  real workspace and refresh `test/fixtures` from the recordings.
 - **Spoke palette is duplicated** in `packages/render/src/scene/palette.ts` and
   `packages/orloj/src/constants.ts`. Move it into core `visuals` config (together with
   decision 37).

@@ -1,0 +1,8 @@
+[
+  {
+    "table_catalog": "stg_sales",
+    "table_schema": "retail_sales_gold",
+    "table_count": "4",
+    "last_altered": "2026-10-01T08:00:00.000Z"
+  }
+]

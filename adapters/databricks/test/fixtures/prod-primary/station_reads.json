@@ -1,0 +1,30 @@
+[
+  {
+    "read_minute": "2026-10-07T10:20:00.000Z",
+    "source_table_catalog": "prod_sales",
+    "source_table_schema": "retail_sales_gold",
+    "statements": "12",
+    "users": "4"
+  },
+  {
+    "read_minute": "2026-10-07T10:25:00.000Z",
+    "source_table_catalog": "legacy_wh",
+    "source_table_schema": "erp",
+    "statements": "3",
+    "users": "1"
+  },
+  {
+    "read_minute": "2026-10-07T10:50:00.000Z",
+    "source_table_catalog": "sales_prod",
+    "source_table_schema": "eu_sales_gold",
+    "statements": "6",
+    "users": "2"
+  },
+  {
+    "read_minute": "2026-10-07T10:10:00.000Z",
+    "source_table_catalog": "prod_sales",
+    "source_table_schema": "retail_sales_gold",
+    "statements": "9",
+    "users": "3"
+  }
+]

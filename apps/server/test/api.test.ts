@@ -76,7 +76,7 @@ describe('meta endpoints', () => {
 });
 
 describe('failure isolation', () => {
-  it('marks unimplemented adapters as errors while dev keeps working', async () => {
+  it('marks environments whose adapter cannot start as errors while dev keeps working', async () => {
     const app = await startApp(loadExample('three-env.yaml'));
     const list = (await getJson(app, '/api/environments')).body as Envelope<EnvSummary[]>;
     expect(list.data.map((env) => [env.id, env.health.status])).toEqual([
@@ -84,7 +84,8 @@ describe('failure isolation', () => {
       ['stg', 'error'],
       ['prod', 'error'],
     ]);
-    expect(list.data[1]?.health.message).toBe('The databricks adapter is not available yet.');
+    // No credentials in the test env: the real adapter fails to start, without blocking dev.
+    expect(list.data[1]?.health.message).toBe('The databricks adapter failed to start.');
 
     expect((await getJson(app, '/api/env/dev/topology')).status).toBe(200);
     const unavailable = await getJson(app, '/api/env/stg/topology');

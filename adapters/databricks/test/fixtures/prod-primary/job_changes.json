@@ -1,0 +1,42 @@
+[
+  {
+    "workspace_id": "1001",
+    "job_id": "j-sales-nightly",
+    "name": "Sales nightly load",
+    "tags_json": "{\"domain\":\"sales\",\"release\":\"r-126\"}",
+    "change_time": "2026-10-02T14:00:00.000Z",
+    "delete_time": null
+  },
+  {
+    "workspace_id": "1001",
+    "job_id": "j-sales-nightly",
+    "name": "Sales nightly load",
+    "tags_json": "{\"domain\":\"sales\",\"release\":\"r-127\"}",
+    "change_time": "2026-10-05T09:30:00.000Z",
+    "delete_time": null
+  },
+  {
+    "workspace_id": "1001",
+    "job_id": "j-ml",
+    "name": "Demand forecast model training",
+    "tags_json": "{\"workload\":\"ml\"}",
+    "change_time": "2026-10-05T09:45:00.000Z",
+    "delete_time": null
+  },
+  {
+    "workspace_id": "1001",
+    "job_id": "j-sales-nightly",
+    "name": "Sales nightly load",
+    "tags_json": "{\"domain\":\"sales\",\"release\":\"r-128\"}",
+    "change_time": "2026-10-07T10:30:00.000Z",
+    "delete_time": null
+  },
+  {
+    "workspace_id": "1001",
+    "job_id": "j-sales-nightly",
+    "name": "Sales nightly load",
+    "tags_json": "{\"domain\":\"sales\",\"release\":\"r-128\"}",
+    "change_time": "2026-10-07T09:00:00.000Z",
+    "delete_time": null
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "usage_date": "2026-10-07",
+    "billing_origin_product": "JOBS",
+    "est_cost": "24.0",
+    "currency": "USD"
+  },
+  {
+    "usage_date": "2026-10-07",
+    "billing_origin_product": "SQL",
+    "est_cost": "48.0",
+    "currency": "USD"
+  }
+]
