@@ -11,7 +11,7 @@ import {
 import type { Target } from '../contracts.js';
 import { schemaKey, type Tags } from '../rows.js';
 import { foreignId } from './inventory.js';
-import { objectMatches, schemaMatches, unsupportedClauses, type SchemaFacts } from './matchers.js';
+import { objectMatches, schemaMatches, type SchemaFacts } from './matchers.js';
 import { highestTier, tierOf } from './medallion.js';
 import {
   mergeCatalogs,
@@ -204,18 +204,8 @@ function healthOf(
   ownership: Ownership,
 ): { status: 'ok' | 'degraded' | 'error'; messages: string[] } {
   const messages: string[] = [...ownership.conflicts, ...ownership.unknown];
-  const topo = input.env.resolvedTopology;
   for (const inv of input.inventories.filter((i) => !i.available)) {
     messages.push(`Metastore "${inv.metastore}" is unavailable (${inv.error ?? 'unknown error'}).`);
-  }
-  const matchers = [
-    ...topo.spokes.map((s) => ({ id: `spoke ${s.id}`, match: s.match })),
-    ...topo.sourceGroups.map((g) => ({ id: `source group ${g.id}`, match: g.match })),
-    ...topo.useCases.map((u) => ({ id: `use case ${u.id}`, match: u.match })),
-  ];
-  for (const { id, match } of matchers) {
-    const names = unsupportedClauses(match);
-    if (names.length > 0) messages.push(`${id}: ${names.join(', ')} matching is not supported.`);
   }
   const allDown = input.inventories.length > 0 && input.inventories.every((i) => !i.available);
   const someDown = input.inventories.some((i) => !i.available);

@@ -387,3 +387,8 @@ test e2e/perf.spec.ts --headed`, which uses the real GPU). Intel and AMD integra
     validation with the unknown-key error. Matchers are now `catalog`, `schema`, `tag`,
     `pipelineTag`, `jobTag`, and `dashboardTag`. This supersedes the `sqlPredicate` part of
     decisions 10 and 52.
+
+82. **`dashboardTag` is removed from the matcher schema** (no verified source in either
+    adapter). Example use cases now use `tag: { use_case: … }`; Databricks resolves a use case
+    by reads of schemas carrying that tag. Supersedes the `dashboardTag` parts of decisions 10,
+    52 and 81.

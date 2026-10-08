@@ -70,32 +70,32 @@ topologies:
         name: Executive overview
         site: Office 1
         utcOffset: -4
-        match: { dashboardTag: { use_case: exec } }
+        match: { tag: { use_case: exec } }
       - id: demand
         name: Demand planning
         site: Office 1
         utcOffset: -4
-        match: { dashboardTag: { use_case: demand } }
+        match: { tag: { use_case: demand } }
       - id: risk
         name: Quality risk watch
         site: Office 1
         utcOffset: -4
-        match: { dashboardTag: { use_case: risk } }
+        match: { tag: { use_case: risk } }
       - id: campaign
         name: Campaign performance
         site: Office 2
         utcOffset: -7
-        match: { dashboardTag: { use_case: campaign } }
+        match: { tag: { use_case: campaign } }
       - id: inbound
         name: Inbound risk
         site: Office 3
         utcOffset: 2
-        match: { dashboardTag: { use_case: inbound } }
+        match: { tag: { use_case: inbound } }
       - id: models
         name: Asset health models
         site: Engineering studio
         utcOffset: 5.5
-        match: { dashboardTag: { use_case: models } }
+        match: { tag: { use_case: models } }
 
 environments:
   - id: dev

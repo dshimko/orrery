@@ -32,7 +32,7 @@ const ago = (minutes: number): string => iso(NOW.getTime() - minutes * MIN);
 const env = withTopology(prodEnv(), {
   useCases: [
     { id: 'readers', name: 'Gold readers', match: { schema: '*_gold' } },
-    { id: 'exec', name: 'Executive overview', match: { dashboardTag: { use_case: 'exec' } } },
+    { id: 'exec', name: 'Executive overview', match: { tag: { use_case: 'exec' } } },
   ],
 });
 

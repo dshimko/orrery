@@ -145,7 +145,7 @@ describe('file source', () => {
     expect(health.message).toContain('line 2: not valid JSON');
   });
 
-  it('reports configuration gaps and unsupported matchers in health', async () => {
+  it('reports configuration gaps in health', async () => {
     await writeEvents('gaps.ndjson', SAMPLE);
     const topology = `hub: { id: core, name: Core }
 spokes:
@@ -159,10 +159,20 @@ spokes:
     role: domain
     match: { catalog: nowhere }
     freshness: { cadenceMinutes: 60, targetMinutes: 90 }
-  - id: sql
-    name: Sql
+  - id: void
+    name: Void
     role: domain
-    match: { dashboardTag: { panel: x } }
+    match: { catalog: nowhere }
+    freshness: { cadenceMinutes: 60, targetMinutes: 90 }
+  - id: vacant
+    name: Vacant
+    role: domain
+    match: { catalog: nowhere }
+    freshness: { cadenceMinutes: 60, targetMinutes: 90 }
+  - id: blank
+    name: Blank
+    role: domain
+    match: { catalog: nowhere }
     freshness: { cadenceMinutes: 60, targetMinutes: 90 }
 sourceGroups:
   - id: lonely
@@ -172,13 +182,13 @@ sourceGroups:
 useCases:
   - id: dash
     name: Dash
-    match: { dashboardTag: { use_case: x } }`;
+    match: { catalog: nowhere }`;
     const adapter = await started(fileOptions('gaps.ndjson'), iso(T0), topology);
     const health = await adapter.health();
     expect(health.status).toBe('degraded');
-    expect(health.message).toContain('Spoke "sql" uses dashboardTag');
-    expect(health.message).toContain('Use case "dash" uses dashboardTag');
     expect(health.message).toContain('Spoke "empty" matches no dataset.');
+    expect(health.message).toContain('Source group "lonely" matches no source.');
+    expect(health.message).not.toContain('Use case "dash"');
     expect(health.message).toContain('(1 more)');
     const topo = await adapter.topology();
     expect(topo.useCases[0]?.reads).toEqual([]);

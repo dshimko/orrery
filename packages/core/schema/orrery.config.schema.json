@@ -140,17 +140,6 @@
                         "type": "string",
                         "minLength": 1
                       }
-                    },
-                    "dashboardTag": {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string",
-                        "minLength": 1
-                      },
-                      "additionalProperties": {
-                        "type": "string",
-                        "minLength": 1
-                      }
                     }
                   },
                   "additionalProperties": false
@@ -250,17 +239,6 @@
                         "type": "string",
                         "minLength": 1
                       }
-                    },
-                    "dashboardTag": {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string",
-                        "minLength": 1
-                      },
-                      "additionalProperties": {
-                        "type": "string",
-                        "minLength": 1
-                      }
                     }
                   },
                   "additionalProperties": false
@@ -319,17 +297,6 @@
                       }
                     },
                     "jobTag": {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string",
-                        "minLength": 1
-                      },
-                      "additionalProperties": {
-                        "type": "string",
-                        "minLength": 1
-                      }
-                    },
-                    "dashboardTag": {
                       "type": "object",
                       "propertyNames": {
                         "type": "string",
@@ -535,17 +502,6 @@
                             "type": "string",
                             "minLength": 1
                           }
-                        },
-                        "dashboardTag": {
-                          "type": "object",
-                          "propertyNames": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "additionalProperties": {
-                            "type": "string",
-                            "minLength": 1
-                          }
                         }
                       },
                       "additionalProperties": false
@@ -645,17 +601,6 @@
                             "type": "string",
                             "minLength": 1
                           }
-                        },
-                        "dashboardTag": {
-                          "type": "object",
-                          "propertyNames": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "additionalProperties": {
-                            "type": "string",
-                            "minLength": 1
-                          }
                         }
                       },
                       "additionalProperties": false
@@ -714,17 +659,6 @@
                           }
                         },
                         "jobTag": {
-                          "type": "object",
-                          "propertyNames": {
-                            "type": "string",
-                            "minLength": 1
-                          },
-                          "additionalProperties": {
-                            "type": "string",
-                            "minLength": 1
-                          }
-                        },
-                        "dashboardTag": {
                           "type": "object",
                           "propertyNames": {
                             "type": "string",

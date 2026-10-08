@@ -36,7 +36,7 @@ topologies:
         }
       - { id: region-b, name: Region B, utcOffset: 2, match: { pipelineTag: { source_region: b } } }
     useCases:
-      - { id: exec, name: Executive overview, match: { dashboardTag: { use_case: exec } } }
+      - { id: exec, name: Executive overview, match: { tag: { use_case: exec } } }
     medallion:
       strategy: schema-suffix # schema-suffix | catalog-prefix | tag
       bronze: ['*_bronze', '*_raw']

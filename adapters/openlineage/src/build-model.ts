@@ -8,7 +8,7 @@ import {
   type UseCase,
 } from '@orrery/core';
 import { consumedSpokes } from './convert/classify.js';
-import { subjectMatches, unsupportedClauses, jobSubject } from './matchers.js';
+import { subjectMatches, jobSubject } from './matchers.js';
 import {
   MAX_SITES_PER_GROUP,
   isSinkRun,
@@ -173,25 +173,6 @@ function buildUseCases(
   });
 }
 
-function configNotes(topology: ResolvedTopology): string[] {
-  const entries = [
-    ...topology.spokes.map((item) => ({ label: `Spoke "${item.id}"`, match: item.match })),
-    ...topology.sourceGroups.map((item) => ({
-      label: `Source group "${item.id}"`,
-      match: item.match,
-    })),
-    ...topology.useCases.map((item) => ({ label: `Use case "${item.id}"`, match: item.match })),
-  ];
-  return entries.flatMap(({ label, match }) => {
-    const names = unsupportedClauses(match);
-    return names.length === 0
-      ? []
-      : [
-          `${label} uses ${names.join(' and ')}, which OpenLineage events cannot answer; it never matches.`,
-        ];
-  });
-}
-
 function gapNotes(
   topology: Topology,
   model: ModelCore,
@@ -264,6 +245,6 @@ export function buildModel(env: ResolvedEnvironment, runs: readonly Run[]): Mode
   return {
     ...core,
     topology: result,
-    notes: [...configNotes(topology), ...gapNotes(result, core, built.counts)],
+    notes: gapNotes(result, core, built.counts),
   };
 }

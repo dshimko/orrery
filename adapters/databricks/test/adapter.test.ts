@@ -119,14 +119,13 @@ describe('scope conflicts and health', () => {
     await expect(adapter.topology()).rejects.toThrow('matches more than one environment');
   });
 
-  it('lists unmatched catalogs and unsupported matchers in health', async () => {
+  it('lists unmatched catalogs in health', async () => {
     const adapter = await started(prodEnv(), new FixtureWorld(PROD_SCENARIOS));
 
     const health = await adapter.health();
 
     expect(health.status).toBe('ok');
     expect(health.unmatchedCatalogs).toEqual(['stg_sales', 'scratch_lab']);
-    expect(health.message).toContain('dashboardTag');
   });
 });
 

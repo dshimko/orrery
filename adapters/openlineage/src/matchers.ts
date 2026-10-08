@@ -6,8 +6,7 @@
 //   tag                        the `tags` facet of the dataset (or job)
 //   jobTag / pipelineTag       tags and jobType facets of the job (for a dataset: of its producers)
 //
-// All given clauses must match. `dashboardTag` cannot be evaluated from run events, so a
-// matcher that uses it never matches (reported in health).
+// All given clauses must match.
 import { matchGlob, type Matcher } from '@orrery/core';
 import type { DatasetRef, JobRef, Tags } from './types.js';
 
@@ -26,13 +25,6 @@ export function datasetSubject(ref: DatasetRef, producerTags: readonly Tags[]): 
 
 export function jobSubject(job: JobRef): Subject {
   return { namespace: job.namespace, name: job.name, tags: job.tags, jobTags: [job.tags] };
-}
-
-/** Names of clauses this adapter cannot evaluate. */
-export function unsupportedClauses(matcher: Matcher): string[] {
-  const names: string[] = [];
-  if (matcher.dashboardTag !== undefined) names.push('dashboardTag');
-  return names;
 }
 
 function lowered(tags: Tags): Map<string, string> {
@@ -55,7 +47,6 @@ function nameMatches(glob: string, name: string): boolean {
 }
 
 export function subjectMatches(matcher: Matcher, subject: Subject): boolean {
-  if (unsupportedClauses(matcher).length > 0) return false;
   if (matcher.catalog !== undefined && !matchGlob(matcher.catalog, subject.namespace)) return false;
   if (matcher.schema !== undefined && !nameMatches(matcher.schema, subject.name)) return false;
   if (matcher.tag !== undefined && !tagsContain(subject.tags, matcher.tag)) return false;

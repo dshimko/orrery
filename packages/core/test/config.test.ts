@@ -282,6 +282,18 @@ describe('defaults and YAML', () => {
     ]);
   });
 
+  it('rejects dashboardTag, which was removed from matchers (decision 82)', () => {
+    const topologies = {
+      base: {
+        hub: { id: 'c', name: 'C' },
+        spokes: [{ ...SPOKE, match: { schema: '*_sales_*', dashboardTag: { use_case: 'x' } } }],
+      },
+    };
+    expect(issuesOf(validateConfig(baseConfig({ topologies })))).toEqual([
+      expect.stringContaining('Unknown key "dashboardTag".'),
+    ]);
+  });
+
   it('rejects an empty matcher', () => {
     const topologies = {
       base: { hub: { id: 'c', name: 'C' }, spokes: [{ ...SPOKE, match: {} }] },

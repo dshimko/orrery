@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ResolvedEnvironment } from '@orrery/core';
 import { complexityOf } from '../src/discovery/build.js';
 import { highestTier, tierOf } from '../src/discovery/medallion.js';
-import { objectMatches, schemaMatches, unsupportedClauses } from '../src/discovery/matchers.js';
+import { objectMatches, schemaMatches } from '../src/discovery/matchers.js';
 import { prodEnv, stgEnv, withTopology } from './support/env.js';
 import { catalog, discover, inventory, job, pipeline, schema, write } from './support/inventory.js';
 
@@ -202,10 +202,8 @@ describe('matcher semantics', () => {
     expect(schemaMatches({ tag: { domain: 'finance' } }, facts)).toBe(false);
   });
 
-  it('never matches a matcher without schema clauses or with unsupported ones', () => {
+  it('never matches a schema against a matcher without schema clauses', () => {
     expect(schemaMatches({ pipelineTag: { a: 'b' } }, facts)).toBe(false);
-    expect(objectMatches({ dashboardTag: { a: 'b' } }, 'job', { a: 'b' }, [])).toBe(false);
-    expect(unsupportedClauses({ dashboardTag: { a: 'b' } })).toEqual(['dashboardTag']);
   });
 
   it('applies pipelineTag to pipelines only and jobTag to jobs only', () => {

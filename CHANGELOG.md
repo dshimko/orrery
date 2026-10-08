@@ -9,8 +9,10 @@ All notable changes to this project are documented here. The format follows
 ### Removed
 
 - `sqlPredicate` matchers (decision 81). Configs that use it fail validation with the
-  unknown-key error; use `catalog`, `schema`, `tag`, `pipelineTag`, `jobTag`, or
-  `dashboardTag`.
+  unknown-key error; use `catalog`, `schema`, `tag`, `pipelineTag`, or `jobTag`.
+- `dashboardTag` matchers (decision 82). No adapter had a verified source for them. Configs
+  that use it fail validation with the unknown-key error; use `tag: { use_case: … }` for
+  Databricks use cases.
 
 ### Added
 

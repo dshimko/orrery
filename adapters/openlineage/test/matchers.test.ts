@@ -1,13 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Matcher } from '@orrery/core';
 import { describe, expect, it } from 'vitest';
-import {
-  datasetSubject,
-  jobSubject,
-  subjectMatches,
-  tagsContain,
-  unsupportedClauses,
-} from '../src/matchers.js';
+import { datasetSubject, jobSubject, subjectMatches, tagsContain } from '../src/matchers.js';
 import { dataset } from './helpers.js';
 
 const asset = (name: string, namespace = 'lake', tags: Record<string, string> = {}) =>
@@ -61,12 +55,6 @@ describe('subjectMatches', () => {
     expect(subjectMatches({ catalog: 'jobs' }, job)).toBe(true);
     expect(subjectMatches({ jobTag: { processingType: 'batch' } }, job)).toBe(true);
     expect(subjectMatches({ tag: { processingType: 'STREAMING' } }, job)).toBe(false);
-  });
-
-  it('never matches a matcher that uses a clause events cannot answer', () => {
-    expect(subjectMatches({ dashboardTag: { use_case: 'x' } }, asset('a'))).toBe(false);
-    expect(unsupportedClauses({ dashboardTag: { a: 'b' } })).toEqual(['dashboardTag']);
-    expect(unsupportedClauses({ catalog: 'x' })).toEqual([]);
   });
 });
 

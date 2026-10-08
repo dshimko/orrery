@@ -110,9 +110,9 @@ late run arrives.
 
 ## Known limits
 
-The full list is in `docs/decisions.md`, milestone 5:
+The full list is in `docs/decisions.md`, milestone 5. A use case matches station reads by the
+`catalog`, `schema`, and `tag` of the schemas read (decision 82):
 
-- `dashboardTag` cannot be resolved from documented system tables.
 - The schedule is empty, because job trigger formats are unverified.
 - Promotions are not detected yet.
 - A live stream ends after 15 minutes, so a held crossing not yet released when it ends is

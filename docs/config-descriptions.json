@@ -29,7 +29,7 @@
   "topologies.*.useCases": "Use cases and consumers, drawn as stations in low orbit around the hub.",
   "topologies.*.useCases[].id": "Stable id of the use case.",
   "topologies.*.useCases[].name": "Display name. Required once the topology is resolved.",
-  "topologies.*.useCases[].match": "Matcher that identifies the use case's consumers (typically `dashboardTag`). Required once the topology is resolved.",
+  "topologies.*.useCases[].match": "Matcher that identifies the use case's consumers. Databricks counts reads of schemas matching the use case's `catalog`/`schema`/`tag` clauses; OpenLineage matches sink jobs by `jobTag`/`pipelineTag`/`tag`. Required once the topology is resolved.",
   "topologies.*.useCases[].site": "Office or team location. Drawn as a small sun on the Orloj dial when `utcOffset` is also set.",
   "topologies.*.useCases[].utcOffset": "Offset from UTC in hours for the use case's location.",
   "topologies.*.medallion": "How schemas map to medallion tiers (bronze, silver, gold). Used by the Databricks adapter; the mock adapter ignores it.",
@@ -177,6 +177,5 @@
   "match.schema": "Glob on the schema name, for example `*_sales_*`.",
   "match.tag": "Unity Catalog tags (key and value pairs) that a schema must carry.",
   "match.pipelineTag": "Tags that a pipeline must carry. Places pipelines in a spoke or source group.",
-  "match.jobTag": "Tags that a job must carry. Places jobs in a spoke.",
-  "match.dashboardTag": "Tags that a dashboard must carry. Accepted, but the Databricks adapter cannot resolve it and reports it in health (decision 52)."
+  "match.jobTag": "Tags that a job must carry. Places jobs in a spoke."
 }

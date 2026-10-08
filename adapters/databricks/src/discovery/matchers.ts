@@ -3,9 +3,7 @@
 //
 // Clauses split in two kinds. Schema clauses (`catalog`, `schema`, `tag`) describe where data
 // lives and are evaluated against schemas, with the catalog's environment tag stripped.
-// Workload clauses (`pipelineTag`, `jobTag`) describe pipelines and jobs. `dashboardTag`
-// cannot be evaluated from the verified system tables, so a matcher that uses it never matches
-// (see docs/decisions.md).
+// Workload clauses (`pipelineTag`, `jobTag`) describe pipelines and jobs.
 import { matchGlob, type Matcher } from '@orrery/core';
 import { tagsContain, type Tags } from '../rows.js';
 import type { ObjectKind } from './types.js';
@@ -21,13 +19,6 @@ export interface SchemaFacts {
 
 export function hasSchemaClauses(matcher: Matcher): boolean {
   return matcher.catalog !== undefined || matcher.schema !== undefined || matcher.tag !== undefined;
-}
-
-/** Names of clauses this adapter cannot evaluate. */
-export function unsupportedClauses(matcher: Matcher): string[] {
-  const names: string[] = [];
-  if (matcher.dashboardTag !== undefined) names.push('dashboardTag');
-  return names;
 }
 
 function hasWorkloadClauses(matcher: Matcher): boolean {
@@ -53,7 +44,6 @@ export function objectMatches(
   tags: Tags,
   written: readonly SchemaFacts[],
 ): boolean {
-  if (unsupportedClauses(matcher).length > 0) return false;
   const workload = kind === 'pipeline' ? matcher.pipelineTag : matcher.jobTag;
   if (hasWorkloadClauses(matcher)) {
     if (workload === undefined || !tagsContain(tags, workload)) return false;
